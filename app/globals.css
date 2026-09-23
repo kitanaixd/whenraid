@@ -2707,3 +2707,97 @@ button.danger:hover:not(:disabled) {
     display: none !important;
   }
 }
+
+/* ─── Bannières en bas à droite (convocation, nouvelle candidature) ───────── */
+.bannieres {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: min(24rem, calc(100vw - 2rem));
+}
+.banniere {
+  --biseau: 10px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem 0.9rem;
+  background: rgb(5 8 14 / 0.97);
+  border: 2px solid var(--ton);
+  box-shadow:
+    inset 4px 0 0 var(--ton),
+    0 12px 30px rgb(0 0 0 / 0.6);
+  clip-path: polygon(
+    var(--biseau) 0,
+    calc(100% - var(--biseau)) 0,
+    100% var(--biseau),
+    100% calc(100% - var(--biseau)),
+    calc(100% - var(--biseau)) 100%,
+    var(--biseau) 100%,
+    0 calc(100% - var(--biseau)),
+    0 var(--biseau)
+  );
+  animation: banniere-entree 0.35s ease-out;
+}
+.banniere-acceptee {
+  --ton: var(--succes);
+}
+.banniere-candidature {
+  --ton: var(--turquoise);
+}
+.banniere-symbole {
+  display: grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  font-weight: 700;
+  color: var(--ton);
+  border: 2px solid var(--ton);
+}
+.banniere-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  color: var(--texte);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+.banniere-texte strong {
+  font-family: var(--police-titre), serif;
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ton);
+}
+.banniere-texte:hover span {
+  text-decoration: underline;
+}
+button.banniere-fermer {
+  align-self: start;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.8rem;
+  color: var(--texte-doux);
+  background: none;
+  border: none;
+  clip-path: none;
+}
+button.banniere-fermer::before {
+  display: none;
+}
+@keyframes banniere-entree {
+  from {
+    opacity: 0;
+    transform: translateY(1rem);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .banniere {
+    animation: none;
+  }
+}

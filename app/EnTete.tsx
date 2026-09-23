@@ -5,6 +5,7 @@ import { utilisateurConnecte } from "@/lib/session";
 import { db } from "@/lib/db";
 import { IconeCloche } from "./Icones";
 import { MenuCompte } from "./MenuCompte";
+import { Bannieres } from "./Bannieres";
 import { LigneNotification } from "./notifications/LigneNotification";
 
 /**
@@ -89,6 +90,7 @@ export async function EnTete() {
                 </form>
               </MenuCompte>
             </div>
+            <Bannieres />
           </>
         )}
       </div>
