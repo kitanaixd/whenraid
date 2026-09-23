@@ -31,7 +31,7 @@ import { nomEnJeu } from "@/lib/invitations";
 import { rolesPourPlace } from "./eligibilite";
 import { BoutonAnnuler } from "./BoutonAnnuler";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
-import { ClasseIcone, NomClasse } from "@/app/ClasseIcone";
+import { ClasseIcone, NomClasse, NomRole, RoleIcone } from "@/app/ClasseIcone";
 import { FormCandidature } from "./FormCandidature";
 import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 
@@ -165,146 +165,155 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           {maCandidature.statut === "CONFIRME" ? "✔ Tu es convié" : "⏳ Ta candidature est envoyée"} avec{" "}
           {maCandidature.personnage && <ClasseIcone classe={maCandidature.personnage.classe} />}{" "}
           <strong>{maCandidature.personnage && nomEnJeu(maCandidature.personnage)}</strong>
-          {maCandidature.role && ` (${libelleRole[maCandidature.role]})`} —{" "}
+          {maCandidature.role && (
+            <>
+              {" "}
+              (<NomRole role={maCandidature.role} taille={18} />)
+            </>
+          )}{" "}
+          —{" "}
           {libelleStatutInscription[maCandidature.statut]}.
           {maCandidature.statut === "LISTE_ATTENTE" &&
             " Le raid est plein : peu de chances d'être pris, mais le RL peut encore t'appeler en remplaçant."}
         </p>
       )}
 
+      <div className="bloc-rl">
+      {estRl && (
+        <section className="carte espace-rl">
+          <p className="surtitre">Espace RL</p>
+          {annonce.vocal === "DISCORD" && (
+            <p>
+              Discord : <code>{annonce.vocalDiscordLien}</code>
+            </p>
+          )}
+          {annonce.vocal === "TEAMSPEAK" && (
+            <p>
+              TeamSpeak : <code>{annonce.vocalTsAdresse}</code>
+              {annonce.vocalTsMotDePasse && (
+                <>
+                  {" "}
+                  — mot de passe : <code>{annonce.vocalTsMotDePasse}</code>
+                </>
+              )}
+            </p>
+          )}
+          {annonce.vocal !== "AUCUN" && (
+            <p className="doux">
+              Visibles par toi seul : le bot les enverra en MP aux joueurs confirmés avec les invitations.
+            </p>
+          )}
+          <div className="actions-rl">
+            {rlPeutAgir(annonce) && (
+              <BoutonInvitations
+                action={envoyerLesInvitations}
+                annonceId={annonce.id}
+                resume={resumeRaid}
+                nbConfirmes={confirmes.length}
+                vocal={
+                  annonce.vocal === "DISCORD"
+                    ? `Discord (${annonce.vocalDiscordLien})`
+                    : annonce.vocal === "TEAMSPEAK"
+                      ? `TeamSpeak (${annonce.vocalTsAdresse})`
+                      : "aucun"
+                }
+                commandeWhisper={organisateur ? `/w ${nomEnJeu(organisateur)} inv` : null}
+                dejaEnvoyeesLe={annonce.invitationsEnvoyeesLe && afficherDate(annonce.invitationsEnvoyeesLe, fuseau)}
+              />
+            )}
+            {ouvert && (
+              <BoutonAnnuler
+                action={annuler}
+                annonceId={annonce.id}
+                resume={resumeRaid}
+                nbInscrits={confirmes.length}
+                estComplet={complet}
+              />
+            )}
+          </div>
+        </section>
+      )}
+
+      {estRl && presences.visible && (
+        <section id="presences" className="carte">
+          <p className="surtitre">Feuille de présence</p>
+          {annonce.presencesValideesLe ? (
+            <p className="encadre">✔ Présences validées le {afficherDate(annonce.presencesValideesLe, fuseau)}.</p>
+          ) : (
+            <p className="doux">
+              Signale les absents pendant le raid, puis valide la fin du raid une fois terminé. Tout le monde est
+              présent par défaut.
+            </p>
+          )}
+          {confirmes.length === 0 ? (
+            <p>Aucun joueur confirmé sur ce raid.</p>
+          ) : (
+            <form action={enregistrerPresences}>
+              <input type="hidden" name="annonceId" value={annonce.id} />
+              <table>
+                <thead>
+                  <tr>
+                    <th>Joueur</th>
+                    <th>Présence</th>
+                    <th>S&apos;est distingué</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {confirmes.map((i) => {
+                    const p = participationDe(i.personnageId);
+                    return (
+                      <tr key={i.id}>
+                        <td>
+                          <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)}{" "}
+                          <small>
+                            (<Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>)
+                          </small>
+                        </td>
+                        <td>
+                          <select
+                            name={`presence.${i.id}`}
+                            defaultValue={p?.resultat ?? "PRESENT"}
+                            disabled={!presences.modifiable}
+                            aria-label={`Présence de ${nomEnJeu(i.personnage!)}`}
+                          >
+                            <option value="PRESENT">Présent</option>
+                            <option value="ABSENT">Absent</option>
+                            <option value="PARTI_EN_COURS">Parti en cours</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="checkbox"
+                            name={`distinction.${i.id}`}
+                            defaultChecked={p?.distinction ?? false}
+                            disabled={!presences.modifiable}
+                            aria-label={`${nomEnJeu(i.personnage!)} s'est distingué`}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {presences.modifiable && (
+                <div className="actions-rl">
+                  <BoutonEnvoi enCours="Enregistrement…">Enregistrer</BoutonEnvoi>
+                  {presences.validable && (
+                    <BoutonEnvoi name="valider" value="1" className="principal" enCours="Validation…">
+                      Valider la fin du raid
+                    </BoutonEnvoi>
+                  )}
+                </div>
+              )}
+            </form>
+          )}
+        </section>
+      )}
+
+      </div>
+
       <div className="grille-raid">
         <div className="colonne-principale">
-          {estRl && (
-            <section className="carte espace-rl">
-              <p className="surtitre">Espace RL</p>
-              {annonce.vocal === "DISCORD" && (
-                <p>
-                  Discord : <code>{annonce.vocalDiscordLien}</code>
-                </p>
-              )}
-              {annonce.vocal === "TEAMSPEAK" && (
-                <p>
-                  TeamSpeak : <code>{annonce.vocalTsAdresse}</code>
-                  {annonce.vocalTsMotDePasse && (
-                    <>
-                      {" "}
-                      — mot de passe : <code>{annonce.vocalTsMotDePasse}</code>
-                    </>
-                  )}
-                </p>
-              )}
-              {annonce.vocal !== "AUCUN" && (
-                <p className="doux">
-                  Visibles par toi seul : le bot les enverra en MP aux joueurs confirmés avec les invitations.
-                </p>
-              )}
-              <div className="actions-rl">
-                {rlPeutAgir(annonce) && (
-                  <BoutonInvitations
-                    action={envoyerLesInvitations}
-                    annonceId={annonce.id}
-                    resume={resumeRaid}
-                    nbConfirmes={confirmes.length}
-                    vocal={
-                      annonce.vocal === "DISCORD"
-                        ? `Discord (${annonce.vocalDiscordLien})`
-                        : annonce.vocal === "TEAMSPEAK"
-                          ? `TeamSpeak (${annonce.vocalTsAdresse})`
-                          : "aucun"
-                    }
-                    commandeWhisper={organisateur ? `/w ${nomEnJeu(organisateur)} inv` : null}
-                    dejaEnvoyeesLe={annonce.invitationsEnvoyeesLe && afficherDate(annonce.invitationsEnvoyeesLe, fuseau)}
-                  />
-                )}
-                {ouvert && (
-                  <BoutonAnnuler
-                    action={annuler}
-                    annonceId={annonce.id}
-                    resume={resumeRaid}
-                    nbInscrits={confirmes.length}
-                    estComplet={complet}
-                  />
-                )}
-              </div>
-            </section>
-          )}
-
-          {estRl && presences.visible && (
-            <section id="presences" className="carte">
-              <p className="surtitre">Feuille de présence</p>
-              {annonce.presencesValideesLe ? (
-                <p className="encadre">✔ Présences validées le {afficherDate(annonce.presencesValideesLe, fuseau)}.</p>
-              ) : (
-                <p className="doux">
-                  Signale les absents pendant le raid, puis valide la fin du raid une fois terminé. Tout le monde est
-                  présent par défaut.
-                </p>
-              )}
-              {confirmes.length === 0 ? (
-                <p>Aucun joueur confirmé sur ce raid.</p>
-              ) : (
-                <form action={enregistrerPresences}>
-                  <input type="hidden" name="annonceId" value={annonce.id} />
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Joueur</th>
-                        <th>Présence</th>
-                        <th>S&apos;est distingué</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {confirmes.map((i) => {
-                        const p = participationDe(i.personnageId);
-                        return (
-                          <tr key={i.id}>
-                            <td>
-                              <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)}{" "}
-                              <small>
-                                (<Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>)
-                              </small>
-                            </td>
-                            <td>
-                              <select
-                                name={`presence.${i.id}`}
-                                defaultValue={p?.resultat ?? "PRESENT"}
-                                disabled={!presences.modifiable}
-                                aria-label={`Présence de ${nomEnJeu(i.personnage!)}`}
-                              >
-                                <option value="PRESENT">Présent</option>
-                                <option value="ABSENT">Absent</option>
-                                <option value="PARTI_EN_COURS">Parti en cours</option>
-                              </select>
-                            </td>
-                            <td>
-                              <input
-                                type="checkbox"
-                                name={`distinction.${i.id}`}
-                                defaultChecked={p?.distinction ?? false}
-                                disabled={!presences.modifiable}
-                                aria-label={`${nomEnJeu(i.personnage!)} s'est distingué`}
-                              />
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                  {presences.modifiable && (
-                    <div className="actions-rl">
-                      <BoutonEnvoi enCours="Enregistrement…">Enregistrer</BoutonEnvoi>
-                      {presences.validable && (
-                        <BoutonEnvoi name="valider" value="1" className="principal" enCours="Validation…">
-                          Valider la fin du raid
-                        </BoutonEnvoi>
-                      )}
-                    </div>
-                  )}
-                </form>
-              )}
-            </section>
-          )}
-
           <section aria-labelledby="titre-places">
             <p className="surtitre">
               {complet ? "Raid complet" : `${placesRestantes} place${placesRestantes > 1 ? "s" : ""} à pourvoir`}
@@ -325,6 +334,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                 const toutes = place.classesAcceptees.length === NOMBRE_DE_CLASSES;
                 return (
                   <li key={place.id} className={`carte place place-${place.statut.toLowerCase()}`}>
+                    {!toutes && <p className="etiquette-place">Classes mises en avant</p>}
                     <div className="place-entete">
                       <div className="place-quoi">
                         {toutes ? (
@@ -332,7 +342,9 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         ) : (
                           place.classesAcceptees.map((c) => <NomClasse key={c} classe={c} taille={26} />)
                         )}
-                        <span className="place-role">{place.role ? libelleRole[place.role] : "Tout rôle"}</span>
+                        <span className="place-role">
+                          {place.role ? <NomRole role={place.role} taille={20} /> : "Tout rôle"}
+                        </span>
                       </div>
                       <span className={`pastille ${CLASSE_STATUT_PLACE[place.statut]}`}>
                         {libelleStatutPlace[place.statut]}
@@ -364,7 +376,12 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                                 </strong>{" "}
                                 <span className="doux">
                                   niv. {i.personnage?.niveau}
-                                  {i.role && ` · ${libelleRole[i.role]}`}
+                                  {i.role && (
+                                    <>
+                                      {" · "}
+                                      <NomRole role={i.role} taille={18} />
+                                    </>
+                                  )}
                                 </span>
                               </div>
                               <div className="doux">
@@ -426,23 +443,26 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         </div>
 
         <aside className="colonne-compo">
-          <section className="carte compo-panneau" aria-labelledby="titre-compo">
-            <p className="surtitre" id="titre-compo">
-              Compo actuelle
+          <header className="entete-colonne">
+            <p className="surtitre">
+              {compo.total}/{annonce.taille} joueurs
             </p>
+            <h2 id="titre-compo">Compo</h2>
+          </header>
+          <section className="carte compo-panneau" aria-labelledby="titre-compo">
             <div className="compo-chiffres">
               <div>
-                <span aria-hidden="true">🛡</span>
+                <RoleIcone role="TANK" taille={30} />
                 <strong>{roles.tanks}</strong>
                 <small>Tanks</small>
               </div>
               <div>
-                <span aria-hidden="true">✚</span>
+                <RoleIcone role="SOIGNEUR" taille={30} />
                 <strong>{roles.soigneurs}</strong>
                 <small>Soigneurs</small>
               </div>
               <div>
-                <span aria-hidden="true">⚔</span>
+                <RoleIcone role="DPS" taille={30} />
                 <strong>{roles.dps}</strong>
                 <small>DPS</small>
               </div>
@@ -459,7 +479,9 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             </p>
             {compoParGroupe.map((g) => (
               <div key={g.role} className="compo-groupe">
-                <h3>{libelleRole[g.role]}</h3>
+                <h3>
+                  <NomRole role={g.role} taille={18} />
+                </h3>
                 <ul>
                   {g.lignes.map((l) => (
                     <li key={`${l.classe}.${l.role}`}>
@@ -479,7 +501,9 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                       <span className="nom-classe">
                         <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)}
                       </span>
-                      <span className="compo-nombre">{libelleRole[i.role!]}</span>
+                      <span className="compo-nombre">
+                        <NomRole role={i.role!} taille={18} />
+                      </span>
                     </li>
                   ))}
                 </ul>

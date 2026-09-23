@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import type { Classe } from "@/generated/prisma/enums";
-import { ClasseIcone } from "./ClasseIcone";
+import type { Classe, Role } from "@/generated/prisma/enums";
+import { ClasseIcone, RoleIcone } from "./ClasseIcone";
 
-export type OptionMenu = { valeur: string; libelle: string; classe?: Classe };
+export type OptionMenu = { valeur: string; libelle: string; classe?: Classe; role?: Role };
+
+function Icone({ option }: { option?: OptionMenu }) {
+  if (option?.classe) return <ClasseIcone classe={option.classe} taille={22} />;
+  if (option?.role) return <RoleIcone role={option.role} taille={22} />;
+  return <span className="menu-sans-icone" />;
+}
 
 /**
  * Menu déroulant avec icônes de classe (le <select> natif n'accepte que du texte).
@@ -95,7 +101,7 @@ export function MenuDeroulant({
         onClick={() => (ouvert ? setOuvert(false) : ouvrir())}
         onKeyDown={auClavier}
       >
-        {choisie?.classe && <ClasseIcone classe={choisie.classe} taille={22} />}
+        <Icone option={choisie} />
         <span className="menu-libelle">{choisie?.libelle}</span>
         <span className="menu-fleche" aria-hidden="true">
           ▾
@@ -114,7 +120,7 @@ export function MenuDeroulant({
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => choisir(i)}
             >
-              {o.classe ? <ClasseIcone classe={o.classe} taille={22} /> : <span className="menu-sans-icone" />}
+              <Icone option={o} />
               <span>{o.libelle}</span>
             </li>
           ))}

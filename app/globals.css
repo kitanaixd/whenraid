@@ -1320,3 +1320,67 @@ main[data-fond] .carte {
     linear-gradient(180deg, rgb(0 0 0 / 0.9), rgb(0 0 0 / 0.9)),
     var(--image-fond) center / cover no-repeat;
 }
+
+/* ─── Page d'un raid : alignement des colonnes ────────────────────────────── */
+
+/* Espace RL et feuille de présence : pleine largeur, au-dessus des colonnes. */
+.bloc-rl {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  margin: 1rem 0 0.5rem;
+}
+.bloc-rl:empty {
+  display: none;
+}
+/* Les deux colonnes commencent par le même en-tête (surtitre + titre),
+   pour que titres et premières cartes tombent au même niveau. */
+.grille-raid {
+  margin-top: 1.5rem;
+}
+.entete-colonne,
+.colonne-principale > section > .surtitre {
+  margin: 0;
+}
+.entete-colonne h2,
+.colonne-principale > section > h2 {
+  margin: 0.3rem 0 1rem;
+}
+.colonne-compo {
+  gap: 0;
+}
+.colonne-compo > .carte + .carte {
+  margin-top: 1.2rem;
+}
+
+.etiquette-place {
+  font-family: var(--police-titre), serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--or);
+  margin: 0 0 0.45rem;
+}
+.place-role .nom-classe {
+  gap: 0.35rem;
+}
+.compo-chiffres > div {
+  align-items: center;
+  gap: 0.15rem;
+}
+.compo-roles span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.compteur-compo span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.besoin-role {
+  flex: 1 1 10rem;
+}
+.liste-persos small .nom-classe {
+  margin-right: 0.6rem;
+}

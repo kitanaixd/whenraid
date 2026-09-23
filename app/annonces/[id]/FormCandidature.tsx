@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import type { Classe, Role } from "@/generated/prisma/enums";
-import { libelleRole } from "@/lib/libelles";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
+import { NomRole } from "@/app/ClasseIcone";
 
 export type PersoCandidat = { id: string; libelle: string; classe: Classe; roles: Role[] };
 
@@ -51,7 +51,7 @@ export function FormCandidature({
               className={`petit ${r === roleValide ? "choisi" : ""}`}
               onClick={() => setRole(r)}
             >
-              {libelleRole[r]}
+              <NomRole role={r} taille={18} />
             </button>
           ))}
         </div>

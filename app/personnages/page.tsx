@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Classe, Faction, Region, Role, Ruleset } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
-import { ClasseIcone } from "@/app/ClasseIcone";
+import { ClasseIcone, NomRole } from "@/app/ClasseIcone";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { nomEnJeu } from "@/lib/jeu";
 import { exigerUtilisateur } from "@/lib/session";
@@ -124,7 +124,10 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 <br />
                 <small>
                   {libelleClasse[p.classe]} niveau {p.niveau} · {libelleFaction[p.faction]} ·{" "}
-                  {libelleRuleset[p.ruleset]} {p.region} · {p.rolesJouables.map((r) => libelleRole[r]).join(", ")}
+                  {libelleRuleset[p.ruleset]} {p.region} ·{" "}
+                  {p.rolesJouables.map((r) => (
+                    <NomRole key={r} role={r} taille={16} />
+                  ))}
                 </small>
               </div>
             </li>

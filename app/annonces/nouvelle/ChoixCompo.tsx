@@ -5,7 +5,7 @@ import type { Classe, Contenu, Role } from "@/generated/prisma/enums";
 import { MAX_EXIGENCES, rolesParClasse } from "@/lib/jeu";
 import { libelleClasse, libelleRole, options } from "@/lib/libelles";
 import { nomRaid, raids } from "@/lib/raids";
-import { NomClasse } from "@/app/ClasseIcone";
+import { NomClasse, NomRole, RoleIcone } from "@/app/ClasseIcone";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
 
 const tousLesRoles = Object.keys(libelleRole) as Role[];
@@ -83,11 +83,17 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
 
       <h2>Ta compo actuelle</h2>
       <div className="compteur-compo" aria-live="polite">
-        <span title="Tanks">🛡 {totalRole("TANK")}</span>
+        <span title="Tanks">
+          <RoleIcone role="TANK" taille={24} /> {totalRole("TANK")}
+        </span>
         <span className="separateur">/</span>
-        <span title="Soigneurs">✚ {totalRole("SOIGNEUR")}</span>
+        <span title="Soigneurs">
+          <RoleIcone role="SOIGNEUR" taille={24} /> {totalRole("SOIGNEUR")}
+        </span>
         <span className="separateur">/</span>
-        <span title="DPS">⚔ {totalRole("DPS")}</span>
+        <span title="DPS">
+          <RoleIcone role="DPS" taille={24} /> {totalRole("DPS")}
+        </span>
         <strong>
           {joueurs}/{taille}
         </strong>
@@ -102,7 +108,9 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
           <tr>
             <th></th>
             {tousLesRoles.map((r) => (
-              <th key={r}>{libelleRole[r]}</th>
+              <th key={r}>
+                <NomRole role={r} taille={20} />
+              </th>
             ))}
           </tr>
         </thead>
@@ -179,14 +187,16 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
               ]}
             />
           </div>
-          <select name={`exigences.${l}.role`} aria-label="Rôle" defaultValue="">
-            <option value="">tout rôle</option>
-            {options(libelleRole).map(([v, lib]) => (
-              <option key={v} value={v}>
-                {lib}
-              </option>
-            ))}
-          </select>
+          <div className="besoin-role">
+            <MenuDeroulant
+              name={`exigences.${l}.role`}
+              etiquette="Rôle"
+              options={[
+                { valeur: "", libelle: "tout rôle" },
+                ...options(libelleRole).map(([v, lib]) => ({ valeur: v, libelle: lib, role: v })),
+              ]}
+            />
+          </div>
           {lignes.length > 1 && (
             <button
               type="button"

@@ -5,12 +5,12 @@ import { utilisateurConnecte } from "@/lib/session";
 import { db } from "@/lib/db";
 import { afficherDate } from "@/lib/dates";
 import { nomRaid, raids } from "@/lib/raids";
-import { libelleFaction, libelleRole, libelleRuleset } from "@/lib/libelles";
+import { libelleFaction, libelleRuleset } from "@/lib/libelles";
 import { chargerMesRaids } from "@/lib/mesRaids";
 import { fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 import { compoActuelle, compoParRole } from "@/lib/annonces";
 import type { Classe } from "@/generated/prisma/enums";
-import { ClasseIcone } from "./ClasseIcone";
+import { ClasseIcone, NomRole, RoleIcone } from "./ClasseIcone";
 import { nomEnJeu } from "@/lib/jeu";
 
 const NOMBRE_DE_CLASSES = 9;
@@ -91,7 +91,12 @@ export default async function Accueil() {
               <Link href={`/annonces/${i.place.annonce.id}`}>{nomRaid(i.place.annonce.contenu)}</Link> —{" "}
               <strong>{afficherDate(i.place.annonce.debutUtc, fuseau)}</strong> avec{" "}
               {i.personnage && <ClasseIcone classe={i.personnage.classe} />} <strong>{i.personnage && nomEnJeu(i.personnage)}</strong>
-              {i.role && ` (${libelleRole[i.role]})`}
+              {i.role && (
+                <>
+                  {" "}
+                  (<NomRole role={i.role} taille={18} />)
+                </>
+              )}
             </p>
           ))}
           {organises.map((a) => (
@@ -176,9 +181,15 @@ export default async function Accueil() {
                     </div>
                   )}
                   <div className="compo-roles" title="Tanks · Soigneurs · DPS">
-                    <span aria-label={`${roles.tanks} tanks`}>🛡 {roles.tanks}</span>
-                    <span aria-label={`${roles.soigneurs} soigneurs`}>✚ {roles.soigneurs}</span>
-                    <span aria-label={`${roles.dps} DPS`}>⚔ {roles.dps}</span>
+                    <span aria-label={`${roles.tanks} tanks`}>
+                      <RoleIcone role="TANK" taille={20} /> {roles.tanks}
+                    </span>
+                    <span aria-label={`${roles.soigneurs} soigneurs`}>
+                      <RoleIcone role="SOIGNEUR" taille={20} /> {roles.soigneurs}
+                    </span>
+                    <span aria-label={`${roles.dps} DPS`}>
+                      <RoleIcone role="DPS" taille={20} /> {roles.dps}
+                    </span>
                     <strong>
                       {compo.total}/{a.taille}
                     </strong>

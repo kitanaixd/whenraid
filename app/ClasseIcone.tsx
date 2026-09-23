@@ -1,6 +1,6 @@
 import Image from "next/image";
-import type { Classe } from "@/generated/prisma/enums";
-import { libelleClasse } from "@/lib/libelles";
+import type { Classe, Role } from "@/generated/prisma/enums";
+import { libelleClasse, libelleRole } from "@/lib/libelles";
 
 // Seul endroit où l'on dessine une classe. Icônes : recréations des icônes de
 // WoW Classic par brutaliccus (github.com/brutaliccus/ClassicWoWClassIcons_Circle_HighRes).
@@ -28,6 +28,31 @@ export function NomClasse({ classe, taille = 20 }: { classe: Classe; taille?: nu
       <span className="classe" style={{ "--c": `var(--classe-${classe})` } as React.CSSProperties}>
         {libelleClasse[classe]}
       </span>
+    </span>
+  );
+}
+
+/** Icône d'un rôle : bouclier (Tank), croix (Soigneur), épée (DPS). */
+export function RoleIcone({ role, taille = 20 }: { role: Role; taille?: number }) {
+  return (
+    <Image
+      src={`/roles/${role}.webp`}
+      alt={libelleRole[role]}
+      title={libelleRole[role]}
+      width={taille}
+      height={taille}
+      className="icone-classe"
+      unoptimized
+    />
+  );
+}
+
+/** Icône + nom du rôle. */
+export function NomRole({ role, taille = 20 }: { role: Role; taille?: number }) {
+  return (
+    <span className="nom-classe">
+      <RoleIcone role={role} taille={taille} />
+      <span>{libelleRole[role]}</span>
     </span>
   );
 }
