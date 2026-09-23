@@ -22,13 +22,13 @@ import {
   libelleRuleset,
   libelleStatutAnnonce,
   libelleStatutInscription,
-  libelleStatutPlace,
   libelleVocal,
 } from "@/lib/libelles";
 import { accepter, annuler, candidater, enregistrerPresences, envoyerLesInvitations, refuser } from "./actions";
 import { BoutonInvitations } from "./BoutonInvitations";
 import { nomEnJeu } from "@/lib/invitations";
-import { rolesPourPlace } from "./eligibilite";
+import { placePour, rolesPourRaid } from "./eligibilite";
+import type { Classe, Role } from "@/generated/prisma/enums";
 import { BoutonAnnuler } from "./BoutonAnnuler";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { ClasseIcone, NomClasse, NomRole, RoleIcone } from "@/app/ClasseIcone";
@@ -41,7 +41,6 @@ const ORDRE_CLASSES = Object.keys(libelleClasse);
 
 // Couleur des pastilles selon le statut.
 const CLASSE_STATUT_ANNONCE: Record<string, string> = { PUBLIEE: "ouvert", COMPLETE: "complet", ANNULEE: "alerte" };
-const CLASSE_STATUT_PLACE: Record<string, string> = { OUVERTE: "ouvert", POURVUE: "complet", ANNULEE: "" };
 const CLASSE_STATUT_INSCRIPTION: Record<string, string> = {
   CONFIRME: "succes",
   LISTE_ATTENTE: "complet",
@@ -79,13 +78,14 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   const inscriptions = annonce.places.flatMap((p) => p.inscriptions.map((i) => ({ ...i, place: p })));
   const confirmes = inscriptions.filter((i) => i.statut === "CONFIRME" && i.personnage && i.role);
   // Par place, le premier confirmé est titulaire ; les suivants sont des remplaçants.
-  const titulaires = annonce.places.flatMap((p) =>
+  const premiers = annonce.places.flatMap((p) =>
     p.inscriptions.filter((i) => i.statut === "CONFIRME").slice(0, 1),
   );
-  const remplacants = confirmes.filter((i) => !titulaires.some((t) => t.id === i.id));
+  const titulaires = confirmes.filter((i) => premiers.some((t) => t.id === i.id));
+  const remplacants = confirmes.filter((i) => !titulaires.includes(i));
   const compo = compoActuelle(
     annonce.composition,
-    confirmes.filter((i) => !remplacants.includes(i)).map((i) => ({ classe: i.personnage!.classe, role: i.role! })),
+    titulaires.map((i) => ({ classe: i.personnage!.classe, role: i.role! })),
   );
   const placesRestantes = annonce.places.filter((p) => p.statut === "OUVERTE").length;
   const complet = estComplet(annonce.places);
@@ -104,15 +104,54 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
       : await db.personnage.findMany({ where: { utilisateurId: utilisateur.id }, orderBy: { nom: "asc" } });
 
   const roles = compoParRole(compo.lignes);
-  const lignesTriees = [...compo.lignes].sort(
+  // Compo joueur par joueur : les membres déclarés par le RL (sans nom) puis les joueurs acceptés.
+  const membres = [
+    ...annonce.composition.flatMap((c) =>
+      Array.from({ length: c.nombre }, (_, n) => ({
+        cle: `${c.classe}.${c.role}.${n}`,
+        classe: c.classe,
+        role: c.role,
+        nom: null as string | null,
+      })),
+    ),
+    ...confirmes
+      .filter((i) => !remplacants.includes(i))
+      .map((i) => ({ cle: i.id, classe: i.personnage!.classe, role: i.role!, nom: nomEnJeu(i.personnage!) })),
+  ].sort(
     (a, b) =>
       ORDRE_ROLES.indexOf(a.role) - ORDRE_ROLES.indexOf(b.role) ||
       ORDRE_CLASSES.indexOf(a.classe) - ORDRE_CLASSES.indexOf(b.classe),
   );
   const compoParGroupe = ORDRE_ROLES.map((role) => ({
-    role: role as keyof typeof libelleRole,
-    lignes: lignesTriees.filter((l) => l.role === role),
-  })).filter((g) => g.lignes.length > 0);
+    role: role as Role,
+    membres: membres.filter((m) => m.role === role),
+  })).filter((g) => g.membres.length > 0);
+
+  // Besoins : les places identiques (mêmes classes, même rôle) sont regroupées sur une ligne.
+  const besoins: { cle: string; classes: Classe[]; role: Role | null; total: number; ouvertes: number }[] = [];
+  for (const p of annonce.places) {
+    if (p.statut === "ANNULEE") continue;
+    const classes = [...p.classesAcceptees].sort((x, y) => ORDRE_CLASSES.indexOf(x) - ORDRE_CLASSES.indexOf(y));
+    const cle = `${classes.join(",")}|${p.role ?? ""}`;
+    let besoin = besoins.find((x) => x.cle === cle);
+    if (!besoin) besoins.push((besoin = { cle, classes, role: p.role, total: 0, ouvertes: 0 }));
+    besoin.total++;
+    if (p.statut === "OUVERTE") besoin.ouvertes++;
+  }
+
+  // Candidatures en attente (vue du RL) : « Accepter » s'il reste une place compatible, sinon « Remplaçant ».
+  const candidatsEnAttente = inscriptions
+    .filter((i) => estEnAttente(i.statut))
+    .sort((x, y) => Number(x.statut === "LISTE_ATTENTE") - Number(y.statut === "LISTE_ATTENTE"))
+    .map((i) => ({
+      ...i,
+      placeOuverte: Boolean(
+        i.personnage && i.role && placePour(annonce.places, i.personnage, i.role, annonce)?.ouverte,
+      ),
+    }));
+  const persosCandidats = mesPersonnages
+    .map((p) => ({ perso: p, roles: rolesPourRaid(p, annonce.places, annonce) }))
+    .filter((c) => c.roles.length > 0);
   const organisateur = annonce.organisateurPersonnage;
   const resumeRaid = `${nomRaid(annonce.contenu)} — ${afficherDate(annonce.debutUtc, fuseau)}`;
 
@@ -160,24 +199,6 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           ⚠ {erreur}
         </p>
       )}
-      {maCandidature && (
-        <p className="encadre">
-          {maCandidature.statut === "CONFIRME" ? "✔ Tu es convié" : "⏳ Ta candidature est envoyée"} avec{" "}
-          {maCandidature.personnage && <ClasseIcone classe={maCandidature.personnage.classe} />}{" "}
-          <strong>{maCandidature.personnage && nomEnJeu(maCandidature.personnage)}</strong>
-          {maCandidature.role && (
-            <>
-              {" "}
-              (<NomRole role={maCandidature.role} taille={18} />)
-            </>
-          )}{" "}
-          —{" "}
-          {libelleStatutInscription[maCandidature.statut]}.
-          {maCandidature.statut === "LISTE_ATTENTE" &&
-            " Le raid est plein : peu de chances d'être pris, mais le RL peut encore t'appeler en remplaçant."}
-        </p>
-      )}
-
       <div className="bloc-rl">
       {estRl && (
         <section className="carte espace-rl">
@@ -314,130 +335,192 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
 
       <div className="grille-raid">
         <div className="colonne-principale">
-          <section aria-labelledby="titre-places">
+          <header className="entete-colonne">
             <p className="surtitre">
               {complet ? "Raid complet" : `${placesRestantes} place${placesRestantes > 1 ? "s" : ""} à pourvoir`}
             </p>
-            <h2 id="titre-places">Places</h2>
-            {complet && !estRl && ouvert && !maCandidature && (
-              <p className="encadre">
-                ⚠ Ce raid est complet : si tu candidates, tu seras en liste d&apos;attente avec peu de chances
-                d&apos;être pris. Le RL pourra quand même t&apos;appeler en remplaçant.
-              </p>
-            )}
-            <ul className="liste-places">
-              {annonce.places.map((place) => {
-                const candidats = place.inscriptions.filter((i) => estActive(i.statut));
-                const persosEligibles = mesPersonnages
-                  .map((p) => ({ perso: p, roles: rolesPourPlace(p, place, annonce) }))
-                  .filter((c) => c.roles.length > 0);
-                const toutes = place.classesAcceptees.length === NOMBRE_DE_CLASSES;
-                return (
-                  <li key={place.id} className={`carte place place-${place.statut.toLowerCase()}`}>
-                    {!toutes && <p className="etiquette-place">Classes mises en avant</p>}
-                    <div className="place-entete">
-                      <div className="place-quoi">
-                        {toutes ? (
-                          <span className="place-libre">Toute classe</span>
-                        ) : (
-                          place.classesAcceptees.map((c) => <NomClasse key={c} classe={c} taille={26} />)
-                        )}
-                        <span className="place-role">
-                          {place.role ? <NomRole role={place.role} taille={20} /> : "Tout rôle"}
-                        </span>
-                      </div>
-                      <span className={`pastille ${CLASSE_STATUT_PLACE[place.statut]}`}>
-                        {libelleStatutPlace[place.statut]}
-                      </span>
-                    </div>
+            <h2>Le raid</h2>
+          </header>
 
-                    {!estRl && candidats.length > 0 && (
-                      <p className="doux">
-                        {candidats.length} candidat{candidats.length > 1 ? "s" : ""}
-                      </p>
+          <section className="carte" aria-labelledby="titre-recherche">
+            <p className="surtitre" id="titre-recherche">
+              Recherché
+            </p>
+            <ul className="liste-besoins">
+              {besoins.map((b) => (
+                <li key={b.cle} className={`besoin ${b.ouvertes === 0 ? "besoin-pourvu" : ""}`}>
+                  <div className="besoin-quoi">
+                    {b.classes.length === NOMBRE_DE_CLASSES ? (
+                      <span className="place-libre">Toute classe</span>
+                    ) : (
+                      b.classes.map((c) => <NomClasse key={c} classe={c} taille={24} />)
                     )}
-
-                    {estRl && candidats.length > 0 && (
-                      <ul className="liste-candidats">
-                        {candidats.map((i) => (
-                          <li key={i.id} className="candidat">
-                            <div className="candidat-infos">
-                              <div>
-                                {i.personnage && <ClasseIcone classe={i.personnage.classe} taille={26} />}{" "}
-                                <strong
-                                  className="classe"
-                                  style={
-                                    i.personnage
-                                      ? ({ "--c": `var(--classe-${i.personnage.classe})` } as React.CSSProperties)
-                                      : undefined
-                                  }
-                                >
-                                  {i.personnage && nomEnJeu(i.personnage)}
-                                </strong>{" "}
-                                <span className="doux">
-                                  niv. {i.personnage?.niveau}
-                                  {i.role && (
-                                    <>
-                                      {" · "}
-                                      <NomRole role={i.role} taille={18} />
-                                    </>
-                                  )}
-                                </span>
-                              </div>
-                              <div className="doux">
-                                <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
-                                {fiabCandidats.get(i.utilisateurId) && texteBadge(fiabCandidats.get(i.utilisateurId)!)}
-                              </div>
-                              {i.note && <blockquote className="note">« {i.note} »</blockquote>}
-                            </div>
-                            <div className="candidat-actions">
-                              <span className={`pastille ${CLASSE_STATUT_INSCRIPTION[i.statut] ?? ""}`}>
-                                {libelleStatutInscription[i.statut]}
-                                {remplacants.some((r) => r.id === i.id) && " · remplaçant"}
-                              </span>
-                              {estEnAttente(i.statut) && annonce.statut !== "ANNULEE" && (
-                                <div className="boutons">
-                                  <form action={accepter}>
-                                    <input type="hidden" name="inscriptionId" value={i.id} />
-                                    <BoutonEnvoi className="petit principal" enCours="…">
-                                      {place.statut === "POURVUE" ? "Remplaçant" : "Accepter"}
-                                    </BoutonEnvoi>
-                                  </form>
-                                  <form action={refuser}>
-                                    <input type="hidden" name="inscriptionId" value={i.id} />
-                                    <BoutonEnvoi className="petit" enCours="…">
-                                      Refuser
-                                    </BoutonEnvoi>
-                                  </form>
-                                </div>
-                              )}
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-
-                    {persosEligibles.length > 0 && place.statut !== "ANNULEE" && (
-                      <FormCandidature
-                        action={candidater}
-                        placeId={place.id}
-                        listeAttente={place.statut === "POURVUE"}
-                        persos={persosEligibles.map(({ perso, roles }) => ({
-                          id: perso.id,
-                          classe: perso.classe,
-                          roles,
-                          libelle: `${nomEnJeu(perso)} — ${libelleClasse[perso.classe]} niv. ${perso.niveau}`,
-                        }))}
-                      />
-                    )}
-                  </li>
-                );
-              })}
+                    <span className="place-role">
+                      {b.role ? <NomRole role={b.role} taille={20} /> : "Tout rôle"}
+                    </span>
+                  </div>
+                  <span className={`pastille ${b.ouvertes === 0 ? "complet" : "ouvert"}`}>
+                    {b.ouvertes === 0
+                      ? `${b.total} pourvue${b.total > 1 ? "s" : ""}`
+                      : `${b.ouvertes} / ${b.total} à pourvoir`}
+                  </span>
+                </li>
+              ))}
             </ul>
-            {!estRl && !maCandidature && ouvert && mesPersonnages.length === 0 && (
-              <p className="doux">
-                Pour candidater, déclare d&apos;abord <Link href="/personnages">un personnage</Link>.
+          </section>
+
+          {estRl ? (
+            <section className="carte" aria-labelledby="titre-candidatures">
+              <p className="surtitre" id="titre-candidatures">
+                Candidatures reçues · {candidatsEnAttente.length}
               </p>
+              {candidatsEnAttente.length === 0 ? (
+                <p className="doux">Aucune candidature en attente pour le moment.</p>
+              ) : (
+                <ul className="liste-candidats">
+                  {candidatsEnAttente.map((i) => (
+                    <li key={i.id} className="candidat">
+                      <div className="candidat-infos">
+                        <div>
+                          {i.personnage && <ClasseIcone classe={i.personnage.classe} taille={26} />}{" "}
+                          <strong
+                            className="classe"
+                            style={
+                              i.personnage
+                                ? ({ "--c": `var(--classe-${i.personnage.classe})` } as React.CSSProperties)
+                                : undefined
+                            }
+                          >
+                            {i.personnage && nomEnJeu(i.personnage)}
+                          </strong>{" "}
+                          <span className="doux">
+                            niv. {i.personnage?.niveau}
+                            {i.role && (
+                              <>
+                                {" · "}
+                                <NomRole role={i.role} taille={18} />
+                              </>
+                            )}
+                          </span>
+                        </div>
+                        <div className="doux">
+                          <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
+                          {fiabCandidats.get(i.utilisateurId) && texteBadge(fiabCandidats.get(i.utilisateurId)!)}
+                        </div>
+                        {i.note && <blockquote className="note">« {i.note} »</blockquote>}
+                      </div>
+                      <div className="candidat-actions">
+                        <span className={`pastille ${CLASSE_STATUT_INSCRIPTION[i.statut] ?? ""}`}>
+                          {libelleStatutInscription[i.statut]}
+                        </span>
+                        {rlPeutAgir(annonce) && (
+                          <div className="boutons">
+                            <form action={accepter}>
+                              <input type="hidden" name="inscriptionId" value={i.id} />
+                              <BoutonEnvoi className="petit principal" enCours="…">
+                                {i.placeOuverte ? "Accepter" : "Remplaçant"}
+                              </BoutonEnvoi>
+                            </form>
+                            <form action={refuser}>
+                              <input type="hidden" name="inscriptionId" value={i.id} />
+                              <BoutonEnvoi className="petit" enCours="…">
+                                Refuser
+                              </BoutonEnvoi>
+                            </form>
+                          </div>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          ) : (
+            <section className="carte" aria-labelledby="titre-candidature">
+              <p className="surtitre" id="titre-candidature">
+                Candidature
+              </p>
+              {maCandidature ? (
+                <p>
+                  {maCandidature.statut === "CONFIRME" ? "✔ Tu es convié" : "⏳ Ta candidature est envoyée"} avec{" "}
+                  {maCandidature.personnage && <ClasseIcone classe={maCandidature.personnage.classe} />}{" "}
+                  <strong>{maCandidature.personnage && nomEnJeu(maCandidature.personnage)}</strong>
+                  {maCandidature.role && (
+                    <>
+                      {" "}
+                      (<NomRole role={maCandidature.role} taille={18} />)
+                    </>
+                  )}{" "}
+                  — {libelleStatutInscription[maCandidature.statut]}.
+                  {maCandidature.statut === "LISTE_ATTENTE" &&
+                    " Aucune place compatible n'est libre : peu de chances d'être pris, mais le RL peut encore t'appeler en remplaçant."}
+                </p>
+              ) : !ouvert ? (
+                <p className="doux">Ce raid n&apos;accepte plus de candidatures.</p>
+              ) : mesPersonnages.length === 0 ? (
+                <p className="doux">
+                  Pour candidater, déclare d&apos;abord <Link href="/personnages">un personnage</Link>.
+                </p>
+              ) : persosCandidats.length === 0 ? (
+                <p className="doux">
+                  Aucun de tes personnages ne correspond aux places de ce raid (faction, serveur, niveau ou classe).
+                </p>
+              ) : (
+                <>
+                  {complet && (
+                    <p className="encadre">
+                      ⚠ Ce raid est complet : si tu candidates, tu seras en liste d&apos;attente avec peu de chances
+                      d&apos;être pris. Le RL pourra quand même t&apos;appeler en remplaçant.
+                    </p>
+                  )}
+                  <FormCandidature
+                    action={candidater}
+                    annonceId={annonce.id}
+                    listeAttente={complet}
+                    persos={persosCandidats.map(({ perso, roles }) => ({
+                      id: perso.id,
+                      classe: perso.classe,
+                      roles,
+                      libelle: `${nomEnJeu(perso)} — ${libelleClasse[perso.classe]} niv. ${perso.niveau}`,
+                    }))}
+                  />
+                </>
+              )}
+            </section>
+          )}
+
+          <section className="carte" aria-labelledby="titre-acceptes">
+            <p className="surtitre" id="titre-acceptes">
+              Joueurs acceptés · {titulaires.length}
+            </p>
+            {titulaires.length + remplacants.length === 0 ? (
+              <p className="doux">Personne n&apos;a encore été accepté.</p>
+            ) : (
+              <ul className="liste-acceptes">
+                {[...titulaires, ...remplacants].map((i) => (
+                  <li key={i.id}>
+                    <span className="nom-classe">
+                      <ClasseIcone classe={i.personnage!.classe} taille={24} />
+                      <strong
+                        className="classe"
+                        style={{ "--c": `var(--classe-${i.personnage!.classe})` } as React.CSSProperties}
+                      >
+                        {nomEnJeu(i.personnage!)}
+                      </strong>
+                    </span>
+                    <span className="doux">
+                      <NomRole role={i.role!} taille={18} />
+                      {remplacants.includes(i) && " · remplaçant"}
+                      {estRl && (
+                        <>
+                          {" · "}
+                          <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>
+                        </>
+                      )}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
         </div>
@@ -483,10 +566,18 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                   <NomRole role={g.role} taille={18} />
                 </h3>
                 <ul>
-                  {g.lignes.map((l) => (
-                    <li key={`${l.classe}.${l.role}`}>
-                      <NomClasse classe={l.classe} />
-                      <span className="compo-nombre">× {l.nombre}</span>
+                  {g.membres.map((m) => (
+                    <li key={m.cle}>
+                      {m.nom ? (
+                        <span className="nom-classe">
+                          <ClasseIcone classe={m.classe} />
+                          <span className="classe" style={{ "--c": `var(--classe-${m.classe})` } as React.CSSProperties}>
+                            {m.nom}
+                          </span>
+                        </span>
+                      ) : (
+                        <NomClasse classe={m.classe} />
+                      )}
                     </li>
                   ))}
                 </ul>

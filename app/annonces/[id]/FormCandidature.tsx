@@ -11,12 +11,12 @@ export type PersoCandidat = { id: string; libelle: string; classe: Classe; roles
 /** Candidature en trois étapes : personnage, puis rôle (selon le personnage), puis note pour le RL. */
 export function FormCandidature({
   action,
-  placeId,
+  annonceId,
   persos,
   listeAttente,
 }: {
   action: (form: FormData) => void;
-  placeId: string;
+  annonceId: string;
   persos: PersoCandidat[];
   listeAttente: boolean;
 }) {
@@ -28,7 +28,7 @@ export function FormCandidature({
 
   return (
     <form action={action} className="form-candidature">
-      <input type="hidden" name="placeId" value={placeId} />
+      <input type="hidden" name="annonceId" value={annonceId} />
       <input type="hidden" name="role" value={roleValide ?? ""} />
       <div className="champ">
         1. Personnage

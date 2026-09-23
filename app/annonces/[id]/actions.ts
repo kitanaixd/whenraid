@@ -16,7 +16,8 @@ import {
   STATUTS_EN_ATTENTE,
 } from "@/lib/annonces";
 import { seChevauchent } from "@/lib/jeu";
-import { rolesPourPlace } from "./eligibilite";
+import { placePour } from "./eligibilite";
+import type { Role } from "@/generated/prisma/enums";
 import { envoyerMp } from "@/lib/discord";
 import { texteNotification } from "@/lib/notifications";
 import { libelleRole } from "@/lib/libelles";
@@ -73,25 +74,25 @@ async function dejaConfirmeAilleurs(
 
 export async function candidater(form: FormData) {
   const utilisateur = await exigerUtilisateur();
-  const place = await db.place.findUnique({
-    where: { id: String(form.get("placeId") ?? "") },
-    include: { annonce: true },
+  const annonce = await db.annonce.findUnique({
+    where: { id: String(form.get("annonceId") ?? "") },
+    include: { places: true },
   });
-  if (!place) notFound();
-  const { annonce } = place;
+  if (!annonce) notFound();
   const retour = retourVers(annonce.id);
 
   const personnageId = String(form.get("personnageId") ?? "");
-  const role = String(form.get("role") ?? "");
+  const role = String(form.get("role") ?? "") as Role;
   const personnage = await db.personnage.findFirst({ where: { id: personnageId, utilisateurId: utilisateur.id } });
   const note = String(form.get("note") ?? "").trim();
 
   if (annonce.createurId === utilisateur.id) retour("Tu organises ce raid, tu ne peux pas y candidater.");
   if (!accepteCandidatures(annonce)) retour("Ce raid n'accepte plus de candidatures.");
-  if (place.statut === "ANNULEE") retour("Cette place a été retirée.");
-  if (!personnage || !rolesPourPlace(personnage, place, annonce).includes(role as never)) {
-    retour("Ce personnage ne correspond pas à cette place.");
-  }
+  if (!personnage) retour("Choisis un de tes personnages.");
+  // Le site choisit la place : une place ouverte compatible, sinon la liste d'attente.
+  const choix = placePour(annonce.places, personnage!, role, annonce);
+  if (!choix) retour("Ce personnage ne correspond à aucune place de ce raid avec ce rôle.");
+  const place = choix!.place;
   if (note.length > 80) retour("Ta note doit faire 80 caractères maximum.");
 
   const dejaCandidat = await db.inscription.findFirst({
@@ -106,12 +107,12 @@ export async function candidater(form: FormData) {
     db.inscription.create({
       data: {
         placeId: place.id,
-      personnageId: personnage!.id,
-      utilisateurId: utilisateur.id,
-      role: role as never,
-      note: note || null,
-        // Place déjà pourvue (raid plein) : directement en liste d'attente.
-        statut: place.statut === "OUVERTE" ? "INSCRIT" : "LISTE_ATTENTE",
+        personnageId: personnage!.id,
+        utilisateurId: utilisateur.id,
+        role,
+        note: note || null,
+        // Aucune place compatible encore ouverte : directement en liste d'attente.
+        statut: choix!.ouverte ? "INSCRIT" : "LISTE_ATTENTE",
       },
     }),
     db.notification.create({
@@ -127,7 +128,7 @@ async function candidaturePourRl(form: FormData) {
   const utilisateur = await exigerUtilisateur();
   const inscription = await db.inscription.findUnique({
     where: { id: String(form.get("inscriptionId") ?? "") },
-    include: { place: { include: { annonce: true } } },
+    include: { personnage: true, place: { include: { annonce: true } } },
   });
   if (!inscription || inscription.place.annonce.createurId !== utilisateur.id) notFound();
   return inscription;
@@ -147,27 +148,36 @@ export async function accepter(form: FormData) {
   }
 
   await db.$transaction(async (tx) => {
-    await tx.inscription.update({ where: { id: inscription.id }, data: { statut: "CONFIRME" } });
+    // Le joueur prend n'importe quelle place ouverte compatible (la sienne en priorité).
+    // S'il n'en reste aucune, il est confirmé comme remplaçant sur sa place d'origine.
+    const places = await tx.place.findMany({ where: { annonceId: annonce.id } });
+    const choix =
+      inscription.personnage && inscription.role
+        ? placePour(places, inscription.personnage, inscription.role, annonce, inscription.placeId)
+        : null;
+    const cible = choix?.ouverte ? choix.place.id : inscription.placeId;
+    await tx.inscription.update({ where: { id: inscription.id }, data: { statut: "CONFIRME", placeId: cible } });
+    await tx.place.updateMany({ where: { id: cible, statut: "OUVERTE" }, data: { statut: "POURVUE" } });
     await tx.notification.create({
       data: { utilisateurId: inscription.utilisateurId, type: "CANDIDATURE_ACCEPTEE", annonceId: annonce.id },
     });
 
-    // Première acceptation sur la place : elle devient pourvue, les autres candidats
-    // de cette place passent en liste d'attente. Sinon, c'est un remplaçant.
-    const pourvue = await tx.place.updateMany({
-      where: { id: inscription.placeId, statut: "OUVERTE" },
-      data: { statut: "POURVUE" },
+    // Les autres candidats passent en liste d'attente seulement s'il ne reste
+    // plus aucune place ouverte compatible avec leur personnage et leur rôle.
+    const placesApres = await tx.place.findMany({ where: { annonceId: annonce.id } });
+    const enAttente = await tx.inscription.findMany({
+      where: { place: { annonceId: annonce.id }, statut: "INSCRIT" },
+      include: { personnage: true },
     });
-    if (pourvue.count === 1) {
-      await tx.inscription.updateMany({
-        where: { placeId: inscription.placeId, statut: "INSCRIT" },
-        data: { statut: "LISTE_ATTENTE" },
-      });
+    const sansPlace = enAttente
+      .filter((i) => !i.personnage || !i.role || !placePour(placesApres, i.personnage, i.role, annonce)?.ouverte)
+      .map((i) => i.id);
+    if (sansPlace.length > 0) {
+      await tx.inscription.updateMany({ where: { id: { in: sansPlace } }, data: { statut: "LISTE_ATTENTE" } });
     }
 
     // Raid plein : il passe « complet » et tous les candidats restants en liste d'attente.
-    const places = await tx.place.findMany({ where: { annonceId: annonce.id }, select: { statut: true } });
-    if (estComplet(places)) {
+    if (estComplet(placesApres)) {
       const devientComplet = await tx.annonce.updateMany({
         where: { id: annonce.id, statut: "PUBLIEE" },
         data: { statut: "COMPLETE" },

@@ -1384,3 +1384,51 @@ main[data-fond] .carte {
 .liste-persos small .nom-classe {
   margin-right: 0.6rem;
 }
+
+/* ─── Page d'un raid : cartes Recherché / Candidature / Joueurs acceptés ──── */
+.colonne-principale {
+  display: flex;
+  flex-direction: column;
+}
+.colonne-principale > .carte + .carte {
+  margin-top: 1.2rem;
+}
+.liste-besoins,
+.liste-acceptes {
+  list-style: none;
+  padding: 0;
+  margin: 0.4rem 0 0;
+}
+.besoin,
+.liste-acceptes li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--filet);
+}
+.besoin:last-child,
+.liste-acceptes li:last-child {
+  border-bottom: none;
+}
+.besoin-quoi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  font-size: 1.05rem;
+}
+.besoin-pourvu .besoin-quoi {
+  opacity: 0.55;
+}
+.liste-acceptes .nom-classe {
+  gap: 0.5rem;
+  font-size: 1.05rem;
+}
+.colonne-principale .form-candidature {
+  margin-top: 0.4rem;
+  padding-top: 0;
+  border-top: none;
+}
