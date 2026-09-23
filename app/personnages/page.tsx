@@ -38,7 +38,6 @@ async function creerPersonnage(form: FormData) {
           nom: texte(form, "nom", { requis: true, max: 24 })!,
           nomDeFamille: texte(form, "nomDeFamille", { max: 24 }),
           classe: choix(form, "classe", Classe),
-          spePrincipale: texte(form, "spePrincipale", { max: 40 }),
           rolesJouables,
           faction: choix(form, "faction", Faction),
           ruleset: choix(form, "ruleset", Ruleset),
@@ -56,6 +55,29 @@ async function creerPersonnage(form: FormData) {
   if (erreur) redirect(`/personnages?erreur=${encodeURIComponent(erreur)}`);
   revalidatePath("/personnages");
   redirect("/personnages");
+}
+
+async function basculerPrincipal(form: FormData) {
+  "use server";
+  const utilisateur = await exigerUtilisateur();
+  const personnageId = String(form.get("personnageId") ?? "");
+
+  // Vérifie que le personnage appartient bien à l'utilisateur connecté.
+  const personnage = await db.personnage.findFirst({
+    where: { id: personnageId, utilisateurId: utilisateur.id },
+  });
+  if (!personnage) redirect("/personnages");
+
+  await db.$transaction([
+    db.personnage.updateMany({
+      where: { utilisateurId: utilisateur.id, estPrincipal: true },
+      data: { estPrincipal: false },
+    }),
+    ...(personnage.estPrincipal
+      ? []
+      : [db.personnage.update({ where: { id: personnage.id }, data: { estPrincipal: true } })]),
+  ]);
+  revalidatePath("/personnages");
 }
 
 export default async function PagePersonnages({ searchParams }: PageProps<"/personnages">) {
@@ -79,14 +101,22 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
         <ul>
           {personnages.map((p) => (
             <li key={p.id}>
+              <form action={basculerPrincipal} style={{ display: "inline" }}>
+                <input type="hidden" name="personnageId" value={p.id} />
+                <button
+                  type="submit"
+                  title={p.estPrincipal ? "Retirer le statut principal" : "Définir comme principal"}
+                  aria-pressed={p.estPrincipal}
+                >
+                  {p.estPrincipal ? "★" : "☆"}
+                </button>
+              </form>{" "}
               <strong>
                 {p.nom}
                 {p.nomDeFamille && ` ${p.nomDeFamille}`}
               </strong>{" "}
-              — {libelleClasse[p.classe]} niveau {p.niveau}
-              {p.spePrincipale && ` (${p.spePrincipale})`}, {libelleFaction[p.faction]},{" "}
+              — {libelleClasse[p.classe]} niveau {p.niveau}, {libelleFaction[p.faction]},{" "}
               {libelleRuleset[p.ruleset]} {p.region} — {p.rolesJouables.map((r) => libelleRole[r]).join(", ")}
-              {p.estPrincipal && " ★ principal"}
             </li>
           ))}
         </ul>
@@ -113,9 +143,6 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 </option>
               ))}
             </select>
-          </label>{" "}
-          <label>
-            Spécialisation principale <input name="spePrincipale" maxLength={40} placeholder="ex. Feu" />
           </label>{" "}
           <label>
             Niveau <input name="niveau" type="number" min={1} max={60} defaultValue={60} required />
