@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type Banniere = { id: string; type: "CANDIDATURE_ACCEPTEE" | "NOUVELLE_CANDIDATURE"; texte: string; lien: string };
@@ -81,10 +80,11 @@ export function Bannieres() {
           <span className="banniere-symbole" aria-hidden="true">
             {b.type === "CANDIDATURE_ACCEPTEE" ? "✔" : "+"}
           </span>
-          <Link href={b.lien} className="banniere-texte" onClick={() => fermer(b.id)}>
+          {/* <a> simple : pas de préchargement, qui marquerait la notification comme lue. */}
+          <a href={b.lien} className="banniere-texte" onClick={() => fermer(b.id)}>
             <strong>{b.type === "CANDIDATURE_ACCEPTEE" ? "Convocation" : "Nouvelle candidature"}</strong>
             <span>{b.texte}</span>
-          </Link>
+          </a>
           <button type="button" className="banniere-fermer" aria-label="Fermer" onClick={() => fermer(b.id)}>
             ✕
           </button>

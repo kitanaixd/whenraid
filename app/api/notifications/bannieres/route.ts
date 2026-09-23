@@ -29,7 +29,8 @@ export async function GET() {
       type: n.type,
       // Le symbole de tête (✔…) est déjà dans la bannière.
       texte: texteNotification(n.type, n.annonce, utilisateur.fuseauHoraire).replace(/^[^\p{L}]+/u, ""),
-      lien: n.annonce ? `/annonces/${n.annonce.id}` : "/notifications",
+      // Ouvrir la bannière marque la notification comme lue.
+      lien: `/notifications/${n.id}`,
     })),
   );
 }

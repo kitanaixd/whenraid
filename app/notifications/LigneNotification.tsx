@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Contenu, TypeNotification } from "@/generated/prisma/enums";
 import { afficherDate } from "@/lib/dates";
 import { texteNotification } from "@/lib/notifications";
@@ -22,7 +21,10 @@ type NotificationAffichee = {
   annonce: { id: string; contenu: Contenu; debutUtc: Date } | null;
 };
 
-/** Une notification : symbole de couleur, texte, date ; mène au raid concerné. */
+/**
+ * Une notification : symbole de couleur, texte, date. Le lien passe par /notifications/[id],
+ * qui la marque comme lue puis mène au raid concerné.
+ */
 export function LigneNotification({ n, fuseau }: { n: NotificationAffichee; fuseau: string }) {
   const style = STYLE[n.type];
   const contenu = (
@@ -37,7 +39,8 @@ export function LigneNotification({ n, fuseau }: { n: NotificationAffichee; fuse
   );
   return (
     <li className={`notification ${n.lue ? "" : "non-lue"}`}>
-      {n.annonce ? <Link href={`/annonces/${n.annonce.id}`}>{contenu}</Link> : <div>{contenu}</div>}
+      {/* <a> simple (pas <Link>) : aucun préchargement ne doit marquer la notification comme lue. */}
+      <a href={`/notifications/${n.id}`}>{contenu}</a>
     </li>
   );
 }
