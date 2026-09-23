@@ -2563,3 +2563,81 @@ button.menu-compte-deconnexion {
     grid-column: 2;
   }
 }
+
+/* ─── Coins biseautés : filet de la même épaisseur que les bords (2 px) ─────
+   La découpe suit la diagonale ; le filet est dessiné juste à l'intérieur de
+   celle-ci (de 50 % à 50 % + 2 px), au lieu d'être centré dessus et à moitié coupé. */
+.carte::before,
+.parchemin::before,
+.encadre::before,
+.ligne-raid::before,
+.filtres::before,
+.candidat::before,
+.compo-chiffres > div::before,
+dialog.confirmation::before,
+button:not(.bouton-lien):not(.menu-choisi)::before,
+a.bouton::before,
+.pastille::before,
+.perso-choix::before,
+.cloche::before,
+.notification > a::before,
+.notification > div::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  z-index: 1;
+  --trait: transparent 50%, var(--bord-biseau) 50%, var(--bord-biseau) calc(50% + 2px), transparent calc(50% + 2px);
+  background:
+    linear-gradient(135deg, var(--trait)) top left / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(225deg, var(--trait)) top right / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(45deg, var(--trait)) bottom left / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(315deg, var(--trait)) bottom right / var(--biseau) var(--biseau) no-repeat;
+}
+.notification > a,
+.notification > div {
+  position: relative;
+  --bord-biseau: var(--filet);
+}
+.notification > a:hover {
+  --bord-biseau: var(--or);
+}
+.notification.non-lue > a,
+.notification.non-lue > div {
+  --bord-biseau: var(--filet-fort);
+}
+.cloche:hover,
+.cloche.a-lire {
+  --bord-biseau: var(--or);
+}
+button:not(.bouton-lien):not(.menu-choisi):hover:not(:disabled) {
+  --bord-biseau: var(--or);
+}
+button.principal:hover:not(:disabled),
+button.danger:hover:not(:disabled) {
+  --bord-biseau: currentColor;
+}
+
+/* Liserés de couleur : bords uniformes à 2 px, la bande épaisse est dessinée à l'intérieur. */
+.ligne-raid.ligne-organise,
+.ligne-raid.ligne-convie,
+.ligne-raid.ligne-candidat,
+.ligne-raid.ligne-attente {
+  border-left-width: 2px;
+  box-shadow: inset 5px 0 0 var(--bord-biseau);
+}
+.ligne-raid.ligne-organise {
+  box-shadow:
+    inset 5px 0 0 var(--bord-biseau),
+    inset 0 0 40px rgb(217 181 106 / 0.14);
+}
+.ligne-raid:not(.ligne-organise):not(.ligne-convie):not(.ligne-candidat):not(.ligne-attente) {
+  border-left-width: 2px;
+  box-shadow: inset 3px 0 0 var(--or);
+}
+.notification.non-lue > a,
+.notification.non-lue > div {
+  border-left-width: 2px;
+  border-left-color: var(--filet-fort);
+  box-shadow: inset 4px 0 0 var(--or);
+}
