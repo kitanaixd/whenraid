@@ -1,0 +1,266 @@
+// Schéma complet de WhenRaid. La v1 n'en utilise qu'une partie.
+//
+// Règles non négociables (voir aussi prisma/migrations/*/migration.sql) :
+// 1. Une Inscription porte soit un personnageId, soit un groupeId : jamais les
+//    deux, jamais aucun. Garanti par une contrainte CHECK en base.
+// 2. Participation est distincte d'Inscription et survit à l'Annonce : une
+//    Annonce n'est jamais effacée (on passe son statut à ANNULEE), et la base
+//    refuse d'effacer une Annonce qui a des Participations.
+// 3. Toutes les dates sont en UTC (timestamptz), converties à l'affichage.
+//    Aucun score agrégé n'est stocké : la fiabilité se calcule à la lecture.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Énumérations ────────────────────────────────────────────────────────────
+
+enum Classe {
+  GUERRIER
+  PALADIN
+  CHASSEUR
+  VOLEUR
+  PRETRE
+  CHAMAN
+  MAGE
+  DEMONISTE
+  DRUIDE
+}
+
+enum Role {
+  TANK
+  SOIGNEUR
+  DPS_MELEE
+  DPS_DISTANCE
+}
+
+enum Faction {
+  ALLIANCE
+  HORDE
+}
+
+enum Ruleset {
+  NORMAL
+  PVP
+  HARDCORE
+}
+
+enum Region {
+  EU
+  US
+}
+
+enum ReglesLoot {
+  ROLL
+  LOOT_COUNCIL
+  DKP
+  RESERVE
+}
+
+enum StatutAnnonce {
+  BROUILLON
+  PUBLIEE
+  COMPLETE
+  ANNULEE
+  PASSEE
+  CLOTUREE
+}
+
+enum StatutPlace {
+  OUVERTE
+  POURVUE
+  ANNULEE
+}
+
+enum StatutInscription {
+  INSCRIT
+  LISTE_ATTENTE
+  CONFIRME
+  RETIRE
+  REFUSE
+}
+
+enum ResultatParticipation {
+  PRESENT
+  ABSENT
+  PARTI_EN_COURS
+  ANNULE_A_TEMPS
+}
+
+enum SourceParticipation {
+  VALIDATION_MANUELLE
+  ADDON
+}
+
+// ─── Modèles ─────────────────────────────────────────────────────────────────
+
+model Utilisateur {
+  id            String   @id @default(cuid())
+  discordId     String   @unique
+  pseudo        String
+  avatarUrl     String?
+  langues       String[] @default(["fr"]) // codes ISO 639-1
+  fuseauHoraire String   @default("Europe/Paris") // IANA, pour l'affichage uniquement
+  region        Region?
+  creeLe        DateTime @default(now()) @db.Timestamptz(3)
+
+  personnages    Personnage[]
+  groupes        Groupe[]
+  annonces       Annonce[]
+  inscriptions   Inscription[]
+  alertes        Alerte[]
+  participations Participation[]
+}
+
+model Personnage {
+  id            String  @id @default(cuid())
+  utilisateurId String
+  nom           String
+  nomDeFamille  String?
+  classe        Classe
+  spePrincipale String?
+  rolesJouables Role[]
+  faction       Faction
+  ruleset       Ruleset
+  region        Region
+  niveau        Int
+  estPrincipal  Boolean @default(false) // au plus un par utilisateur (index partiel en SQL)
+
+  // Restrict : on ne perd pas l'historique en effaçant un compte par accident.
+  // La suppression de compte passera par une anonymisation (à concevoir).
+  utilisateur    Utilisateur     @relation(fields: [utilisateurId], references: [id], onDelete: Restrict)
+  inscriptions   Inscription[]
+  participations Participation[]
+
+  @@index([utilisateurId])
+}
+
+model Groupe {
+  id             String  @id @default(cuid())
+  nom            String
+  proprietaireId String
+  description    String?
+  langue         String  @default("fr")
+  vocalRequis    Boolean @default(false)
+  lienVocal      String?
+  ruleset        Ruleset
+  faction        Faction
+
+  proprietaire Utilisateur         @relation(fields: [proprietaireId], references: [id], onDelete: Restrict)
+  composition  GroupeComposition[]
+  annonces     Annonce[]
+  inscriptions Inscription[]
+
+  @@index([proprietaireId])
+}
+
+model GroupeComposition {
+  id       String @id @default(cuid())
+  groupeId String
+  classe   Classe
+  role     Role
+  nombre   Int
+
+  groupe Groupe @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+
+  @@unique([groupeId, classe, role])
+}
+
+model Annonce {
+  id            String        @id @default(cuid())
+  groupeId      String?
+  createurId    String
+  contenu       String // code du raid visé, ex. "MC", "BWL"
+  taille        Int // 10, 20, 40…
+  debutUtc      DateTime      @db.Timestamptz(3)
+  dureeEstimee  Int? // en minutes
+  reglesLoot    ReglesLoot
+  prerequis     String?
+  langueRequise String?
+  vocalRequis   Boolean       @default(false)
+  niveauMin     Int?
+  statut        StatutAnnonce @default(BROUILLON)
+  publieeLe     DateTime?     @db.Timestamptz(3)
+
+  groupe         Groupe?         @relation(fields: [groupeId], references: [id], onDelete: SetNull)
+  createur       Utilisateur     @relation(fields: [createurId], references: [id], onDelete: Restrict)
+  places         Place[]
+  participations Participation[]
+
+  @@index([statut, debutUtc])
+  @@index([createurId])
+}
+
+model Place {
+  id               String      @id @default(cuid())
+  annonceId        String
+  classesAcceptees Classe[]
+  role             Role
+  statut           StatutPlace @default(OUVERTE)
+
+  annonce      Annonce       @relation(fields: [annonceId], references: [id], onDelete: Cascade)
+  inscriptions Inscription[]
+
+  @@index([annonceId])
+}
+
+model Inscription {
+  id            String            @id @default(cuid())
+  placeId       String
+  personnageId  String? // règle 1 : exactement un des deux
+  groupeId      String? // règle 1 : exactement un des deux
+  utilisateurId String // qui a fait l'inscription
+  statut        StatutInscription @default(INSCRIT)
+  note          String?
+  inscritLe     DateTime          @default(now()) @db.Timestamptz(3)
+
+  place       Place       @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  personnage  Personnage? @relation(fields: [personnageId], references: [id], onDelete: Cascade)
+  groupe      Groupe?     @relation(fields: [groupeId], references: [id], onDelete: Cascade)
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@unique([placeId, personnageId])
+  @@unique([placeId, groupeId])
+  @@index([utilisateurId])
+}
+
+model Alerte {
+  id            String   @id @default(cuid())
+  utilisateurId String
+  classes       Classe[]
+  roles         Role[]
+  contenus      String[]
+  joursSemaine  Int[] // 0 = dimanche … 6 = samedi, dans le fuseau de l'utilisateur
+  plageHoraire  String? // "HH:MM-HH:MM", dans le fuseau de l'utilisateur
+  langue        String?
+  active        Boolean  @default(true)
+
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+
+  @@index([utilisateurId])
+}
+
+model Participation {
+  id            String                @id @default(cuid())
+  annonceId     String
+  personnageId  String
+  utilisateurId String? // null une fois anonymisé
+  resultat      ResultatParticipation
+  source        SourceParticipation
+  anonymise     Boolean               @default(false)
+  enregistreLe  DateTime              @default(now()) @db.Timestamptz(3)
+
+  // Restrict : règle 2, l'historique bloque l'effacement de l'Annonce.
+  annonce     Annonce      @relation(fields: [annonceId], references: [id], onDelete: Restrict)
+  personnage  Personnage   @relation(fields: [personnageId], references: [id], onDelete: Restrict)
+  utilisateur Utilisateur? @relation(fields: [utilisateurId], references: [id], onDelete: SetNull)
+
+  @@unique([annonceId, personnageId])
+  @@index([personnageId])
+  @@index([utilisateurId])
+}
