@@ -1748,3 +1748,43 @@ button.menu-choisi {
   padding-top: 0;
   padding-bottom: 0;
 }
+
+/* ─── Liste des raids : partie droite agrandie (×2), tout sur une ligne ──── */
+.ligne-raid-droite {
+  flex-direction: row;
+  align-items: center;
+  gap: 1.2rem;
+}
+.recherche {
+  gap: 0.4rem;
+}
+.compo-roles {
+  align-items: center;
+  gap: 1.1rem;
+  font-size: 1.9rem;
+  line-height: 1;
+}
+.compo-roles span {
+  gap: 0.4rem;
+}
+.compo-roles strong {
+  font-size: 2.2rem;
+  padding-left: 1.1rem;
+}
+.ligne-raid-droite .pastille {
+  font-size: 0.9rem;
+}
+@media (max-width: 640px) {
+  .ligne-raid-droite {
+    flex-wrap: wrap;
+  }
+  .compo-roles {
+    font-size: 1.4rem;
+  }
+  .compo-roles strong {
+    font-size: 1.6rem;
+  }
+}
+.ligne-raid-droite .recherche {
+  flex-wrap: nowrap;
+}

@@ -302,20 +302,20 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   {a.statut !== "COMPLETE" && (
                     <div className="recherche" aria-label="Classes recherchées">
                       {classesRecherchees.map((c) => (
-                        <ClasseIcone key={c} classe={c} taille={28} />
+                        <ClasseIcone key={c} classe={c} taille={40} />
                       ))}
                       {placeLibre && <span className="pastille">Toutes classes</span>}
                     </div>
                   )}
                   <div className="compo-roles" title="Tanks · Soigneurs · DPS">
                     <span aria-label={`${roles.tanks} tanks`}>
-                      <RoleIcone role="TANK" taille={20} /> {roles.tanks}
+                      <RoleIcone role="TANK" taille={34} /> {roles.tanks}
                     </span>
                     <span aria-label={`${roles.soigneurs} soigneurs`}>
-                      <RoleIcone role="SOIGNEUR" taille={20} /> {roles.soigneurs}
+                      <RoleIcone role="SOIGNEUR" taille={34} /> {roles.soigneurs}
                     </span>
                     <span aria-label={`${roles.dps} DPS`}>
-                      <RoleIcone role="DPS" taille={20} /> {roles.dps}
+                      <RoleIcone role="DPS" taille={34} /> {roles.dps}
                     </span>
                     <strong>
                       {compo.total}/{a.taille}
