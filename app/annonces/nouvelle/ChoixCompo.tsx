@@ -5,6 +5,7 @@ import type { Classe, Contenu, Role } from "@/generated/prisma/enums";
 import { LIGNES_EXIGENCES, rolesParClasse } from "@/lib/jeu";
 import { libelleClasse, libelleRole, options } from "@/lib/libelles";
 import { nomRaid, raids } from "@/lib/raids";
+import { NomClasse } from "@/app/ClasseIcone";
 
 
 const tousLesRoles = Object.keys(libelleRole) as Role[];
@@ -50,7 +51,9 @@ export function ChoixCompo() {
         <tbody>
           {options(libelleClasse).map(([classe, libelle]) => (
             <tr key={classe}>
-              <th scope="row">{libelle}</th>
+              <th scope="row">
+                <NomClasse classe={classe as Classe} />
+              </th>
               {tousLesRoles.map((role) => (
                 <td key={role}>
                   {rolesParClasse[classe as Classe].includes(role) ? (

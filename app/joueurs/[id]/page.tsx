@@ -5,6 +5,7 @@ import { exigerUtilisateur } from "@/lib/session";
 import { statsMercenaire, statsRl } from "@/lib/profil";
 import { libelleClasse, libelleFaction } from "@/lib/libelles";
 import { nomEnJeu } from "@/lib/invitations";
+import { ClasseIcone } from "@/app/ClasseIcone";
 import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 
 export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">) {
@@ -38,11 +39,20 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
       </h1>
 
       {joueur.personnages.length > 0 && (
-        <p>
-          {joueur.personnages
-            .map((p) => `${p.estPrincipal ? "★ " : ""}${nomEnJeu(p)} (${libelleClasse[p.classe]} ${p.niveau}, ${libelleFaction[p.faction]})`)
-            .join(" · ")}
-        </p>
+        <ul className="persos-profil">
+          {joueur.personnages.map((p) => (
+            <li key={p.id}>
+              <ClasseIcone classe={p.classe} taille={26} />{" "}
+              <span className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
+                {p.estPrincipal && "★ "}
+                {nomEnJeu(p)}
+              </span>{" "}
+              <small>
+                {libelleClasse[p.classe]} {p.niveau} · {libelleFaction[p.faction]}
+              </small>
+            </li>
+          ))}
+        </ul>
       )}
 
       <div className="faces">

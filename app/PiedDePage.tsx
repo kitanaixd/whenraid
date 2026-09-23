@@ -14,6 +14,10 @@ export function PiedDePage() {
         Blizzard Entertainment, Inc. aux États-Unis et/ou dans d&apos;autres pays. Illustrations © Blizzard
         Entertainment, Inc.
       </p>
+      <p>
+        Icônes de classe : recréations par{" "}
+        <a href="https://github.com/brutaliccus/ClassicWoWClassIcons_Circle_HighRes">brutaliccus</a>.
+      </p>
     </footer>
   );
 }

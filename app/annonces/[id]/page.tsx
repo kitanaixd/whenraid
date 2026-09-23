@@ -31,20 +31,23 @@ import { nomEnJeu } from "@/lib/invitations";
 import { rolesPourPlace } from "./eligibilite";
 import { BoutonAnnuler } from "./BoutonAnnuler";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
+import { ClasseIcone, NomClasse } from "@/app/ClasseIcone";
 import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 
 const NOMBRE_DE_CLASSES = Object.keys(libelleClasse).length;
 const ORDRE_ROLES = Object.keys(libelleRole);
 const ORDRE_CLASSES = Object.keys(libelleClasse);
 
-function libellePlace(place: { classesAcceptees: Classe[]; role: string | null }) {
-  const classes =
-    place.classesAcceptees.length === NOMBRE_DE_CLASSES
-      ? null
-      : place.classesAcceptees.map((c) => libelleClasse[c]).join(", ");
+function LibellePlace({ place }: { place: { classesAcceptees: Classe[]; role: string | null } }) {
+  const toutes = place.classesAcceptees.length === NOMBRE_DE_CLASSES;
   const role = place.role ? libelleRole[place.role as keyof typeof libelleRole] : null;
-  if (!classes && !role) return "Place libre (toute classe, tout rôle)";
-  return [classes, role].filter(Boolean).join(" ");
+  if (toutes && !role) return <>Place libre (toute classe, tout rôle)</>;
+  return (
+    <span className="nom-classe">
+      {!toutes && place.classesAcceptees.map((c) => <NomClasse key={c} classe={c} />)}
+      {role && <span>{role}</span>}
+    </span>
+  );
 }
 
 export default async function PageAnnonce({ params, searchParams }: PageProps<"/annonces/[id]">) {
@@ -135,6 +138,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
       {maCandidature && (
         <p className="encadre">
           {maCandidature.statut === "CONFIRME" ? "✔ Tu es convié" : "⏳ Ta candidature est envoyée"} avec{" "}
+          {maCandidature.personnage && <ClasseIcone classe={maCandidature.personnage.classe} />}{" "}
           <strong>{maCandidature.personnage?.nom}</strong>
           {maCandidature.role && ` (${libelleRole[maCandidature.role]})`} —{" "}
           {libelleStatutInscription[maCandidature.statut]}.
@@ -158,16 +162,19 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           )
           .map((l) => (
             <li key={`${l.classe}.${l.role}`}>
-              {l.nombre} × {libelleClasse[l.classe]} {libelleRole[l.role]}
+              {l.nombre} × <NomClasse classe={l.classe} /> {libelleRole[l.role]}
             </li>
           ))}
       </ul>
       {remplacants.length > 0 && (
         <p>
           + {remplacants.length} remplaçant{remplacants.length > 1 ? "s" : ""} :{" "}
-          {remplacants
-            .map((i) => `${i.personnage!.nom} (${libelleClasse[i.personnage!.classe]} ${libelleRole[i.role!]})`)
-            .join(", ")}
+          {remplacants.map((i, n) => (
+            <span key={i.id}>
+              {n > 0 && ", "}
+              <ClasseIcone classe={i.personnage!.classe} /> {i.personnage!.nom} ({libelleRole[i.role!]})
+            </span>
+          ))}
         </p>
       )}
 
@@ -255,7 +262,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                       <tr key={i.id}>
                         <td>
                           <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> —{" "}
-                          {i.personnage!.nom} ({libelleClasse[i.personnage!.classe]})
+                          <ClasseIcone classe={i.personnage!.classe} /> {i.personnage!.nom}
                         </td>
                         <td>
                           <select
@@ -313,7 +320,10 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           );
           return (
             <li key={place.id}>
-              <strong>{libellePlace(place)}</strong> — {libelleStatutPlace[place.statut]}
+              <strong>
+                <LibellePlace place={place} />
+              </strong>{" "}
+              — {libelleStatutPlace[place.statut]}
               {!estRl && candidats.length > 0 && ` (${candidats.length} candidat${candidats.length > 1 ? "s" : ""})`}
 
               {estRl && candidats.length > 0 && (
@@ -324,8 +334,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>
                       </strong>{" "}
                       <small>{fiabCandidats.get(i.utilisateurId) && texteBadge(fiabCandidats.get(i.utilisateurId)!)}</small>{" "}
-                      — {i.personnage?.nom} (
-                      {i.personnage && libelleClasse[i.personnage.classe]} {i.personnage?.niveau}
+                      — {i.personnage && <ClasseIcone classe={i.personnage.classe} />} {i.personnage?.nom} (niv.{" "}
+                      {i.personnage?.niveau}
                       {i.role && `, ${libelleRole[i.role]}`}) — {libelleStatutInscription[i.statut]}
                       {remplacants.some((r) => r.id === i.id) && " (remplaçant)"}
                       {i.note && (

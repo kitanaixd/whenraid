@@ -1,30 +1,33 @@
+import Image from "next/image";
 import type { Classe } from "@/generated/prisma/enums";
 import { libelleClasse } from "@/lib/libelles";
 
-// Seul endroit où l'on dessine une classe : quand on choisira les icônes
-// définitives, il suffira de modifier ce composant.
+// Seul endroit où l'on dessine une classe. Icônes : recréations des icônes de
+// WoW Classic par brutaliccus (github.com/brutaliccus/ClassicWoWClassIcons_Circle_HighRes).
 
-/** Icône d'une classe (provisoire : initiale dans un losange à la couleur de la classe). */
+/** Icône ronde d'une classe. */
 export function ClasseIcone({ classe, taille = 22 }: { classe: Classe; taille?: number }) {
   return (
-    <span
-      className="icone-classe"
-      style={{ "--c": `var(--classe-${classe})`, "--t": `${taille}px` } as React.CSSProperties}
+    <Image
+      src={`/classes/${classe}.webp`}
+      alt={libelleClasse[classe]}
       title={libelleClasse[classe]}
-      role="img"
-      aria-label={libelleClasse[classe]}
-    >
-      <span aria-hidden="true">{libelleClasse[classe][0]}</span>
-    </span>
+      width={taille}
+      height={taille}
+      className="icone-classe"
+      unoptimized
+    />
   );
 }
 
 /** Icône + nom de la classe dans sa couleur. */
-export function NomClasse({ classe }: { classe: Classe }) {
+export function NomClasse({ classe, taille = 20 }: { classe: Classe; taille?: number }) {
   return (
-    <span className="nom-classe" style={{ "--c": `var(--classe-${classe})` } as React.CSSProperties}>
-      <ClasseIcone classe={classe} taille={18} />
-      <span className="classe">{libelleClasse[classe]}</span>
+    <span className="nom-classe">
+      <ClasseIcone classe={classe} taille={taille} />
+      <span className="classe" style={{ "--c": `var(--classe-${classe})` } as React.CSSProperties}>
+        {libelleClasse[classe]}
+      </span>
     </span>
   );
 }

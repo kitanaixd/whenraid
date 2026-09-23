@@ -88,7 +88,8 @@ export default async function Accueil() {
             <p key={i.id}>
               ✔ <strong>Convié</strong> :{" "}
               <Link href={`/annonces/${i.place.annonce.id}`}>{nomRaid(i.place.annonce.contenu)}</Link> —{" "}
-              <strong>{afficherDate(i.place.annonce.debutUtc, fuseau)}</strong> avec <strong>{i.personnage?.nom}</strong>
+              <strong>{afficherDate(i.place.annonce.debutUtc, fuseau)}</strong> avec{" "}
+              {i.personnage && <ClasseIcone classe={i.personnage.classe} />} <strong>{i.personnage?.nom}</strong>
               {i.role && ` (${libelleRole[i.role]})`}
             </p>
           ))}
@@ -106,7 +107,8 @@ export default async function Accueil() {
                 {candidatures.map((i) => (
                   <li key={i.id}>
                     <Link href={`/annonces/${i.place.annonce.id}`}>{nomRaid(i.place.annonce.contenu)}</Link> —{" "}
-                    {afficherDate(i.place.annonce.debutUtc, fuseau)} avec {i.personnage?.nom}
+                    {afficherDate(i.place.annonce.debutUtc, fuseau)} avec{" "}
+                    {i.personnage && <ClasseIcone classe={i.personnage.classe} />} {i.personnage?.nom}
                     {i.statut === "LISTE_ATTENTE" && " (liste d'attente)"}
                   </li>
                 ))}
