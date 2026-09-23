@@ -1812,3 +1812,88 @@ button.menu-choisi {
   gap: 0.5rem;
   align-items: center;
 }
+
+/* ─── Lisibilité : bordures dorées à 2 px, textes plus grands et plus épais ── */
+.carte,
+.parchemin,
+.encadre,
+.ligne-raid,
+.filtres,
+.candidat,
+.compo-chiffres > div,
+dialog.confirmation,
+button:not(.bouton-lien),
+a.bouton,
+.pastille,
+.perso-choix,
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+fieldset,
+.menu-liste {
+  border-width: 2px;
+}
+/* Le filet des coins biseautés suit la même épaisseur. */
+.carte::before,
+.parchemin::before,
+.encadre::before,
+.ligne-raid::before,
+.filtres::before,
+.candidat::before,
+.compo-chiffres > div::before,
+dialog.confirmation::before,
+button:not(.bouton-lien):not(.menu-choisi)::before,
+a.bouton::before,
+.pastille::before,
+.perso-choix::before {
+  inset: -2px;
+  --trait: transparent calc(50% - 1.3px), var(--bord-biseau) 50%, transparent calc(50% + 1.3px);
+}
+
+/* Texte courant : Crimson Pro est fin en 400, on passe en 500 et un cran plus grand. */
+body {
+  font-size: 20px;
+  font-weight: 500;
+}
+small {
+  font-size: 0.9em;
+}
+.champ {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+.champ .fuseau {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+legend {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+button,
+a.bouton {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+button.petit,
+a.bouton.petit {
+  font-size: 0.8rem;
+}
+.pastille {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.surtitre {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* « Toutes classes » sur la liste des raids : bien visible à côté des icônes. */
+.ligne-raid-droite .recherche .pastille {
+  font-size: 1rem;
+  padding: 0.3rem 0.8rem;
+  color: var(--or-clair);
+  border-color: var(--or);
+  --bord-biseau: var(--or);
+  background: rgb(0 0 0 / 0.55);
+}
