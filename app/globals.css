@@ -2326,3 +2326,240 @@ button.bouton-icone {
     font-size: 1.1rem;
   }
 }
+
+/* ─── En-tête : cloche et menu du compte ──────────────────────────────────── */
+.compte {
+  margin-left: auto;
+  gap: 0.8rem;
+}
+/* Cloche : bouton carré biseauté, pastille rouge pour les non lues. */
+.cloche {
+  --biseau: 7px;
+  --bord-biseau: var(--filet-fort);
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: var(--or-clair);
+  background: rgb(7 13 25 / 0.55);
+  border: 2px solid var(--filet-fort);
+  clip-path: polygon(
+    var(--biseau) 0,
+    calc(100% - var(--biseau)) 0,
+    100% var(--biseau),
+    100% calc(100% - var(--biseau)),
+    calc(100% - var(--biseau)) 100%,
+    var(--biseau) 100%,
+    0 calc(100% - var(--biseau)),
+    0 var(--biseau)
+  );
+  transition: border-color 0.15s, background 0.15s;
+}
+.cloche:hover {
+  border-color: var(--or);
+  background: rgb(217 181 106 / 0.1);
+}
+.cloche.a-lire {
+  border-color: var(--or);
+  color: var(--or);
+}
+.cloche .compteur {
+  top: 0.15rem;
+  right: 0.15rem;
+  min-width: 1rem;
+  height: 1rem;
+  display: grid;
+  place-items: center;
+  padding: 0 0.2rem;
+  font-family: var(--police-texte), sans-serif;
+  font-size: 0.62rem;
+  line-height: 1;
+  border-radius: 999px;
+  box-shadow: 0 0 6px rgb(201 73 63 / 0.8);
+}
+
+/* Menu du compte. */
+.menu-compte {
+  position: relative;
+}
+button.menu-compte-bouton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 0.7rem 0 0.35rem;
+  font-family: var(--police-texte), sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--texte);
+}
+.menu-compte-bouton img,
+.avatar-vide {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--or);
+}
+.avatar-vide {
+  display: grid;
+  place-items: center;
+  font-family: var(--police-titre), serif;
+  color: var(--or-clair);
+  background: var(--nuit);
+}
+.menu-compte-pseudo {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-compte-liste {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 30;
+  min-width: 13rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.4rem 0;
+  background: rgb(5 8 14 / 0.97);
+  border: 2px solid var(--filet-fort);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.6);
+}
+.menu-compte-liste a,
+button.menu-compte-deconnexion {
+  display: block;
+  width: 100%;
+  padding: 0.6rem 1.1rem;
+  text-align: left;
+  font-family: var(--police-titre), serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--texte);
+  background: none;
+  border: none;
+  clip-path: none;
+  text-decoration: none;
+}
+button.menu-compte-deconnexion::before {
+  display: none;
+}
+.menu-compte-liste a:hover,
+button.menu-compte-deconnexion:hover:not(:disabled) {
+  color: var(--or-clair);
+  background: rgb(217 181 106 / 0.1);
+}
+.menu-compte-liste form {
+  margin-top: 0.3rem;
+  padding-top: 0.3rem;
+  border-top: 1px solid var(--filet);
+}
+button.menu-compte-deconnexion {
+  color: #ffb3aa;
+}
+@media (max-width: 520px) {
+  .menu-compte-pseudo {
+    display: none;
+  }
+}
+
+/* ─── Page des notifications ──────────────────────────────────────────────── */
+.notifications-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+.liste-notifications {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.notification > a,
+.notification > div {
+  --biseau: 8px;
+  display: grid;
+  grid-template-columns: 2.2rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 1rem;
+  color: var(--texte-doux);
+  text-decoration: none;
+  background: rgb(0 0 0 / 0.45);
+  border: 2px solid var(--filet);
+  clip-path: polygon(
+    var(--biseau) 0,
+    calc(100% - var(--biseau)) 0,
+    100% var(--biseau),
+    100% calc(100% - var(--biseau)),
+    calc(100% - var(--biseau)) 100%,
+    var(--biseau) 100%,
+    0 calc(100% - var(--biseau)),
+    0 var(--biseau)
+  );
+  transition: border-color 0.15s, background 0.15s;
+}
+.notification > a:hover {
+  border-color: var(--or);
+  background: rgb(217 181 106 / 0.08);
+}
+/* Non lue : texte clair, liseré doré à gauche. */
+.notification.non-lue > a,
+.notification.non-lue > div {
+  color: var(--texte);
+  font-weight: 600;
+  border-color: var(--filet-fort);
+  border-left: 5px solid var(--or);
+  background: rgb(217 181 106 / 0.07);
+}
+.notif-symbole {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  font-weight: 700;
+  color: var(--ton);
+  border: 2px solid var(--ton);
+  background: rgb(0 0 0 / 0.5);
+}
+.ton-succes {
+  --ton: var(--succes);
+}
+.ton-alerte {
+  --ton: var(--danger);
+}
+.ton-attention {
+  --ton: var(--attention);
+}
+.ton-info {
+  --ton: var(--turquoise);
+}
+.ton-or {
+  --ton: var(--or);
+}
+.notif-date {
+  font-size: 0.8rem;
+  color: var(--texte-doux);
+  font-weight: 400;
+  white-space: nowrap;
+}
+.centre {
+  text-align: center;
+}
+@media (max-width: 640px) {
+  .notification > a,
+  .notification > div {
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+  }
+  .notif-date {
+    grid-column: 2;
+  }
+}
