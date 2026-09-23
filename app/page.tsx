@@ -27,7 +27,7 @@ export default async function Accueil() {
   }
 
   const annonces = await db.annonce.findMany({
-    where: { statut: "PUBLIEE", debutUtc: { gt: new Date() } },
+    where: { statut: { in: ["PUBLIEE", "COMPLETE"] }, debutUtc: { gt: new Date() } },
     orderBy: { debutUtc: "asc" },
     take: 50,
     include: {
@@ -68,8 +68,11 @@ export default async function Accueil() {
               <Link href={`/annonces/${a.id}`}>
                 {nomRaid(a.contenu)} — {afficherDate(a.debutUtc, utilisateur.fuseauHoraire)}
               </Link>{" "}
-              · {libelleFaction[a.faction]} {libelleRuleset[a.ruleset]} {a.region} · {a._count.places} place
-              {a._count.places > 1 ? "s" : ""} ouverte{a._count.places > 1 ? "s" : ""} · par {a.createur.pseudo}
+              · {libelleFaction[a.faction]} {libelleRuleset[a.ruleset]} {a.region} ·{" "}
+              {a.statut === "COMPLETE"
+                ? "complet (liste d'attente)"
+                : `${a._count.places} place${a._count.places > 1 ? "s" : ""} ouverte${a._count.places > 1 ? "s" : ""}`}{" "}
+              · par {a.createur.pseudo}
             </li>
           ))}
         </ul>

@@ -214,8 +214,9 @@ model Annonce {
   annuleeLe       DateTime? @db.Timestamptz(3)
   annuleeComplete Boolean? // le raid était-il complet au moment de l'annulation ?
 
-  groupe         Groupe?         @relation(fields: [groupeId], references: [id], onDelete: SetNull)
-  createur       Utilisateur     @relation(fields: [createurId], references: [id], onDelete: Restrict)
+  groupe         Groupe?              @relation(fields: [groupeId], references: [id], onDelete: SetNull)
+  createur       Utilisateur          @relation(fields: [createurId], references: [id], onDelete: Restrict)
+  composition    CompositionAnnonce[]
   places         Place[]
   participations Participation[]
 
@@ -223,11 +224,24 @@ model Annonce {
   @@index([createurId])
 }
 
+// Les joueurs que le RL a déjà : places = taille − somme des nombres.
+model CompositionAnnonce {
+  id        String @id @default(cuid())
+  annonceId String
+  classe    Classe
+  role      Role
+  nombre    Int
+
+  annonce Annonce @relation(fields: [annonceId], references: [id], onDelete: Cascade)
+
+  @@unique([annonceId, classe, role])
+}
+
 model Place {
   id               String      @id @default(cuid())
   annonceId        String
-  classesAcceptees Classe[]
-  role             Role
+  classesAcceptees Classe[] // toutes les classes = pas d'exigence de classe
+  role             Role? // null = tout rôle
   statut           StatutPlace @default(OUVERTE)
 
   annonce      Annonce       @relation(fields: [annonceId], references: [id], onDelete: Cascade)
@@ -242,8 +256,9 @@ model Inscription {
   personnageId  String? // règle 1 : exactement un des deux
   groupeId      String? // règle 1 : exactement un des deux
   utilisateurId String // qui a fait l'inscription
+  role          Role? // rôle que le candidat jouera (null pour un groupe)
   statut        StatutInscription @default(INSCRIT)
-  note          String?
+  note          String? // 80 caractères max (CHECK en SQL), visible du seul RL
   inscritLe     DateTime          @default(now()) @db.Timestamptz(3)
 
   place       Place       @relation(fields: [placeId], references: [id], onDelete: Cascade)

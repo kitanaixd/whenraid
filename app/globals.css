@@ -48,3 +48,10 @@ dialog.confirmation h2 {
   display: flex;
   justify-content: space-between;
 }
+
+.encadre {
+  border: 2px solid #1d4ed8;
+  background: #eff6ff;
+  color: #1e3a8a;
+  padding: 0.6rem;
+}

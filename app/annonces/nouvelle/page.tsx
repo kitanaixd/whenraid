@@ -4,8 +4,10 @@ import { Classe, Contenu, ReglesLoot, Role, Vocal } from "@/generated/prisma/enu
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { localVersUtc } from "@/lib/dates";
-import { nomRaid, raids } from "@/lib/raids";
-import { choix, choixMultiples, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
+import { raids } from "@/lib/raids";
+import { LIGNES_EXIGENCES, rolePossible, rolesParClasse } from "@/lib/jeu";
+import { ChoixCompo } from "./ChoixCompo";
+import { choix, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
 import {
   libelleClasse,
   libelleFaction,
@@ -15,8 +17,6 @@ import {
   libelleVocal,
   options,
 } from "@/lib/libelles";
-
-const LIGNES_DE_PLACES = [0, 1, 2, 3];
 
 const LANGUES = { fr: "Français", en: "Anglais" } as const;
 
@@ -71,19 +71,36 @@ async function creerAnnonce(form: FormData) {
     if (!debutUtc) throw new ErreurFormulaire("Date ou heure invalide.");
     if (debutUtc.getTime() <= Date.now()) throw new ErreurFormulaire("La date du raid doit être dans le futur.");
 
-    const places: { role: Role; classesAcceptees: Classe[] }[] = [];
-    for (const i of LIGNES_DE_PLACES) {
-      const nombre = entier(form, `places.${i}.nombre`, { min: 0, max: taille }) ?? 0;
+    // La compo que le RL a déjà : uniquement les combinaisons possibles en jeu.
+    const composition: { classe: Classe; role: Role; nombre: number }[] = [];
+    for (const classe of Object.keys(rolesParClasse) as Classe[]) {
+      for (const role of rolesParClasse[classe]) {
+        const nombre = entier(form, `compo.${classe}.${role}`, { min: 0, max: taille }) ?? 0;
+        if (nombre > 0) composition.push({ classe, role, nombre });
+      }
+    }
+    const joueurs = composition.reduce((t, c) => t + c.nombre, 0);
+    if (joueurs === 0) throw new ErreurFormulaire("Indique ta compo actuelle (compte-toi dedans).");
+    if (joueurs >= taille) throw new ErreurFormulaire(`Ton raid a déjà ${joueurs} joueurs sur ${taille} : il ne reste aucune place.`);
+    const nbPlaces = taille - joueurs;
+
+    // Les besoins précis ; les places restantes sont libres.
+    const toutes = Object.keys(Classe) as Classe[];
+    const places: { role: Role | null; classesAcceptees: Classe[] }[] = [];
+    for (const i of LIGNES_EXIGENCES) {
+      const nombre = entier(form, `exigences.${i}.nombre`, { min: 0, max: nbPlaces }) ?? 0;
       if (nombre === 0) continue;
-      const role = choix(form, `places.${i}.role`, Role);
-      const cochees = choixMultiples(form, `places.${i}.classes`, Classe);
-      const classesAcceptees = cochees.length > 0 ? cochees : (Object.keys(Classe) as Classe[]);
-      for (let n = 0; n < nombre; n++) places.push({ role, classesAcceptees });
+      const classe = form.get(`exigences.${i}.classe`) ? choix(form, `exigences.${i}.classe`, Classe) : null;
+      const role = form.get(`exigences.${i}.role`) ? choix(form, `exigences.${i}.role`, Role) : null;
+      if (classe && role && !rolePossible(classe, role)) {
+        throw new ErreurFormulaire(`Un ${libelleClasse[classe]} ne peut pas jouer ${libelleRole[role]}.`);
+      }
+      for (let n = 0; n < nombre; n++) places.push({ role, classesAcceptees: classe ? [classe] : toutes });
     }
-    if (places.length === 0) throw new ErreurFormulaire("Ouvre au moins une place.");
-    if (places.length >= taille) {
-      throw new ErreurFormulaire(`Un raid de ${taille} ne peut pas avoir plus de ${taille - 1} places ouvertes.`);
+    if (places.length > nbPlaces) {
+      throw new ErreurFormulaire(`Tu demandes ${places.length} places précises, mais il n'en reste que ${nbPlaces}.`);
     }
+    while (places.length < nbPlaces) places.push({ role: null, classesAcceptees: toutes });
 
     const vocal = lireVocal(form);
     const langue = String(form.get("langueRequise") ?? "");
@@ -105,6 +122,7 @@ async function creerAnnonce(form: FormData) {
         niveauMin: entier(form, "niveauMin", { min: 1, max: 60 }),
         statut: "PUBLIEE",
         publieeLe: new Date(),
+        composition: { create: composition },
         places: { create: places },
       },
     });
@@ -162,18 +180,8 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
             </select>
           </label>
         </p>
-        <p>
-          <label>
-            Raid{" "}
-            <select name="contenu" required>
-              {options(raids).map(([v]) => (
-                <option key={v} value={v}>
-                  {nomRaid(v)}
-                </option>
-              ))}
-            </select>
-          </label>
-        </p>
+        <ChoixCompo />
+        <h2>Quand et comment</h2>
         <p>
           <label>
             Date <input type="date" name="date" required />
@@ -250,36 +258,6 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
             </small>
           </p>
         </fieldset>
-
-        <h2>Places ouvertes</h2>
-        <p>
-          <small>Aucune classe cochée = toutes les classes acceptées.</small>
-        </p>
-        {LIGNES_DE_PLACES.map((i) => (
-          <fieldset key={i}>
-            <legend>Ligne {i + 1}</legend>
-            <label>
-              Nombre{" "}
-              <input type="number" name={`places.${i}.nombre`} min={0} max={39} defaultValue={i === 0 ? 1 : 0} />
-            </label>{" "}
-            <label>
-              Rôle{" "}
-              <select name={`places.${i}.role`}>
-                {options(libelleRole).map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <br />
-            {options(libelleClasse).map(([v, l]) => (
-              <label key={v}>
-                <input type="checkbox" name={`places.${i}.classes`} value={v} /> {l}{" "}
-              </label>
-            ))}
-          </fieldset>
-        ))}
 
         <p>
           <button type="submit">Publier le raid</button>

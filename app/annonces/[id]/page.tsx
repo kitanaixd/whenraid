@@ -1,13 +1,11 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import type { Personnage, Place } from "@/generated/prisma/client";
+import { notFound } from "next/navigation";
+import type { Classe } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { afficherDate } from "@/lib/dates";
 import { nomRaid } from "@/lib/raids";
-import { estActive, estComplet, STATUTS_ACTIFS } from "@/lib/annonces";
-import { BoutonAnnuler } from "./BoutonAnnuler";
+import { accepteCandidatures, compoActuelle, estActive, estComplet, estEnAttente } from "@/lib/annonces";
 import {
   libelleClasse,
   libelleFaction,
@@ -19,84 +17,22 @@ import {
   libelleStatutPlace,
   libelleVocal,
 } from "@/lib/libelles";
+import { accepter, annuler, candidater, refuser } from "./actions";
+import { rolesPourPlace } from "./eligibilite";
+import { BoutonAnnuler } from "./BoutonAnnuler";
 
-type AnnoncePourEligibilite = { faction: string; ruleset: string; region: string; niveauMin: number | null };
+const NOMBRE_DE_CLASSES = Object.keys(libelleClasse).length;
+const ORDRE_ROLES = Object.keys(libelleRole);
+const ORDRE_CLASSES = Object.keys(libelleClasse);
 
-function estEligible(perso: Personnage, place: Place, annonce: AnnoncePourEligibilite) {
-  return (
-    perso.faction === annonce.faction &&
-    perso.ruleset === annonce.ruleset &&
-    perso.region === annonce.region &&
-    place.classesAcceptees.includes(perso.classe) &&
-    perso.rolesJouables.includes(place.role) &&
-    perso.niveau >= (annonce.niveauMin ?? 1)
-  );
-}
-
-function accepteInscriptions(annonce: { statut: string; debutUtc: Date }) {
-  return annonce.statut === "PUBLIEE" && annonce.debutUtc.getTime() > Date.now();
-}
-
-function peutEtreAnnulee(annonce: { statut: string; debutUtc: Date }) {
-  return ["PUBLIEE", "COMPLETE"].includes(annonce.statut) && annonce.debutUtc.getTime() > Date.now();
-}
-
-async function annulerAnnonce(form: FormData) {
-  "use server";
-  const utilisateur = await exigerUtilisateur();
-  const annonceId = String(form.get("annonceId") ?? "");
-  const retour = (erreur?: string) =>
-    redirect(`/annonces/${annonceId}${erreur ? `?erreur=${encodeURIComponent(erreur)}` : ""}`);
-
-  if (form.get("confirmation") !== "on") retour("Coche la case de confirmation pour annuler le raid.");
-
-  const annonce = await db.annonce.findFirst({
-    where: { id: annonceId, createurId: utilisateur.id },
-    include: { places: { include: { inscriptions: { select: { statut: true } } } } },
-  });
-  if (!annonce) notFound();
-  if (!peutEtreAnnulee(annonce)) retour("Ce raid ne peut plus être annulé.");
-
-  // On enregistre les faits ; la réputation se calculera à la lecture (règle 3).
-  // Le filtre sur le statut évite une double annulation simultanée.
-  await db.annonce.updateMany({
-    where: { id: annonce.id, statut: { in: ["PUBLIEE", "COMPLETE"] } },
-    data: { statut: "ANNULEE", annuleeLe: new Date(), annuleeComplete: estComplet(annonce.places) },
-  });
-  revalidatePath(`/annonces/${annonce.id}`);
-  revalidatePath("/");
-  retour();
-}
-
-async function sInscrire(form: FormData) {
-  "use server";
-  const utilisateur = await exigerUtilisateur();
-  const placeId = String(form.get("placeId") ?? "");
-  const personnageId = String(form.get("personnageId") ?? "");
-
-  const place = await db.place.findUnique({ where: { id: placeId }, include: { annonce: true } });
-  if (!place) notFound();
-  const { annonce } = place;
-  const retour = (erreur?: string) =>
-    redirect(`/annonces/${annonce.id}${erreur ? `?erreur=${encodeURIComponent(erreur)}` : ""}`);
-
-  const personnage = await db.personnage.findFirst({ where: { id: personnageId, utilisateurId: utilisateur.id } });
-
-  if (annonce.createurId === utilisateur.id) retour("Tu organises ce raid, tu ne peux pas t'y inscrire.");
-  if (!accepteInscriptions(annonce)) retour("Ce raid n'accepte plus d'inscriptions.");
-  if (place.statut !== "OUVERTE") retour("Cette place n'est plus ouverte.");
-  if (!personnage || !estEligible(personnage, place, annonce)) retour("Ce personnage ne correspond pas à cette place.");
-
-  const dejaInscrit = await db.inscription.findFirst({
-    where: { utilisateurId: utilisateur.id, statut: { in: [...STATUTS_ACTIFS] }, place: { annonceId: annonce.id } },
-  });
-  if (dejaInscrit) retour("Tu es déjà inscrit sur ce raid.");
-
-  await db.inscription.create({
-    data: { placeId: place.id, personnageId: personnage!.id, utilisateurId: utilisateur.id },
-  });
-  revalidatePath(`/annonces/${annonce.id}`);
-  retour();
+function libellePlace(place: { classesAcceptees: Classe[]; role: string | null }) {
+  const classes =
+    place.classesAcceptees.length === NOMBRE_DE_CLASSES
+      ? null
+      : place.classesAcceptees.map((c) => libelleClasse[c]).join(", ");
+  const role = place.role ? libelleRole[place.role as keyof typeof libelleRole] : null;
+  if (!classes && !role) return "Place libre (toute classe, tout rôle)";
+  return [classes, role].filter(Boolean).join(" ");
 }
 
 export default async function PageAnnonce({ params, searchParams }: PageProps<"/annonces/[id]">) {
@@ -108,15 +44,13 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
     where: { id },
     include: {
       createur: { select: { pseudo: true } },
+      composition: true,
       places: {
-        orderBy: { role: "asc" },
+        orderBy: [{ role: "asc" }, { id: "asc" }],
         include: {
           inscriptions: {
             orderBy: { inscritLe: "asc" },
-            include: {
-              personnage: true,
-              utilisateur: { select: { id: true, pseudo: true } },
-            },
+            include: { personnage: true, utilisateur: { select: { pseudo: true } } },
           },
         },
       },
@@ -124,17 +58,27 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   });
   if (!annonce) notFound();
 
-  const estOrganisateur = annonce.createurId === utilisateur.id;
-  const mesPersonnages = estOrganisateur
-    ? []
-    : await db.personnage.findMany({ where: { utilisateurId: utilisateur.id }, orderBy: { nom: "asc" } });
-  const monInscription = annonce.places
-    .flatMap((p) => p.inscriptions.map((i) => ({ ...i, place: p })))
-    .find((i) => i.utilisateurId === utilisateur.id && estActive(i.statut));
-  const inscriptionsOuvertes = accepteInscriptions(annonce);
-  const toutesClasses = Object.keys(libelleClasse).length;
-  const nbInscrits = annonce.places.flatMap((p) => p.inscriptions).filter((i) => estActive(i.statut)).length;
-  const annulable = estOrganisateur && peutEtreAnnulee(annonce);
+  const fuseau = utilisateur.fuseauHoraire;
+  const estRl = annonce.createurId === utilisateur.id;
+  const inscriptions = annonce.places.flatMap((p) => p.inscriptions.map((i) => ({ ...i, place: p })));
+  const confirmes = inscriptions.filter((i) => i.statut === "CONFIRME" && i.personnage && i.role);
+  // Par place, le premier confirmé est titulaire ; les suivants sont des remplaçants.
+  const titulaires = annonce.places.flatMap((p) =>
+    p.inscriptions.filter((i) => i.statut === "CONFIRME").slice(0, 1),
+  );
+  const remplacants = confirmes.filter((i) => !titulaires.some((t) => t.id === i.id));
+  const compo = compoActuelle(
+    annonce.composition,
+    confirmes.filter((i) => !remplacants.includes(i)).map((i) => ({ classe: i.personnage!.classe, role: i.role! })),
+  );
+  const placesRestantes = annonce.places.filter((p) => p.statut === "OUVERTE").length;
+  const complet = estComplet(annonce.places);
+  const maCandidature = inscriptions.find((i) => i.utilisateurId === utilisateur.id && estActive(i.statut));
+  const ouvert = accepteCandidatures(annonce);
+  const mesPersonnages =
+    estRl || maCandidature || !ouvert
+      ? []
+      : await db.personnage.findMany({ where: { utilisateurId: utilisateur.id }, orderBy: { nom: "asc" } });
 
   return (
     <main>
@@ -143,32 +87,68 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
       </p>
       <h1>{nomRaid(annonce.contenu)}</h1>
       <p>
-        <strong>{afficherDate(annonce.debutUtc, utilisateur.fuseauHoraire)}</strong>
+        <strong>{afficherDate(annonce.debutUtc, fuseau)}</strong>
         {annonce.dureeEstimee && ` — environ ${annonce.dureeEstimee / 60} h`}
       </p>
       <ul>
         <li>
-          {libelleFaction[annonce.faction]}, {libelleRuleset[annonce.ruleset]} {annonce.region}, raid à{" "}
-          {annonce.taille}
+          {libelleFaction[annonce.faction]}, {libelleRuleset[annonce.ruleset]} {annonce.region}
         </li>
         <li>Loot : {libelleReglesLoot[annonce.reglesLoot]}</li>
         {annonce.niveauMin && <li>Niveau minimum : {annonce.niveauMin}</li>}
         {annonce.langueRequise && <li>Langue : {annonce.langueRequise === "fr" ? "français" : "anglais"}</li>}
         <li>Vocal : {libelleVocal[annonce.vocal]}</li>
         <li>
-          Organisé par {estOrganisateur ? "toi" : annonce.createur.pseudo} — {libelleStatutAnnonce[annonce.statut]}
+          Organisé par {estRl ? "toi" : annonce.createur.pseudo} — {libelleStatutAnnonce[annonce.statut]}
         </li>
       </ul>
 
       {annonce.statut === "ANNULEE" && (
         <p className="avertissement grave" role="status">
-          Ce raid a été annulé
-          {annonce.annuleeLe && ` le ${afficherDate(annonce.annuleeLe, utilisateur.fuseauHoraire)}`}.
+          Ce raid a été annulé{annonce.annuleeLe && ` le ${afficherDate(annonce.annuleeLe, fuseau)}`}.
         </p>
       )}
       {typeof erreur === "string" && <p role="alert">⚠ {erreur}</p>}
+      {maCandidature && (
+        <p className="encadre">
+          {maCandidature.statut === "CONFIRME" ? "✔ Tu es convié" : "⏳ Ta candidature est envoyée"} avec{" "}
+          <strong>{maCandidature.personnage?.nom}</strong>
+          {maCandidature.role && ` (${libelleRole[maCandidature.role]})`} —{" "}
+          {libelleStatutInscription[maCandidature.statut]}.
+          {maCandidature.statut === "LISTE_ATTENTE" &&
+            " Le raid est plein : peu de chances d'être pris, mais le RL peut encore t'appeler en remplaçant."}
+        </p>
+      )}
 
-      {estOrganisateur && (
+      <h2>
+        Compo actuelle — {compo.total}/{annonce.taille}
+        {complet
+          ? " (complet)"
+          : `, ${placesRestantes} place${placesRestantes > 1 ? "s" : ""} restante${placesRestantes > 1 ? "s" : ""}`}
+      </h2>
+      <ul>
+        {compo.lignes
+          .sort(
+            (a, b) =>
+              ORDRE_ROLES.indexOf(a.role) - ORDRE_ROLES.indexOf(b.role) ||
+              ORDRE_CLASSES.indexOf(a.classe) - ORDRE_CLASSES.indexOf(b.classe),
+          )
+          .map((l) => (
+            <li key={`${l.classe}.${l.role}`}>
+              {l.nombre} × {libelleClasse[l.classe]} {libelleRole[l.role]}
+            </li>
+          ))}
+      </ul>
+      {remplacants.length > 0 && (
+        <p>
+          + {remplacants.length} remplaçant{remplacants.length > 1 ? "s" : ""} :{" "}
+          {remplacants
+            .map((i) => `${i.personnage!.nom} (${libelleClasse[i.personnage!.classe]} ${libelleRole[i.role!]})`)
+            .join(", ")}
+        </p>
+      )}
+
+      {estRl && (
         <section>
           <h2>Espace RL</h2>
           {annonce.vocal === "DISCORD" && <p>Lien Discord : {annonce.vocalDiscordLien}</p>}
@@ -183,71 +163,96 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
               <small>Ces identifiants ne sont visibles que par toi. L&apos;addon les enverra aux joueurs en jeu.</small>
             </p>
           )}
-          {annulable && (
+          {ouvert && (
             <BoutonAnnuler
-              action={annulerAnnonce}
+              action={annuler}
               annonceId={annonce.id}
-              resume={`${nomRaid(annonce.contenu)} — ${afficherDate(annonce.debutUtc, utilisateur.fuseauHoraire)}`}
-              nbInscrits={nbInscrits}
-              estComplet={estComplet(annonce.places)}
+              resume={`${nomRaid(annonce.contenu)} — ${afficherDate(annonce.debutUtc, fuseau)}`}
+              nbInscrits={confirmes.length}
+              estComplet={complet}
             />
           )}
         </section>
       )}
-      {monInscription && (
-        <p>
-          ✔ Tu es inscrit avec <strong>{monInscription.personnage?.nom}</strong> sur une place{" "}
-          {libelleRole[monInscription.place.role]} ({libelleStatutInscription[monInscription.statut]}).
+
+      <h2>Places</h2>
+      {complet && !estRl && ouvert && !maCandidature && (
+        <p className="encadre">
+          ⚠ Ce raid est complet : si tu candidates, tu seras en liste d&apos;attente avec peu de chances d&apos;être
+          pris. Le RL pourra quand même t&apos;appeler en remplaçant.
         </p>
       )}
-
-      <h2>Places ouvertes</h2>
       <ol>
         {annonce.places.map((place) => {
-          const eligibles = mesPersonnages.filter((p) => estEligible(p, place, annonce));
+          const candidats = place.inscriptions.filter((i) => estActive(i.statut));
+          const choix = mesPersonnages.flatMap((p) =>
+            rolesPourPlace(p, place, annonce).map((role) => ({ valeur: `${p.id}:${role}`, perso: p, role })),
+          );
           return (
             <li key={place.id}>
-              {libelleRole[place.role]} —{" "}
-              {place.classesAcceptees.length === toutesClasses
-                ? "toutes classes"
-                : place.classesAcceptees.map((c) => libelleClasse[c]).join(", ")}{" "}
-              ({libelleStatutPlace[place.statut]}, {place.inscriptions.length} inscrit
-              {place.inscriptions.length > 1 ? "s" : ""})
-              {estOrganisateur && place.inscriptions.length > 0 && (
+              <strong>{libellePlace(place)}</strong> — {libelleStatutPlace[place.statut]}
+              {!estRl && candidats.length > 0 && ` (${candidats.length} candidat${candidats.length > 1 ? "s" : ""})`}
+
+              {estRl && candidats.length > 0 && (
                 <ul>
-                  {place.inscriptions.map((i) => (
+                  {candidats.map((i) => (
                     <li key={i.id}>
-                      <strong>{i.utilisateur.pseudo}</strong> avec {i.personnage?.nom} (
-                      {i.personnage && libelleClasse[i.personnage.classe]} {i.personnage?.niveau}) —{" "}
-                      {libelleStatutInscription[i.statut]}, le {afficherDate(i.inscritLe, utilisateur.fuseauHoraire)}
+                      <strong>{i.utilisateur.pseudo}</strong> — {i.personnage?.nom} (
+                      {i.personnage && libelleClasse[i.personnage.classe]} {i.personnage?.niveau}
+                      {i.role && `, ${libelleRole[i.role]}`}) — {libelleStatutInscription[i.statut]}
+                      {remplacants.some((r) => r.id === i.id) && " (remplaçant)"}
+                      {i.note && (
+                        <>
+                          <br />« {i.note} »
+                        </>
+                      )}
+                      {estEnAttente(i.statut) && annonce.statut !== "ANNULEE" && (
+                        <>
+                          <br />
+                          <form action={accepter} style={{ display: "inline" }}>
+                            <input type="hidden" name="inscriptionId" value={i.id} />
+                            <button type="submit">
+                              {place.statut === "POURVUE" ? "Appeler en remplaçant" : "Accepter"}
+                            </button>
+                          </form>{" "}
+                          <form action={refuser} style={{ display: "inline" }}>
+                            <input type="hidden" name="inscriptionId" value={i.id} />
+                            <button type="submit">Refuser</button>
+                          </form>
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>
               )}
-              {!estOrganisateur &&
-                !monInscription &&
-                inscriptionsOuvertes &&
-                place.statut === "OUVERTE" &&
-                eligibles.length > 0 && (
-                  <form action={sInscrire}>
-                    <input type="hidden" name="placeId" value={place.id} />
-                    <select name="personnageId" aria-label="Personnage">
-                      {eligibles.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.nom} ({libelleClasse[p.classe]} {p.niveau})
-                        </option>
-                      ))}
-                    </select>{" "}
-                    <button type="submit">M&apos;inscrire</button>
-                  </form>
-                )}
+
+              {choix.length > 0 && place.statut !== "ANNULEE" && (
+                <form action={candidater}>
+                  <input type="hidden" name="placeId" value={place.id} />
+                  <select name="choix" aria-label="Personnage et rôle">
+                    {choix.map((c) => (
+                      <option key={c.valeur} value={c.valeur}>
+                        {c.perso.nom} ({libelleClasse[c.perso.classe]} {c.perso.niveau}) — {libelleRole[c.role]}
+                      </option>
+                    ))}
+                  </select>{" "}
+                  <input
+                    name="note"
+                    maxLength={80}
+                    placeholder="Note pour le RL (80 caractères max)"
+                    aria-label="Note pour le RL"
+                    size={36}
+                  />{" "}
+                  <button type="submit">{place.statut === "POURVUE" ? "Liste d'attente" : "Candidater"}</button>
+                </form>
+              )}
             </li>
           );
         })}
       </ol>
-      {!estOrganisateur && !monInscription && mesPersonnages.length === 0 && (
+      {!estRl && !maCandidature && ouvert && mesPersonnages.length === 0 && (
         <p>
-          Pour t&apos;inscrire, déclare d&apos;abord <Link href="/personnages">un personnage</Link>.
+          Pour candidater, déclare d&apos;abord <Link href="/personnages">un personnage</Link>.
         </p>
       )}
     </main>

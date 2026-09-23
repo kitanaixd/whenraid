@@ -1,17 +1,44 @@
-import type { StatutInscription, StatutPlace } from "@/generated/prisma/enums";
+import type { Classe, Role, StatutInscription, StatutPlace } from "@/generated/prisma/enums";
 
-// Une inscription « active » occupe le joueur sur ce raid.
+// Une candidature « active » occupe le joueur sur ce raid.
 export const STATUTS_ACTIFS = ["INSCRIT", "LISTE_ATTENTE", "CONFIRME"] as const satisfies StatutInscription[];
+
+// Candidatures en attente d'une décision du RL.
+export const STATUTS_EN_ATTENTE = ["INSCRIT", "LISTE_ATTENTE"] as const satisfies StatutInscription[];
 
 export function estActive(statut: StatutInscription) {
   return (STATUTS_ACTIFS as readonly string[]).includes(statut);
 }
 
-/**
- * Le RL a déjà (taille − places) joueurs : le raid atteint sa taille quand
- * chaque place encore ouverte a au moins un inscrit actif.
- */
-export function estComplet(places: { statut: StatutPlace; inscriptions: { statut: StatutInscription }[] }[]) {
+export function estEnAttente(statut: StatutInscription) {
+  return (STATUTS_EN_ATTENTE as readonly string[]).includes(statut);
+}
+
+/** Le raid atteint sa taille quand chaque place (non annulée) a été pourvue par le RL. */
+export function estComplet(places: { statut: StatutPlace }[]) {
   const aPourvoir = places.filter((p) => p.statut !== "ANNULEE");
-  return aPourvoir.length > 0 && aPourvoir.every((p) => p.inscriptions.some((i) => estActive(i.statut)));
+  return aPourvoir.length > 0 && aPourvoir.every((p) => p.statut === "POURVUE");
+}
+
+/** Compo actuelle = compo déclarée par le RL + joueurs confirmés, par classe et rôle. */
+export function compoActuelle(
+  composition: { classe: Classe; role: Role; nombre: number }[],
+  confirmes: { classe: Classe; role: Role }[],
+) {
+  const lignes = new Map<string, { classe: Classe; role: Role; nombre: number }>();
+  const ajouter = (classe: Classe, role: Role, nombre: number) => {
+    const cle = `${classe}.${role}`;
+    const ligne = lignes.get(cle) ?? { classe, role, nombre: 0 };
+    ligne.nombre += nombre;
+    lignes.set(cle, ligne);
+  };
+  for (const c of composition) ajouter(c.classe, c.role, c.nombre);
+  for (const c of confirmes) ajouter(c.classe, c.role, 1);
+  const total = [...lignes.values()].reduce((t, l) => t + l.nombre, 0);
+  return { lignes: [...lignes.values()], total };
+}
+
+/** Un raid accepte des candidatures tant qu'il est publié ou complet et pas commencé. */
+export function accepteCandidatures(annonce: { statut: string; debutUtc: Date }) {
+  return ["PUBLIEE", "COMPLETE"].includes(annonce.statut) && annonce.debutUtc.getTime() > Date.now();
 }
