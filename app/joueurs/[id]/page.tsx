@@ -5,7 +5,7 @@ import { exigerUtilisateur } from "@/lib/session";
 import { statsMercenaire, statsRl } from "@/lib/profil";
 import { libelleClasse, libelleFaction } from "@/lib/libelles";
 import { nomEnJeu } from "@/lib/invitations";
-import { ClasseIcone } from "@/app/ClasseIcone";
+import { ClasseIcone, FactionIcone } from "@/app/ClasseIcone";
 import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 
 export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">) {
@@ -13,7 +13,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
   const { id } = await params;
   const joueur = await db.utilisateur.findUnique({
     where: { id },
-    include: { personnages: { orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }] } },
+    include: { personnages: { where: { supprimeLe: null }, orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }] } },
   });
   if (!joueur) notFound();
 
@@ -48,7 +48,16 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
                 {nomEnJeu(p)}
               </span>{" "}
               <small>
-                {libelleClasse[p.classe]} {p.niveau} · {libelleFaction[p.faction]}
+                {libelleClasse[p.classe]} {p.niveau} · <FactionIcone faction={p.faction} taille={16} />{" "}
+                {libelleFaction[p.faction]}
+                {p.lienLogs && (
+                  <>
+                    {" · "}
+                    <a href={p.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
+                      Logs ↗
+                    </a>
+                  </>
+                )}
               </small>
             </li>
           ))}

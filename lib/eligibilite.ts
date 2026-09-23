@@ -53,3 +53,28 @@ export function rolesPourRaid(perso: Perso, places: PlaceAvecStatut[], annonce: 
   for (const p of places) if (p.statut !== "ANNULEE") for (const r of rolesPourPlace(perso, p, annonce)) roles.add(r);
   return (["TANK", "SOIGNEUR", "DPS"] as Role[]).filter((r) => roles.has(r));
 }
+
+/**
+ * La meilleure place parmi plusieurs rôles proposés : une place ouverte pour le
+ * premier rôle qui en a une, sinon une place pourvue (liste d'attente).
+ */
+export function placePourRoles<P extends PlaceAvecStatut>(
+  places: P[],
+  perso: Perso,
+  roles: Role[],
+  annonce: AnnoncePourEligibilite,
+  preferee?: string,
+): { place: P; ouverte: boolean; role: Role } | null {
+  let repli: { place: P; ouverte: boolean; role: Role } | null = null;
+  for (const role of roles) {
+    const choix = placePour(places, perso, role, annonce, preferee);
+    if (choix?.ouverte) return { ...choix, role };
+    if (choix && !repli) repli = { ...choix, role };
+  }
+  return repli;
+}
+
+/** Les rôles proposés par une candidature (les anciennes n'en portaient qu'un). */
+export function rolesProposes(i: { rolesProposes: Role[]; role: Role | null }): Role[] {
+  return i.rolesProposes.length > 0 ? i.rolesProposes : i.role ? [i.role] : [];
+}

@@ -1,6 +1,6 @@
 import Image from "next/image";
-import type { Classe, Role } from "@/generated/prisma/enums";
-import { libelleClasse, libelleRole } from "@/lib/libelles";
+import type { Classe, Faction, Role } from "@/generated/prisma/enums";
+import { libelleClasse, libelleFaction, libelleRole } from "@/lib/libelles";
 
 // Seul endroit où l'on dessine une classe. Icônes : recréations des icônes de
 // WoW Classic par brutaliccus (github.com/brutaliccus/ClassicWoWClassIcons_Circle_HighRes).
@@ -53,6 +53,31 @@ export function NomRole({ role, taille = 20 }: { role: Role; taille?: number }) 
     <span className="nom-classe">
       <RoleIcone role={role} taille={taille} />
       <span>{libelleRole[role]}</span>
+    </span>
+  );
+}
+
+/** Emblème de faction : lion de l'Alliance, symbole de la Horde. */
+export function FactionIcone({ faction, taille = 20 }: { faction: Faction; taille?: number }) {
+  return (
+    <Image
+      src={`/factions/${faction}.webp`}
+      alt={libelleFaction[faction]}
+      title={libelleFaction[faction]}
+      width={taille}
+      height={taille}
+      className="icone-faction"
+      unoptimized
+    />
+  );
+}
+
+/** Pastille de faction : emblème + nom, aux couleurs de la faction. */
+export function PastilleFaction({ faction, taille = 18 }: { faction: Faction; taille?: number }) {
+  return (
+    <span className={`pastille pastille-faction ${faction === "HORDE" ? "horde" : "alliance"}`}>
+      <FactionIcone faction={faction} taille={taille} />
+      {libelleFaction[faction]}
     </span>
   );
 }

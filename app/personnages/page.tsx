@@ -4,11 +4,21 @@ import { revalidatePath } from "next/cache";
 import { Classe, Faction, Region, Role, Ruleset } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
-import { ClasseIcone, NomRole } from "@/app/ClasseIcone";
+import { ClasseIcone, FactionIcone, NomRole } from "@/app/ClasseIcone";
+import { BoutonSupprimer } from "./BoutonSupprimer";
+import { STATUTS_EN_ATTENTE } from "@/lib/annonces";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { nomEnJeu } from "@/lib/jeu";
 import { exigerUtilisateur } from "@/lib/session";
-import { choix, choixMultiples, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
+import {
+  choix,
+  choixMultiples,
+  entier,
+  ErreurFormulaire,
+  lienWarcraftLogs,
+  NOM_MAX,
+  nomDePersonnage,
+} from "@/lib/formulaire";
 import {
   libelleClasse,
   libelleFaction,
@@ -39,8 +49,9 @@ async function creerPersonnage(form: FormData) {
       await tx.personnage.create({
         data: {
           utilisateurId: utilisateur.id,
-          nom: texte(form, "nom", { requis: true, max: 24 })!,
-          nomDeFamille: texte(form, "nomDeFamille", { max: 24 }),
+          nom: nomDePersonnage(form, "nom", "Prénom", { requis: true })!,
+          nomDeFamille: nomDePersonnage(form, "nomDeFamille", "Nom de famille"),
+          lienLogs: lienWarcraftLogs(form, "lienLogs"),
           classe: choix(form, "classe", Classe),
           rolesJouables,
           faction: choix(form, "faction", Faction),
@@ -68,7 +79,7 @@ async function basculerPrincipal(form: FormData) {
 
   // Vérifie que le personnage appartient bien à l'utilisateur connecté.
   const personnage = await db.personnage.findFirst({
-    where: { id: personnageId, utilisateurId: utilisateur.id },
+    where: { id: personnageId, utilisateurId: utilisateur.id, supprimeLe: null },
   });
   if (!personnage) redirect("/personnages");
 
@@ -84,11 +95,67 @@ async function basculerPrincipal(form: FormData) {
   revalidatePath("/personnages");
 }
 
+const retourErreur = (erreur: string): never => redirect(`/personnages?erreur=${encodeURIComponent(erreur)}`);
+
+/** Le personnage de l'utilisateur connecté (jamais celui d'un autre). */
+async function monPersonnage(form: FormData) {
+  const utilisateur = await exigerUtilisateur();
+  const personnage = await db.personnage.findFirst({
+    where: { id: String(form.get("personnageId") ?? ""), utilisateurId: utilisateur.id, supprimeLe: null },
+  });
+  if (!personnage) redirect("/personnages");
+  return personnage;
+}
+
+async function modifierLogs(form: FormData) {
+  "use server";
+  const personnage = await monPersonnage(form);
+  let lienLogs: string | null = null;
+  try {
+    lienLogs = lienWarcraftLogs(form, "lienLogs");
+  } catch (e) {
+    if (!(e instanceof ErreurFormulaire)) throw e;
+    retourErreur(e.message);
+  }
+  await db.personnage.update({ where: { id: personnage.id }, data: { lienLogs } });
+  revalidatePath("/personnages");
+}
+
+/**
+ * Suppression : le personnage est masqué partout (règle 2 : l'historique des raids
+ * garde son nom). La réputation est portée par le compte, elle ne bouge pas.
+ */
+async function supprimerPersonnage(form: FormData) {
+  "use server";
+  const personnage = await monPersonnage(form);
+  const maintenant = new Date();
+  const aVenir = { statut: { in: ["PUBLIEE" as const, "COMPLETE" as const] }, debutUtc: { gt: maintenant } };
+
+  const convie = await db.inscription.findFirst({
+    where: { personnageId: personnage.id, statut: "CONFIRME", place: { annonce: aVenir } },
+  });
+  if (convie) retourErreur("Ce personnage est convié à un raid à venir : il ne peut pas être supprimé avant.");
+  const organise = await db.annonce.findFirst({ where: { organisateurPersonnageId: personnage.id, ...aVenir } });
+  if (organise) retourErreur("Tu organises un raid à venir avec ce personnage : annule-le d'abord.");
+
+  await db.$transaction([
+    db.inscription.updateMany({
+      where: { personnageId: personnage.id, statut: { in: [...STATUTS_EN_ATTENTE] } },
+      data: { statut: "RETIRE" },
+    }),
+    db.personnage.update({ where: { id: personnage.id }, data: { supprimeLe: maintenant, estPrincipal: false } }),
+  ]);
+  revalidatePath("/personnages");
+  revalidatePath("/");
+}
+
+const TITRE_NOM = `Lettres uniquement, ${NOM_MAX} maximum`;
+
 export default async function PagePersonnages({ searchParams }: PageProps<"/personnages">) {
   const utilisateur = await exigerUtilisateur();
   const { erreur } = await searchParams;
   const personnages = await db.personnage.findMany({
-    where: { utilisateurId: utilisateur.id },
+    where: { utilisateurId: utilisateur.id, supprimeLe: null },
     orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }],
   });
 
@@ -98,6 +165,11 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
         <Link href="/">← Accueil</Link>
       </p>
       <h1>Mes personnages</h1>
+      {typeof erreur === "string" && (
+        <p className="avertissement grave" role="alert">
+          ⚠ {erreur}
+        </p>
+      )}
 
       {personnages.length === 0 ? (
         <p>Tu n&apos;as encore déclaré aucun personnage.</p>
@@ -123,12 +195,37 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 </strong>
                 <br />
                 <small>
-                  {libelleClasse[p.classe]} niveau {p.niveau} · {libelleFaction[p.faction]} ·{" "}
+                  {libelleClasse[p.classe]} niveau {p.niveau} · <FactionIcone faction={p.faction} taille={16} />{" "}
+                  {libelleFaction[p.faction]} ·{" "}
                   {libelleRuleset[p.ruleset]} {p.region} ·{" "}
                   {p.rolesJouables.map((r) => (
                     <NomRole key={r} role={r} taille={16} />
                   ))}
                 </small>
+                <details className="logs-perso">
+                  <summary>{p.lienLogs ? "Logs · modifier le lien" : "+ Ajouter ses logs"}</summary>
+                  <form action={modifierLogs} className="form-logs">
+                    <input type="hidden" name="personnageId" value={p.id} />
+                    <input
+                      name="lienLogs"
+                      type="url"
+                      defaultValue={p.lienLogs ?? ""}
+                      placeholder="https://fresh.warcraftlogs.com/character/…"
+                      aria-label={`Lien Warcraft Logs de ${nomEnJeu(p)}`}
+                    />
+                    <BoutonEnvoi className="petit" enCours="…">
+                      Enregistrer
+                    </BoutonEnvoi>
+                  </form>
+                </details>
+                {p.lienLogs && (
+                  <a href={p.lienLogs} target="_blank" rel="noopener noreferrer nofollow" className="lien-logs">
+                    Voir ses logs ↗
+                  </a>
+                )}
+              </div>
+              <div className="perso-actions">
+                <BoutonSupprimer action={supprimerPersonnage} personnageId={p.id} nom={nomEnJeu(p)} />
               </div>
             </li>
           ))}
@@ -136,19 +233,16 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
       )}
 
       <h2>Déclarer un personnage</h2>
-      {typeof erreur === "string" && <p role="alert">⚠ {erreur}</p>}
       <form action={creerPersonnage} className="formulaire">
         <div className="rangee">
-          <label className="champ">
+          <div className="champ">
             Faction
-            <select name="faction" required>
-              {options(libelleFaction).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>
+            <MenuDeroulant
+              name="faction"
+              etiquette="Faction"
+              options={options(libelleFaction).map(([v, l]) => ({ valeur: v, libelle: l, faction: v }))}
+            />
+          </div>
           <label className="champ">
             Ruleset
             <select name="ruleset" required>
@@ -172,12 +266,21 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
         </div>
         <div className="rangee">
           <label className="champ">
-            Nom
-            <input name="nom" required maxLength={24} />
+            Prénom
+            <input name="nom" required maxLength={NOM_MAX} pattern="\p{L}+" title={TITRE_NOM} autoComplete="off" />
           </label>
           <label className="champ">
             Nom de famille
-            <input name="nomDeFamille" maxLength={24} />
+            <input name="nomDeFamille" maxLength={NOM_MAX} pattern="\p{L}+" title={TITRE_NOM} autoComplete="off" />
+          </label>
+        </div>
+        <p className="doux aide-nom">
+          Lettres uniquement, {NOM_MAX} maximum. La majuscule est mise automatiquement (ex. « jaina » → « Jaina »).
+        </p>
+        <div className="rangee">
+          <label className="champ">
+            Logs <small className="fuseau">(facultatif, Warcraft Logs uniquement)</small>
+            <input name="lienLogs" type="url" placeholder="https://fresh.warcraftlogs.com/character/…" />
           </label>
         </div>
         <div className="rangee">

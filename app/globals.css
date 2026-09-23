@@ -1432,3 +1432,122 @@ main[data-fond] .carte {
   padding-top: 0;
   border-top: none;
 }
+
+/* ─── Factions ────────────────────────────────────────────────────────────── */
+.icone-faction {
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.pastille-faction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.roles-proposes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.8rem;
+  font-size: 0.95rem;
+}
+.candidat-actions .boutons {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+/* ─── Mes personnages : logs et suppression ──────────────────────────────── */
+.liste-persos > li > div:has(> strong) {
+  flex: 1;
+  min-width: 0;
+}
+.perso-actions {
+  margin-left: auto;
+}
+.logs-perso {
+  margin-top: 0.3rem;
+  font-size: 0.95rem;
+}
+.logs-perso summary {
+  cursor: pointer;
+  color: var(--texte-doux);
+}
+.form-logs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+  flex-wrap: wrap;
+}
+.form-logs input {
+  flex: 1;
+  min-width: 12rem;
+}
+.lien-logs {
+  font-size: 0.95rem;
+}
+.aide-nom {
+  margin: -0.4rem 0 0.2rem;
+  font-size: 0.95rem;
+}
+
+/* Lien présenté comme un bouton (mêmes styles que <button>). */
+a.bouton {
+  display: inline-block;
+  font-family: var(--police-titre), serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  text-decoration: none;
+  color: var(--or-clair);
+  background: rgb(7 13 25 / 0.55);
+  border: 1px solid var(--filet-fort);
+  padding: 0.75rem 1.5rem;
+}
+a.bouton:hover {
+  background: rgb(217 181 106 / 0.1);
+  border-color: var(--or);
+}
+a.bouton.principal {
+  color: #1b1307;
+  background: linear-gradient(180deg, #f1d99a 0%, #d6b067 55%, #b8894a 100%);
+  border-color: #f3dfa8;
+}
+a.bouton.petit {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  padding: 0.35rem 0.8rem;
+}
+
+/* ─── Accueil : filtres et appel à créer un personnage ────────────────────── */
+.filtres {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.6rem 0.9rem;
+  align-items: end;
+  margin: 0 0 1.2rem;
+  padding: 0.9rem 1rem;
+  background: var(--panneau);
+  border: 1px solid var(--filet);
+}
+.filtres .champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+}
+.filtres select,
+.filtres input {
+  width: 100%;
+}
+.filtres-boutons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.appel-perso {
+  text-align: center;
+}
+.appel-perso p {
+  margin-top: 0;
+}

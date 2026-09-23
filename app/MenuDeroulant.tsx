@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import type { Classe, Role } from "@/generated/prisma/enums";
-import { ClasseIcone, RoleIcone } from "./ClasseIcone";
+import type { Classe, Faction, Role } from "@/generated/prisma/enums";
+import { ClasseIcone, FactionIcone, RoleIcone } from "./ClasseIcone";
 
-export type OptionMenu = { valeur: string; libelle: string; classe?: Classe; role?: Role };
+export type OptionMenu = { valeur: string; libelle: string; classe?: Classe; role?: Role; faction?: Faction };
 
 function Icone({ option }: { option?: OptionMenu }) {
   if (option?.classe) return <ClasseIcone classe={option.classe} taille={22} />;
   if (option?.role) return <RoleIcone role={option.role} taille={22} />;
+  if (option?.faction) return <FactionIcone faction={option.faction} taille={22} />;
   return <span className="menu-sans-icone" />;
 }
 

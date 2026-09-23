@@ -27,11 +27,11 @@ import {
 import { accepter, annuler, candidater, enregistrerPresences, envoyerLesInvitations, refuser } from "./actions";
 import { BoutonInvitations } from "./BoutonInvitations";
 import { nomEnJeu } from "@/lib/invitations";
-import { placePour, rolesPourRaid } from "./eligibilite";
+import { placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite";
 import type { Classe, Role } from "@/generated/prisma/enums";
 import { BoutonAnnuler } from "./BoutonAnnuler";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
-import { ClasseIcone, NomClasse, NomRole, RoleIcone } from "@/app/ClasseIcone";
+import { ClasseIcone, NomClasse, NomRole, PastilleFaction, RoleIcone } from "@/app/ClasseIcone";
 import { FormCandidature } from "./FormCandidature";
 import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 
@@ -101,7 +101,10 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   const mesPersonnages =
     estRl || maCandidature || !ouvert
       ? []
-      : await db.personnage.findMany({ where: { utilisateurId: utilisateur.id }, orderBy: { nom: "asc" } });
+      : await db.personnage.findMany({
+          where: { utilisateurId: utilisateur.id, supprimeLe: null },
+          orderBy: { nom: "asc" },
+        });
 
   const roles = compoParRole(compo.lignes);
   // Compo joueur par joueur : les membres déclarés par le RL (sans nom) puis les joueurs acceptés.
@@ -145,9 +148,13 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
     .sort((x, y) => Number(x.statut === "LISTE_ATTENTE") - Number(y.statut === "LISTE_ATTENTE"))
     .map((i) => ({
       ...i,
-      placeOuverte: Boolean(
-        i.personnage && i.role && placePour(annonce.places, i.personnage, i.role, annonce)?.ouverte,
-      ),
+      // Pour chaque rôle proposé : reste-t-il une place ouverte ? (sinon « Remplaçant »)
+      choixRoles: rolesProposes(i).map((role) => ({
+        role,
+        ouverte: Boolean(
+          i.personnage && placePourRoles(annonce.places, i.personnage, [role], annonce)?.ouverte,
+        ),
+      })),
     }));
   const persosCandidats = mesPersonnages
     .map((p) => ({ perso: p, roles: rolesPourRaid(p, annonce.places, annonce) }))
@@ -174,8 +181,9 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           {annonce.dureeEstimee && <span className="doux"> · environ {annonce.dureeEstimee / 60} h</span>}
         </p>
         <div className="pastilles centre">
-          <span className={`pastille ${annonce.faction === "HORDE" ? "horde" : "alliance"}`}>
-            {libelleFaction[annonce.faction]}
+          <PastilleFaction faction={annonce.faction} />
+          <span className="pastille">
+            Ruleset : {libelleRuleset[annonce.ruleset]} · {annonce.region}
           </span>
           <span className="pastille">Loot : {libelleReglesLoot[annonce.reglesLoot]}</span>
           <span className="pastille">Vocal : {libelleVocal[annonce.vocal]}</span>
@@ -393,20 +401,22 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                           >
                             {i.personnage && nomEnJeu(i.personnage)}
                           </strong>{" "}
-                          <span className="doux">
-                            niv. {i.personnage?.niveau}
-                            {i.role && (
-                              <>
-                                {" · "}
-                                <NomRole role={i.role} taille={18} />
-                              </>
-                            )}
-                          </span>
+                          <span className="doux">niv. {i.personnage?.niveau}</span>
+                        </div>
+                        <div className="roles-proposes">
+                          {i.choixRoles.map((c) => (
+                            <NomRole key={c.role} role={c.role} taille={18} />
+                          ))}
                         </div>
                         <div className="doux">
                           <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
                           {fiabCandidats.get(i.utilisateurId) && texteBadge(fiabCandidats.get(i.utilisateurId)!)}
                         </div>
+                        {i.personnage?.lienLogs && (
+                          <a href={i.personnage.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
+                            Voir ses logs (Warcraft Logs) ↗
+                          </a>
+                        )}
                         {i.note && <blockquote className="note">« {i.note} »</blockquote>}
                       </div>
                       <div className="candidat-actions">
@@ -415,12 +425,18 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         </span>
                         {rlPeutAgir(annonce) && (
                           <div className="boutons">
-                            <form action={accepter}>
-                              <input type="hidden" name="inscriptionId" value={i.id} />
-                              <BoutonEnvoi className="petit principal" enCours="…">
-                                {i.placeOuverte ? "Accepter" : "Remplaçant"}
-                              </BoutonEnvoi>
-                            </form>
+                            {i.choixRoles.map((c) => (
+                              <form key={c.role} action={accepter}>
+                                <input type="hidden" name="inscriptionId" value={i.id} />
+                                <input type="hidden" name="role" value={c.role} />
+                                <BoutonEnvoi className="petit principal" enCours="…">
+                                  <span className="nom-classe">
+                                    {c.ouverte ? "Accepter" : "Remplaçant"}
+                                    {i.choixRoles.length > 1 && ` · ${libelleRole[c.role]}`}
+                                  </span>
+                                </BoutonEnvoi>
+                              </form>
+                            ))}
                             <form action={refuser}>
                               <input type="hidden" name="inscriptionId" value={i.id} />
                               <BoutonEnvoi className="petit" enCours="…">
@@ -445,11 +461,14 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                   {maCandidature.statut === "CONFIRME" ? "✔ Tu es convié" : "⏳ Ta candidature est envoyée"} avec{" "}
                   {maCandidature.personnage && <ClasseIcone classe={maCandidature.personnage.classe} />}{" "}
                   <strong>{maCandidature.personnage && nomEnJeu(maCandidature.personnage)}</strong>
-                  {maCandidature.role && (
-                    <>
-                      {" "}
-                      (<NomRole role={maCandidature.role} taille={18} />)
-                    </>
+                  {/* En attente : les rôles proposés ; convié : le rôle retenu par le RL. */}
+                  {(maCandidature.statut === "CONFIRME" ? [maCandidature.role!] : rolesProposes(maCandidature)).map(
+                    (r) => (
+                      <span key={r}>
+                        {" "}
+                        <NomRole role={r} taille={18} />
+                      </span>
+                    ),
                   )}{" "}
                   — {libelleStatutInscription[maCandidature.statut]}.
                   {maCandidature.statut === "LISTE_ATTENTE" &&

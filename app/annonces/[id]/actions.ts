@@ -16,8 +16,8 @@ import {
   STATUTS_EN_ATTENTE,
 } from "@/lib/annonces";
 import { seChevauchent } from "@/lib/jeu";
-import { placePour } from "./eligibilite";
-import type { Role } from "@/generated/prisma/enums";
+import { placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite";
+import { Role } from "@/generated/prisma/enums";
 import { envoyerMp } from "@/lib/discord";
 import { texteNotification } from "@/lib/notifications";
 import { libelleRole } from "@/lib/libelles";
@@ -82,16 +82,23 @@ export async function candidater(form: FormData) {
   const retour = retourVers(annonce.id);
 
   const personnageId = String(form.get("personnageId") ?? "");
-  const role = String(form.get("role") ?? "") as Role;
-  const personnage = await db.personnage.findFirst({ where: { id: personnageId, utilisateurId: utilisateur.id } });
+  const personnage = await db.personnage.findFirst({
+    where: { id: personnageId, utilisateurId: utilisateur.id, supprimeLe: null },
+  });
+  // Rôles coches, dans l'ordre Tank, Soigneur, DPS ; le RL choisira à l'acceptation.
+  const coches = new Set(form.getAll("roles").map(String));
+  const roles = (Object.keys(Role) as Role[]).filter((r) => coches.has(r));
   const note = String(form.get("note") ?? "").trim();
 
   if (annonce.createurId === utilisateur.id) retour("Tu organises ce raid, tu ne peux pas y candidater.");
   if (!accepteCandidatures(annonce)) retour("Ce raid n'accepte plus de candidatures.");
   if (!personnage) retour("Choisis un de tes personnages.");
+  if (roles.length === 0) retour("Coche au moins un rôle.");
+  const possibles = rolesPourRaid(personnage!, annonce.places, annonce);
+  if (roles.some((r) => !possibles.includes(r))) retour("Ce personnage ne peut pas tenir ce rôle dans ce raid.");
   // Le site choisit la place : une place ouverte compatible, sinon la liste d'attente.
-  const choix = placePour(annonce.places, personnage!, role, annonce);
-  if (!choix) retour("Ce personnage ne correspond à aucune place de ce raid avec ce rôle.");
+  const choix = placePourRoles(annonce.places, personnage!, roles, annonce);
+  if (!choix) retour("Ce personnage ne correspond à aucune place de ce raid.");
   const place = choix!.place;
   if (note.length > 80) retour("Ta note doit faire 80 caractères maximum.");
 
@@ -109,7 +116,8 @@ export async function candidater(form: FormData) {
         placeId: place.id,
         personnageId: personnage!.id,
         utilisateurId: utilisateur.id,
-        role,
+        role: choix!.role,
+        rolesProposes: roles,
         note: note || null,
         // Aucune place compatible encore ouverte : directement en liste d'attente.
         statut: choix!.ouverte ? "INSCRIT" : "LISTE_ATTENTE",
@@ -146,31 +154,35 @@ export async function accepter(form: FormData) {
   if (await dejaConfirmeAilleurs(inscription.utilisateurId, annonce)) {
     retour("Ce joueur a déjà été confirmé dans un autre raid sur ce créneau.");
   }
+  const role = String(form.get("role") ?? "") as Role;
+  if (!rolesProposes(inscription).includes(role)) retour("Ce joueur n'a pas proposé ce rôle.");
 
   await db.$transaction(async (tx) => {
     // Le joueur prend n'importe quelle place ouverte compatible (la sienne en priorité).
     // S'il n'en reste aucune, il est confirmé comme remplaçant sur sa place d'origine.
     const places = await tx.place.findMany({ where: { annonceId: annonce.id } });
-    const choix =
-      inscription.personnage && inscription.role
-        ? placePour(places, inscription.personnage, inscription.role, annonce, inscription.placeId)
-        : null;
-    const cible = choix?.ouverte ? choix.place.id : inscription.placeId;
-    await tx.inscription.update({ where: { id: inscription.id }, data: { statut: "CONFIRME", placeId: cible } });
+    const choix = inscription.personnage
+      ? placePourRoles(places, inscription.personnage, [role], annonce, inscription.placeId)
+      : null;
+    const cible = choix?.ouverte ? choix.place.id : (choix?.place.id ?? inscription.placeId);
+    await tx.inscription.update({
+      where: { id: inscription.id },
+      data: { statut: "CONFIRME", placeId: cible, role },
+    });
     await tx.place.updateMany({ where: { id: cible, statut: "OUVERTE" }, data: { statut: "POURVUE" } });
     await tx.notification.create({
       data: { utilisateurId: inscription.utilisateurId, type: "CANDIDATURE_ACCEPTEE", annonceId: annonce.id },
     });
 
     // Les autres candidats passent en liste d'attente seulement s'il ne reste
-    // plus aucune place ouverte compatible avec leur personnage et leur rôle.
+    // plus aucune place ouverte compatible avec leur personnage et l'un de leurs rôles.
     const placesApres = await tx.place.findMany({ where: { annonceId: annonce.id } });
     const enAttente = await tx.inscription.findMany({
       where: { place: { annonceId: annonce.id }, statut: "INSCRIT" },
       include: { personnage: true },
     });
     const sansPlace = enAttente
-      .filter((i) => !i.personnage || !i.role || !placePour(placesApres, i.personnage, i.role, annonce)?.ouverte)
+      .filter((i) => !i.personnage || !placePourRoles(placesApres, i.personnage, rolesProposes(i), annonce)?.ouverte)
       .map((i) => i.id);
     if (sansPlace.length > 0) {
       await tx.inscription.updateMany({ where: { id: { in: sansPlace } }, data: { statut: "LISTE_ATTENTE" } });

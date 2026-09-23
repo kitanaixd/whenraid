@@ -20,7 +20,7 @@ async function chargerRaid(annonceId: string) {
   const perso =
     annonce.organisateurPersonnage ??
     (await db.personnage.findFirst({
-      where: { utilisateurId: annonce.createurId, faction: annonce.faction },
+      where: { utilisateurId: annonce.createurId, faction: annonce.faction, supprimeLe: null },
       orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }],
     }));
   return { annonce, perso };

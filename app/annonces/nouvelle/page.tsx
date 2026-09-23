@@ -59,7 +59,7 @@ async function creerAnnonce(form: FormData) {
   try {
     // Le raid prend la faction, le ruleset et la région du personnage choisi.
     const personnage = await db.personnage.findFirst({
-      where: { id: String(form.get("personnageId") ?? ""), utilisateurId: utilisateur.id },
+      where: { id: String(form.get("personnageId") ?? ""), utilisateurId: utilisateur.id, supprimeLe: null },
     });
     if (!personnage) throw new ErreurFormulaire("Choisis un de tes personnages.");
 
@@ -156,7 +156,7 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
   const utilisateur = await exigerUtilisateur();
   const { erreur } = await searchParams;
   const personnages = await db.personnage.findMany({
-    where: { utilisateurId: utilisateur.id },
+    where: { utilisateurId: utilisateur.id, supprimeLe: null },
     orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }],
   });
 

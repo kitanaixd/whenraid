@@ -140,7 +140,7 @@ model Utilisateur {
 }
 
 model Personnage {
-  id            String  @id @default(cuid())
+  id            String    @id @default(cuid())
   utilisateurId String
   nom           String
   nomDeFamille  String?
@@ -151,7 +151,11 @@ model Personnage {
   ruleset       Ruleset
   region        Region
   niveau        Int
-  estPrincipal  Boolean @default(false) // au plus un par utilisateur (index partiel en SQL)
+  estPrincipal  Boolean   @default(false) // au plus un par utilisateur (index partiel en SQL)
+  lienLogs      String? // lien Warcraft Logs, visible du RL à la candidature
+  // Supprimé par le joueur : masqué partout, mais gardé pour l'historique des raids (règle 2).
+  // La fiabilité est portée par le compte (Participation.utilisateurId), pas par le personnage.
+  supprimeLe    DateTime? @db.Timestamptz(3)
 
   // Restrict : on ne perd pas l'historique en effaçant un compte par accident.
   // La suppression de compte passera par une anonymisation (à concevoir).
@@ -278,7 +282,8 @@ model Inscription {
   personnageId  String? // règle 1 : exactement un des deux
   groupeId      String? // règle 1 : exactement un des deux
   utilisateurId String // qui a fait l'inscription
-  role          Role? // rôle que le candidat jouera (null pour un groupe)
+  role          Role? // rôle retenu : le préféré du candidat, puis celui choisi par le RL (null pour un groupe)
+  rolesProposes Role[]            @default([]) // rôles cochés par le candidat ; le RL choisit à l'acceptation
   statut        StatutInscription @default(INSCRIT)
   note          String? // 80 caractères max (CHECK en SQL), visible du seul RL
   inscritLe     DateTime          @default(now()) @db.Timestamptz(3)

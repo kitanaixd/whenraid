@@ -3,19 +3,28 @@ import Link from "next/link";
 import { signIn } from "@/lib/auth";
 import { utilisateurConnecte } from "@/lib/session";
 import { db } from "@/lib/db";
-import { afficherDate } from "@/lib/dates";
+import { afficherDate, localVersUtc } from "@/lib/dates";
 import { nomRaid, raids } from "@/lib/raids";
-import { libelleFaction, libelleRuleset } from "@/lib/libelles";
+import { libelleRuleset } from "@/lib/libelles";
+import { rolesPourRaid } from "@/lib/eligibilite";
 import { chargerMesRaids } from "@/lib/mesRaids";
 import { fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 import { compoActuelle, compoParRole } from "@/lib/annonces";
-import type { Classe } from "@/generated/prisma/enums";
-import { ClasseIcone, NomRole, RoleIcone } from "./ClasseIcone";
+import { Contenu, type Classe } from "@/generated/prisma/enums";
+import type { AnnonceWhereInput } from "@/generated/prisma/models";
+import { ClasseIcone, NomRole, PastilleFaction, RoleIcone } from "./ClasseIcone";
 import { nomEnJeu } from "@/lib/jeu";
 
 const NOMBRE_DE_CLASSES = 9;
+const DUREES_MAX = [2, 3, 4, 6];
 
-export default async function Accueil() {
+/** Le lendemain d'une date « AAAA-MM-JJ », au même format. */
+function lendemain(date: string) {
+  const [a, m, j] = date.split("-").map(Number);
+  return new Date(Date.UTC(a, m - 1, j + 1)).toISOString().slice(0, 10);
+}
+
+export default async function Accueil({ searchParams }: PageProps<"/">) {
   const utilisateur = await utilisateurConnecte();
 
   if (!utilisateur) {
@@ -46,17 +55,43 @@ export default async function Accueil() {
     );
   }
 
-  const [annonces, mesRaids] = await Promise.all([
+  const fuseau = utilisateur.fuseauHoraire;
+  const filtres = await searchParams;
+  const valeur = (nom: string) => (typeof filtres[nom] === "string" ? (filtres[nom] as string) : "");
+  const contenu = valeur("raid") in Contenu ? (valeur("raid") as Contenu) : null;
+  const du = valeur("du");
+  const au = valeur("au");
+  const dureeMax = DUREES_MAX.includes(Number(valeur("duree"))) ? Number(valeur("duree")) : null;
+  const debutMin = (du && localVersUtc(du, "00:00", fuseau)) || null;
+  const debutMax = (au && /^\d{4}-\d{2}-\d{2}$/.test(au) && localVersUtc(lendemain(au), "00:00", fuseau)) || null;
+  const filtreActif = Boolean(contenu || debutMin || debutMax || dureeMax);
+
+  const personnages = await db.personnage.findMany({ where: { utilisateurId: utilisateur.id, supprimeLe: null } });
+  // Premier tri en base : même faction, ruleset et région qu'un de mes personnages (ou mes propres raids).
+  const combinaisons = [
+    ...new Map(personnages.map((p) => [`${p.faction}.${p.ruleset}.${p.region}`, p])).values(),
+  ].map((p) => ({ faction: p.faction, ruleset: p.ruleset, region: p.region }));
+  const where: AnnonceWhereInput = {
+    statut: { in: ["PUBLIEE", "COMPLETE"] },
+    debutUtc: { gt: new Date(), ...(debutMin && { gte: debutMin }), ...(debutMax && { lt: debutMax }) },
+    ...(contenu && { contenu }),
+    ...(dureeMax && { dureeEstimee: { lte: dureeMax * 60 } }),
+    OR: [{ createurId: utilisateur.id }, ...combinaisons],
+  };
+
+  const [annoncesBrutes, mesRaids] = await Promise.all([
     db.annonce.findMany({
-      where: { statut: { in: ["PUBLIEE", "COMPLETE"] }, debutUtc: { gt: new Date() } },
+      where,
       orderBy: { debutUtc: "asc" },
-      take: 50,
+      take: 100,
       include: {
         createur: { select: { pseudo: true } },
         composition: true,
         places: {
           select: {
+            id: true,
             statut: true,
+            role: true,
             classesAcceptees: true,
             inscriptions: {
               where: { statut: "CONFIRME" },
@@ -71,8 +106,18 @@ export default async function Accueil() {
     chargerMesRaids(utilisateur.id),
   ]);
   const { convocations, candidatures, organises } = mesRaids;
+  // Un raid n'apparaît que si l'un de mes personnages peut y tenir une place
+  // (classe, niveau…), sauf mes propres raids et ceux où j'ai déjà candidaté.
+  const dejaInscrit = new Set([...convocations, ...candidatures].map((i) => i.place.annonce.id));
+  const annonces = annoncesBrutes
+    .filter(
+      (a) =>
+        a.createurId === utilisateur.id ||
+        dejaInscrit.has(a.id) ||
+        personnages.some((p) => rolesPourRaid(p, a.places, a).length > 0),
+    )
+    .slice(0, 50);
   const fiabilite = await fiabiliteRls([...new Set(annonces.map((a) => a.createurId))]);
-  const fuseau = utilisateur.fuseauHoraire;
 
   return (
     <main>
@@ -127,9 +172,66 @@ export default async function Accueil() {
       <section className="parchemin" aria-labelledby="titre-raids">
         <p className="surtitre">Ce soir et les jours à venir</p>
         <h2 id="titre-raids">Raids qui recrutent</h2>
-        {annonces.length === 0 ? (
+        {personnages.length === 0 ? (
+          <div className="encadre appel-perso">
+            <p>
+              Déclare ton premier personnage pour voir les raids qui te correspondent : faction, ruleset, région,
+              classe et niveau.
+            </p>
+            <Link href="/personnages" className="bouton principal">
+              Créer mon personnage
+            </Link>
+          </div>
+        ) : (
+          <form className="filtres" method="get" role="search" aria-label="Filtrer les raids">
+            <label className="champ">
+              Raid
+              <select name="raid" defaultValue={contenu ?? ""}>
+                <option value="">Tous les raids</option>
+                {(Object.keys(raids) as Contenu[]).map((c) => (
+                  <option key={c} value={c}>
+                    {nomRaid(c)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="champ">
+              Du
+              <input type="date" name="du" defaultValue={du} />
+            </label>
+            <label className="champ">
+              Au
+              <input type="date" name="au" defaultValue={au} />
+            </label>
+            <label className="champ">
+              Durée
+              <select name="duree" defaultValue={dureeMax ?? ""}>
+                <option value="">Toutes</option>
+                {DUREES_MAX.map((h) => (
+                  <option key={h} value={h}>
+                    {h} h maximum
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="filtres-boutons">
+              <button type="submit" className="principal petit">
+                Filtrer
+              </button>
+              {filtreActif && (
+                <Link href="/" className="bouton petit">
+                  Effacer
+                </Link>
+              )}
+            </div>
+          </form>
+        )}
+        {personnages.length === 0 ? null : annonces.length === 0 ? (
           <p className="doux">
-            Aucun raid publié pour l&apos;instant. <Link href="/annonces/nouvelle">Crée le premier !</Link>
+            {filtreActif
+              ? "Aucun raid ne correspond à ces filtres."
+              : "Aucun raid ouvert à tes personnages pour l'instant."}{" "}
+            <Link href="/annonces/nouvelle">Crée le tien !</Link>
           </p>
         ) : (
           <ul className="liste-raids">
@@ -153,11 +255,9 @@ export default async function Accueil() {
                   <h3>{nomRaid(a.contenu)}</h3>
                   <span className="quand">{afficherDate(a.debutUtc, fuseau)}</span>
                   <span className="pastilles">
-                    <span className={`pastille ${a.faction === "HORDE" ? "horde" : "alliance"}`}>
-                      {libelleFaction[a.faction]}
-                    </span>
+                    <PastilleFaction faction={a.faction} />
                     <span className="pastille">
-                      {libelleRuleset[a.ruleset]} {a.region}
+                      Ruleset {libelleRuleset[a.ruleset]} · {a.region}
                     </span>
                     {a.statut === "COMPLETE" ? (
                       <span className="pastille complet">Complet · liste d&apos;attente</span>

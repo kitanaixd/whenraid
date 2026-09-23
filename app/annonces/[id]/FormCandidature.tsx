@@ -8,7 +8,10 @@ import { NomRole } from "@/app/ClasseIcone";
 
 export type PersoCandidat = { id: string; libelle: string; classe: Classe; roles: Role[] };
 
-/** Candidature en trois étapes : personnage, puis rôle (selon le personnage), puis note pour le RL. */
+/**
+ * Candidature en trois étapes : personnage, puis rôle(s) (selon le personnage), puis note pour le RL.
+ * Le joueur peut proposer plusieurs rôles : le RL choisit à l'acceptation.
+ */
 export function FormCandidature({
   action,
   annonceId,
@@ -22,14 +25,20 @@ export function FormCandidature({
 }) {
   const [persoId, setPersoId] = useState(persos[0]?.id ?? "");
   const perso = persos.find((p) => p.id === persoId) ?? persos[0];
-  const [role, setRole] = useState<Role | undefined>(perso?.roles[0]);
-  // Si le rôle choisi n'existe pas pour le nouveau personnage, on prend son premier rôle.
-  const roleValide = perso && role && perso.roles.includes(role) ? role : perso?.roles[0];
+  const [coches, setCoches] = useState<Role[]>(perso?.roles.slice(0, 1) ?? []);
+  // On ne garde que les rôles possibles pour le personnage choisi ; au moins un par défaut.
+  const rolesValides = coches.filter((r) => perso?.roles.includes(r));
+  const roles = rolesValides.length > 0 ? rolesValides : (perso?.roles.slice(0, 1) ?? []);
+
+  const basculer = (r: Role) =>
+    setCoches(roles.includes(r) ? roles.filter((x) => x !== r) : [...roles, r]);
 
   return (
     <form action={action} className="form-candidature">
       <input type="hidden" name="annonceId" value={annonceId} />
-      <input type="hidden" name="role" value={roleValide ?? ""} />
+      {roles.map((r) => (
+        <input key={r} type="hidden" name="roles" value={r} />
+      ))}
       <div className="champ">
         1. Personnage
         <MenuDeroulant
@@ -40,16 +49,15 @@ export function FormCandidature({
         />
       </div>
       <div className="champ">
-        2. Rôle
-        <div className="choix-roles" role="radiogroup" aria-label="Rôle">
+        2. Rôle{perso && perso.roles.length > 1 && <small className="fuseau"> (un ou plusieurs : le RL choisira)</small>}
+        <div className="choix-roles" role="group" aria-label="Rôles proposés">
           {perso?.roles.map((r) => (
             <button
               key={r}
               type="button"
-              role="radio"
-              aria-checked={r === roleValide}
-              className={`petit ${r === roleValide ? "choisi" : ""}`}
-              onClick={() => setRole(r)}
+              aria-pressed={roles.includes(r)}
+              className={`petit ${roles.includes(r) ? "choisi" : ""}`}
+              onClick={() => basculer(r)}
             >
               <NomRole role={r} taille={18} />
             </button>
