@@ -1,0 +1,436 @@
+/* ─── Thème « interface WoW » ───────────────────────────────────────────────
+   Chargé après globals.css, dont il redéfinit l'apparence : cadres sombres à
+   liseré bronze, rivets en losange aux coins, textes jaunes, barres de titre,
+   boutons rouges à bord doré, sélection bleue lumineuse.
+   Pour revenir au thème précédent : retirer l'import de ce fichier dans layout.tsx. */
+
+:root {
+  --wow-jaune: #ffd100;
+  --wow-bronze: #8c7040;
+  --wow-bronze-clair: #c9a24a;
+  --wow-cadre: rgb(10 9 8 / 0.94);
+  --wow-barre: linear-gradient(180deg, #2b231a 0%, #16110c 100%);
+  --wow-rouge: linear-gradient(180deg, #c3232b 0%, #8e1017 55%, #5f080d 100%);
+  --wow-rouge-survol: linear-gradient(180deg, #dd3139 0%, #a5161e 55%, #700a10 100%);
+  --wow-selection: linear-gradient(90deg, rgb(44 110 230 / 0.15) 0%, rgb(58 135 255 / 0.85) 12%, rgb(40 110 230 / 0.75) 80%, rgb(40 110 230 / 0) 100%);
+
+  /* Les filets de tout le site deviennent bronze. */
+  --filet: #4f3f25;
+  --filet-fort: var(--wow-bronze);
+  --panneau: var(--wow-cadre);
+  --texte: #f5f1e6;
+  --texte-doux: #b3ab98;
+  --or: var(--wow-bronze-clair);
+  --or-clair: var(--wow-jaune);
+}
+
+/* ─── Plus de coins biseautés : cadres arrondis ───────────────────────────── */
+.carte,
+.parchemin,
+.encadre,
+.ligne-raid,
+.filtres,
+.candidat,
+.compo-chiffres > div,
+dialog.confirmation,
+button,
+a.bouton,
+.pastille,
+.perso-choix,
+.cloche,
+.notification > a,
+.notification > div,
+.banniere,
+.apercu-notifications,
+.menu-compte-liste,
+.menu-liste,
+.candidature-rapide,
+.case-role,
+fieldset {
+  clip-path: none !important;
+}
+.carte::before,
+.parchemin::before,
+.encadre::before,
+.ligne-raid::before,
+.filtres::before,
+.candidat::before,
+.compo-chiffres > div::before,
+dialog.confirmation::before,
+button::before,
+a.bouton::before,
+.pastille::before,
+.perso-choix::before,
+.cloche::before,
+.notification > a::before,
+.notification > div::before,
+.banniere::before,
+.apercu-notifications::before,
+.menu-compte-liste::before,
+.menu-liste::before,
+.candidature-rapide::before,
+.case-role::before,
+fieldset::before {
+  content: none !important;
+}
+
+/* ─── Cadres : fond sombre, liseré bronze, filets noirs de part et d'autre ── */
+.carte,
+.parchemin,
+.encadre,
+.ligne-raid,
+.filtres,
+.candidature-rapide,
+dialog.confirmation,
+.menu-compte-liste,
+.apercu-notifications,
+.menu-liste,
+.banniere {
+  border-radius: 6px;
+  border: 2px solid var(--wow-bronze);
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 0 0 1px #000,
+    inset 0 0 0 2px rgb(255 214 120 / 0.1),
+    0 8px 22px rgb(0 0 0 / 0.55);
+}
+.parchemin {
+  outline: none;
+}
+/* Rivets en losange aux quatre coins des grands cadres. */
+.carte,
+.parchemin,
+dialog.confirmation,
+.apercu-notifications {
+  position: relative;
+}
+.carte::after,
+.parchemin::after,
+dialog.confirmation::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  pointer-events: none;
+  --rivet: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M5 0L10 5L5 10L0 5Z' fill='%23d8b163' stroke='%23000' stroke-width='1'/%3E%3Cpath d='M5 2.5L7.5 5L5 7.5L2.5 5Z' fill='%23fff0b3'/%3E%3C/svg%3E");
+  background:
+    var(--rivet) top left / 10px 10px no-repeat,
+    var(--rivet) top right / 10px 10px no-repeat,
+    var(--rivet) bottom left / 10px 10px no-repeat,
+    var(--rivet) bottom right / 10px 10px no-repeat;
+}
+/* Cadres secondaires (lignes, cases) : liseré plus discret. */
+.candidat,
+.compo-chiffres > div,
+.notification > a,
+.notification > div,
+fieldset,
+.perso-choix,
+.case-role {
+  border-radius: 4px;
+  border: 1px solid var(--filet);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.6);
+}
+
+/* ─── Titres : jaune WoW, sans majuscules forcées ─────────────────────────── */
+h1,
+h2 {
+  text-transform: none;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--wow-jaune);
+  filter: none;
+  text-shadow:
+    0 2px 0 #000,
+    0 0 12px rgb(0 0 0 / 0.8);
+  letter-spacing: 0.01em;
+  font-weight: 400;
+}
+h3,
+.marque {
+  color: var(--wow-jaune);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+.marque {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  text-shadow: 0 2px 0 #000;
+}
+.surtitre {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--wow-jaune);
+  font-size: 1rem;
+  font-weight: 400;
+}
+.surtitre::before,
+.surtitre::after {
+  background: linear-gradient(90deg, transparent, var(--wow-bronze));
+}
+.surtitre::after {
+  background: linear-gradient(90deg, var(--wow-bronze), transparent);
+}
+
+/* Barre de titre en haut des cartes (comme « Skills », « Mecha Nyahu »). */
+.carte > .surtitre:first-child,
+.parchemin > .surtitre:first-child,
+.candidature-rapide > .etiquette-place:first-of-type {
+  justify-content: center;
+  margin: -1rem -1.2rem 1rem;
+  padding: 0.45rem 1rem;
+  background: var(--wow-barre);
+  border-bottom: 1px solid var(--wow-bronze);
+  box-shadow: inset 0 -1px 0 #000;
+  border-radius: 4px 4px 0 0;
+  text-shadow: 0 1px 0 #000;
+}
+.carte > .surtitre:first-child::before,
+.carte > .surtitre:first-child::after,
+.parchemin > .surtitre:first-child::before,
+.parchemin > .surtitre:first-child::after {
+  display: none;
+}
+
+/* En-têtes de section en pastille bordée (comme « General », « Weapon Skills »). */
+.compo-groupe h3,
+.etiquette-place {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.8rem;
+  font-family: var(--police-titre), serif;
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--wow-jaune);
+  background: var(--wow-barre);
+  border: 1px solid var(--wow-bronze);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px #000;
+}
+
+/* ─── Libellés de champs, légendes, pastilles ─────────────────────────────── */
+.champ,
+legend {
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--wow-jaune);
+}
+.pastille,
+.badge-raid {
+  border-radius: 3px;
+  font-family: var(--police-titre), serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-size: 0.85rem;
+}
+.compo-chiffres small,
+.navigation a,
+.menu-compte-liste a,
+button.menu-compte-deconnexion {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-weight: 400;
+}
+.navigation a {
+  font-size: 1rem;
+  color: var(--wow-jaune);
+}
+
+/* ─── Champs de saisie ────────────────────────────────────────────────────── */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+button.menu-choisi {
+  border-radius: 3px;
+  border: 1px solid var(--filet-fort);
+  background: rgb(0 0 0 / 0.75);
+  box-shadow: inset 0 1px 3px rgb(0 0 0 / 0.8);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--wow-jaune);
+}
+
+/* ─── Boutons rouges à bord doré (comme « Accept », « Enter World ») ──────── */
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton):not(.pas),
+a.bouton {
+  font-family: var(--police-titre), serif;
+  font-weight: 400;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--wow-jaune);
+  text-shadow: 0 1px 1px #000;
+  background: var(--wow-rouge);
+  border: 2px solid var(--wow-bronze-clair);
+  border-radius: 4px;
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 1px 0 rgb(255 255 255 / 0.25),
+    inset 0 -3px 6px rgb(0 0 0 / 0.35),
+    0 3px 8px rgb(0 0 0 / 0.5);
+  padding: 0.55rem 1.4rem;
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton):not(.pas):hover:not(:disabled),
+a.bouton:hover {
+  color: #fff4a8;
+  background: var(--wow-rouge-survol);
+  border-color: #ffd96a;
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton):not(.pas).petit,
+a.bouton.petit {
+  font-size: 0.88rem;
+  padding: 0.3rem 0.9rem;
+}
+/* Bouton principal : même rouge, halo doré pour le distinguer. */
+button:not(.bouton-lien):not(.menu-choisi).principal,
+a.bouton.principal {
+  box-shadow:
+    0 0 0 1px #000,
+    0 0 10px rgb(255 200 80 / 0.35),
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    inset 0 -3px 6px rgb(0 0 0 / 0.35);
+}
+/* Bouton de suppression / annulation : rouge sombre, texte clair. */
+button:not(.bouton-lien):not(.menu-choisi).danger {
+  color: #ffe2dc;
+  background: linear-gradient(180deg, #5c0d10 0%, #3a0709 100%);
+  border-color: #9c4b3a;
+}
+button:not(.bouton-lien):not(.menu-choisi).danger:hover:not(:disabled) {
+  background: linear-gradient(180deg, #7a1216 0%, #4d0a0d 100%);
+  border-color: #d06a55;
+}
+/* Boutons-icônes et −/+ : carrés. */
+button:not(.bouton-lien):not(.menu-choisi).bouton-icone {
+  padding: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+/* ─── Sélection bleue lumineuse (comme la liste des comptes) ──────────────── */
+.perso-choix.choisi,
+.case-role:has(input:checked),
+.menu-liste li.actif,
+.menu-liste li[aria-selected="true"],
+.choix-roles button.choisi {
+  background: var(--wow-selection) !important;
+  border-color: rgb(120 170 255 / 0.7) !important;
+  color: #fff !important;
+  text-shadow: 0 1px 1px #000;
+  box-shadow: 0 0 10px rgb(60 130 255 / 0.35) !important;
+}
+.choix-roles button {
+  font-family: var(--police-titre), serif;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  color: var(--texte);
+  background: rgb(0 0 0 / 0.6);
+  border: 1px solid var(--filet);
+  border-radius: 4px;
+  box-shadow: none;
+}
+
+/* ─── Lignes de raid : cadre + couleur de repère ──────────────────────────── */
+.ligne-raid.ligne-organise,
+.ligne-raid.ligne-convie,
+.ligne-raid.ligne-candidat,
+.ligne-raid.ligne-attente {
+  border: 2px solid var(--bord-biseau);
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 0 0 1px #000,
+    inset 5px 0 0 var(--bord-biseau),
+    0 8px 22px rgb(0 0 0 / 0.55);
+}
+.ligne-raid:not(.ligne-organise):not(.ligne-convie):not(.ligne-candidat):not(.ligne-attente) {
+  border: 2px solid var(--wow-bronze);
+  box-shadow:
+    0 0 0 1px #000,
+    inset 0 0 0 1px #000,
+    0 8px 22px rgb(0 0 0 / 0.55);
+}
+.ligne-raid:hover {
+  border-color: var(--wow-bronze-clair);
+}
+
+/* ─── En-tête : barre sombre comme le menu du haut de l'écran de sélection ── */
+.en-tete {
+  background: linear-gradient(180deg, rgb(12 10 8 / 0.92), rgb(12 10 8 / 0.75));
+  border-bottom: 2px solid var(--wow-bronze);
+  box-shadow: 0 1px 0 #000, 0 6px 18px rgb(0 0 0 / 0.5);
+}
+.en-tete-contenu {
+  padding: 0.6rem 1rem;
+}
+.cloche {
+  border-radius: 4px;
+  border: 2px solid var(--wow-bronze);
+  background: rgb(0 0 0 / 0.6);
+  color: var(--wow-jaune);
+}
+button.menu-compte-bouton {
+  border-radius: 4px;
+  border: 2px solid var(--wow-bronze);
+  background: rgb(0 0 0 / 0.6);
+  box-shadow: inset 0 0 0 1px #000;
+  clip-path: none;
+}
+button.menu-compte-bouton::before {
+  content: none;
+}
+
+/* ─── Divers ──────────────────────────────────────────────────────────────── */
+.compo-chiffres strong,
+.compo-roles strong,
+.compo-total strong {
+  color: var(--wow-jaune);
+  text-shadow: 0 1px 0 #000;
+}
+.notif-symbole {
+  box-shadow: inset 0 0 0 1px #000;
+}
+.ornement {
+  color: var(--wow-bronze-clair);
+}
+
+/* Barres de titre : collées aux bords intérieurs de chaque type de cadre. */
+.carte > .surtitre:first-child {
+  margin: -1.1rem -1.2rem 1rem;
+}
+.parchemin > .surtitre:first-child {
+  margin: -1.6rem -1.4rem 1rem;
+}
+.candidature-rapide > .etiquette-place:first-of-type {
+  margin: -0.9rem -1rem 0.9rem;
+  border-radius: 4px 4px 0 0;
+  border: none;
+  border-bottom: 1px solid var(--wow-bronze);
+}
+a.bouton.principal {
+  color: var(--wow-jaune);
+  background: var(--wow-rouge);
+  border-color: var(--wow-bronze-clair);
+}
+a.bouton.principal:hover {
+  color: #fff4a8;
+  background: var(--wow-rouge-survol);
+  border-color: #ffd96a;
+}
+.place-role,
+.legende,
+.compo-chiffres small {
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.95rem;
+}
