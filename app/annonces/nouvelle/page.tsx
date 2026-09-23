@@ -20,7 +20,7 @@ import {
 
 const LANGUES = { fr: "Français", en: "Anglais" } as const;
 
-// Ces valeurs seront envoyées en jeu par /w : pas d'espace, format strict.
+// Ces valeurs partent telles quelles en MP Discord aux joueurs : format strict, sans espace.
 const LIEN_DISCORD = /^https:\/\/(discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]+$/;
 const ADRESSE_TS = /^[A-Za-z0-9.-]+(:\d{1,5})?$/;
 
@@ -113,6 +113,7 @@ async function creerAnnonce(form: FormData) {
         faction: personnage.faction,
         ruleset: personnage.ruleset,
         region: personnage.region,
+        organisateurPersonnageId: personnage.id,
         taille,
         debutUtc,
         dureeEstimee: dureeHeures ? dureeHeures * 60 : null,
@@ -253,8 +254,8 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
           </p>
           <p>
             <small>
-              Les joueurs ne verront jamais ces identifiants sur le site : ils leur seront envoyés en jeu par
-              l&apos;addon au moment du raid.
+              Les joueurs ne verront jamais ces identifiants sur le site : le bot WhenRaid les enverra en MP
+              aux joueurs confirmés quand tu enverras les invitations.
             </small>
           </p>
         </fieldset>

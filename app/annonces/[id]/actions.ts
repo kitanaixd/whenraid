@@ -12,8 +12,7 @@ import { rolesPourPlace } from "./eligibilite";
 import { envoyerMp } from "@/lib/discord";
 import { texteNotification } from "@/lib/notifications";
 import { libelleRole } from "@/lib/libelles";
-
-const URL_SITE = process.env.SITE_URL ?? "https://www.whenraid.com";
+import { envoyerInvitation, envoyerInvitations, URL_SITE } from "@/lib/invitations";
 
 /** Envoie en MP Discord, après la réponse, la même information que la notification du site. */
 function prevenirEnMp(inscriptionId: string, type: TypeNotification) {
@@ -31,6 +30,8 @@ function prevenirEnMp(inscriptionId: string, type: TypeNotification) {
     const texte = texteNotification(type, annonce, i.utilisateur.fuseauHoraire);
     await envoyerMp(i.utilisateur.discordId, `${texte}${avec}
 ${URL_SITE}/annonces/${annonce.id}`);
+    // Accepté après l'envoi des invitations (ex. remplaçant) : il reçoit la sienne tout de suite.
+    if (type === "CANDIDATURE_ACCEPTEE" && annonce.invitationsEnvoyeesLe) await envoyerInvitation(i.id);
   });
 }
 
@@ -256,6 +257,22 @@ export async function annuler(form: FormData) {
       })),
     });
   });
+  rafraichir(annonce.id);
+  retour();
+}
+
+export async function envoyerLesInvitations(form: FormData) {
+  const utilisateur = await exigerUtilisateur();
+  const annonceId = String(form.get("annonceId") ?? "");
+  const retour = retourVers(annonceId);
+
+  if (form.get("confirmation") !== "on") retour("Coche la case de confirmation pour envoyer les invitations.");
+  const annonce = await db.annonce.findFirst({ where: { id: annonceId, createurId: utilisateur.id } });
+  if (!annonce) notFound();
+  if (!rlPeutAgir(annonce)) retour("Ce raid n'est plus modifiable.");
+
+  await db.annonce.update({ where: { id: annonce.id }, data: { invitationsEnvoyeesLe: new Date() } });
+  after(() => envoyerInvitations(annonce.id));
   rafraichir(annonce.id);
   retour();
 }

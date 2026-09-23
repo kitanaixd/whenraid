@@ -74,3 +74,22 @@ dialog.confirmation h2 {
   margin-left: 0.2rem;
   vertical-align: top;
 }
+
+/* Envoi des invitations */
+button.principal {
+  background: #1d4ed8;
+  color: #fff;
+  border: 1px solid #1e3a8a;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+button.principal:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+dialog.confirmation.invitations {
+  border-color: #1d4ed8;
+}
+dialog.confirmation.invitations h2 {
+  color: #1d4ed8;
+}

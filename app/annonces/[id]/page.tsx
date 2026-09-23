@@ -17,7 +17,9 @@ import {
   libelleStatutPlace,
   libelleVocal,
 } from "@/lib/libelles";
-import { accepter, annuler, candidater, refuser } from "./actions";
+import { accepter, annuler, candidater, envoyerLesInvitations, refuser } from "./actions";
+import { BoutonInvitations } from "./BoutonInvitations";
+import { nomEnJeu } from "@/lib/invitations";
 import { rolesPourPlace } from "./eligibilite";
 import { BoutonAnnuler } from "./BoutonAnnuler";
 
@@ -44,6 +46,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
     where: { id },
     include: {
       createur: { select: { pseudo: true } },
+      organisateurPersonnage: true,
       composition: true,
       places: {
         orderBy: [{ role: "asc" }, { id: "asc" }],
@@ -160,8 +163,32 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           )}
           {annonce.vocal !== "AUCUN" && (
             <p>
-              <small>Ces identifiants ne sont visibles que par toi. L&apos;addon les enverra aux joueurs en jeu.</small>
+              <small>
+                Ces identifiants ne sont visibles que par toi. Le bot les enverra en MP aux joueurs confirmés quand
+                tu enverras les invitations.
+              </small>
             </p>
+          )}
+          {["PUBLIEE", "COMPLETE"].includes(annonce.statut) && (
+            <div>
+              <BoutonInvitations
+                action={envoyerLesInvitations}
+                annonceId={annonce.id}
+                resume={`${nomRaid(annonce.contenu)} — ${afficherDate(annonce.debutUtc, fuseau)}`}
+                nbConfirmes={confirmes.length}
+                vocal={
+                  annonce.vocal === "DISCORD"
+                    ? `Discord (${annonce.vocalDiscordLien})`
+                    : annonce.vocal === "TEAMSPEAK"
+                      ? `TeamSpeak (${annonce.vocalTsAdresse})`
+                      : "aucun"
+                }
+                commandeWhisper={
+                  annonce.organisateurPersonnage ? `/w ${nomEnJeu(annonce.organisateurPersonnage)} inv` : null
+                }
+                dejaEnvoyeesLe={annonce.invitationsEnvoyeesLe && afficherDate(annonce.invitationsEnvoyeesLe, fuseau)}
+              />
+            </div>
           )}
           {ouvert && (
             <BoutonAnnuler

@@ -157,6 +157,7 @@ model Personnage {
   utilisateur    Utilisateur     @relation(fields: [utilisateurId], references: [id], onDelete: Restrict)
   inscriptions   Inscription[]
   participations Participation[]
+  raidsOrganises Annonce[]       @relation("PersonnageOrganisateur")
 
   @@index([utilisateurId])
 }
@@ -213,22 +214,29 @@ model Annonce {
   publieeLe     DateTime?     @db.Timestamptz(3)
 
   // Identifiants vocaux : jamais affichés aux joueurs sur le site, ils leur
-  // seront envoyés en jeu par l'addon du RL au moment du raid.
+  // sont envoyés en MP Discord quand le RL envoie les invitations.
   vocal             Vocal   @default(AUCUN)
   vocalDiscordLien  String?
   vocalTsAdresse    String?
   vocalTsMotDePasse String?
 
+  // Personnage avec lequel le RL mène le raid (pour le « /w Prénom Nom inv »).
+  organisateurPersonnageId String?
+  // Envois Discord : rappel au RL 15 min avant, puis invitations aux joueurs.
+  rappelRlEnvoyeLe         DateTime? @db.Timestamptz(3)
+  invitationsEnvoyeesLe    DateTime? @db.Timestamptz(3)
+
   // Faits de l'annulation (règle 3 : la réputation se calcule à la lecture).
   annuleeLe       DateTime? @db.Timestamptz(3)
   annuleeComplete Boolean? // le raid était-il complet au moment de l'annulation ?
 
-  groupe         Groupe?              @relation(fields: [groupeId], references: [id], onDelete: SetNull)
-  createur       Utilisateur          @relation(fields: [createurId], references: [id], onDelete: Restrict)
-  composition    CompositionAnnonce[]
-  notifications  Notification[]
-  places         Place[]
-  participations Participation[]
+  groupe                 Groupe?              @relation(fields: [groupeId], references: [id], onDelete: SetNull)
+  createur               Utilisateur          @relation(fields: [createurId], references: [id], onDelete: Restrict)
+  organisateurPersonnage Personnage?          @relation("PersonnageOrganisateur", fields: [organisateurPersonnageId], references: [id], onDelete: SetNull)
+  composition            CompositionAnnonce[]
+  notifications          Notification[]
+  places                 Place[]
+  participations         Participation[]
 
   @@index([statut, debutUtc])
   @@index([createurId])
