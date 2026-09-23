@@ -2801,3 +2801,107 @@ button.banniere-fermer::before {
     animation: none;
   }
 }
+
+/* Couleur du filet des coins = couleur exacte de la bordure, y compris au survol. */
+button.principal:hover:not(:disabled),
+a.bouton.principal:hover {
+  --bord-biseau: #fff3cf;
+}
+button.danger,
+button.danger:hover:not(:disabled) {
+  --bord-biseau: var(--bord-danger);
+}
+button.danger {
+  --bord-danger: rgb(201 73 63 / 0.8);
+  border-color: var(--bord-danger);
+}
+button.danger:hover:not(:disabled) {
+  --bord-danger: var(--danger);
+}
+
+/* ─── Biseau sur les derniers blocs à bordure ─────────────────────────────── */
+.banniere,
+.apercu-notifications,
+.menu-compte-liste,
+.menu-liste,
+.candidature-rapide,
+.case-role,
+fieldset {
+  --biseau: 10px;
+  --bord-biseau: var(--filet-fort);
+  clip-path: polygon(
+    var(--biseau) 0,
+    calc(100% - var(--biseau)) 0,
+    100% var(--biseau),
+    100% calc(100% - var(--biseau)),
+    calc(100% - var(--biseau)) 100%,
+    var(--biseau) 100%,
+    0 calc(100% - var(--biseau)),
+    0 var(--biseau)
+  );
+}
+.candidature-rapide,
+.case-role,
+fieldset {
+  position: relative;
+}
+.banniere::before,
+.apercu-notifications::before,
+.menu-compte-liste::before,
+.menu-liste::before,
+.candidature-rapide::before,
+.case-role::before,
+fieldset::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  z-index: 1;
+  --trait: transparent 50%, var(--bord-biseau) 50%, var(--bord-biseau) calc(50% + 2px), transparent calc(50% + 2px);
+  background:
+    linear-gradient(135deg, var(--trait)) top left / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(225deg, var(--trait)) top right / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(45deg, var(--trait)) bottom left / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(315deg, var(--trait)) bottom right / var(--biseau) var(--biseau) no-repeat;
+}
+.banniere {
+  --bord-biseau: var(--ton);
+}
+.case-role {
+  --biseau: 7px;
+  --bord-biseau: var(--filet);
+}
+.case-role:has(input:checked) {
+  --bord-biseau: var(--or);
+}
+fieldset {
+  --bord-biseau: var(--filet);
+}
+.menu-liste {
+  --biseau: 8px;
+  /* Le filet des coins ne doit pas défiler avec la liste. */
+  background-attachment: local;
+}
+
+/* Aperçu des notifications : panneau plein (plus de fond en pseudo-élément), la zone
+   de survol est prolongée sous la cloche pour ne pas se refermer en y descendant. */
+.zone-cloche {
+  padding-bottom: 0.5rem;
+  margin-bottom: -0.5rem;
+}
+.apercu-notifications {
+  padding-top: 0;
+  background: rgb(5 8 14 / 0.97);
+  border: 2px solid var(--filet-fort);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.6);
+}
+.apercu-notifications::after {
+  display: none;
+}
+.apercu-notifications > .surtitre {
+  margin-top: 0.8rem;
+}
+.menu-liste {
+  max-height: none;
+  overflow: visible;
+}
