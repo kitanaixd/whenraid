@@ -1,15 +1,25 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import Image from "next/image";
 import type { Classe, Faction, Role } from "@/generated/prisma/enums";
 import { ClasseIcone, FactionIcone, RoleIcone } from "./ClasseIcone";
 
-export type OptionMenu = { valeur: string; libelle: string; classe?: Classe; role?: Role; faction?: Faction };
+export type OptionMenu = {
+  valeur: string;
+  libelle: string;
+  classe?: Classe;
+  role?: Role;
+  faction?: Faction;
+  /** Autre icône (ruleset, drapeau…) : chemin d'une image de public/. */
+  image?: string;
+};
 
 function Icone({ option }: { option?: OptionMenu }) {
   if (option?.classe) return <ClasseIcone classe={option.classe} taille={22} />;
   if (option?.role) return <RoleIcone role={option.role} taille={22} />;
   if (option?.faction) return <FactionIcone faction={option.faction} taille={22} />;
+  if (option?.image) return <Image src={option.image} alt="" width={22} height={22} className="icone-faction" unoptimized />;
   return <span className="menu-sans-icone" />;
 }
 

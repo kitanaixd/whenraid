@@ -1734,3 +1734,8 @@ a.bouton:focus-visible {
   --bord-biseau: var(--or);
   background: rgb(217 181 106 / 0.14);
 }
+.ruleset-region {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}

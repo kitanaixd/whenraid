@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Classe, Faction, Region, Role, Ruleset } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
-import { ClasseIcone, FactionIcone, NomRole } from "@/app/ClasseIcone";
+import { ClasseIcone, DRAPEAUX, FactionIcone, ICONES_RULESET, NomRole, RulesetRegion } from "@/app/ClasseIcone";
 import { BoutonSupprimer } from "./BoutonSupprimer";
 import { STATUTS_EN_ATTENTE } from "@/lib/annonces";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
@@ -197,7 +197,7 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 <small>
                   {libelleClasse[p.classe]} niveau {p.niveau} · <FactionIcone faction={p.faction} taille={16} />{" "}
                   {libelleFaction[p.faction]} ·{" "}
-                  {libelleRuleset[p.ruleset]} {p.region} ·{" "}
+                  <RulesetRegion ruleset={p.ruleset} region={p.region} taille={16} /> ·{" "}
                   {p.rolesJouables.map((r) => (
                     <NomRole key={r} role={r} taille={16} />
                   ))}
@@ -243,26 +243,22 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
               options={options(libelleFaction).map(([v, l]) => ({ valeur: v, libelle: l, faction: v }))}
             />
           </div>
-          <label className="champ">
+          <div className="champ">
             Ruleset
-            <select name="ruleset" required>
-              {options(libelleRuleset).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="champ">
+            <MenuDeroulant
+              name="ruleset"
+              etiquette="Ruleset"
+              options={options(libelleRuleset).map(([v, l]) => ({ valeur: v, libelle: l, image: ICONES_RULESET[v as Ruleset] }))}
+            />
+          </div>
+          <div className="champ">
             Région
-            <select name="region" required>
-              {options(libelleRegion).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>
+            <MenuDeroulant
+              name="region"
+              etiquette="Région"
+              options={options(libelleRegion).map(([v, l]) => ({ valeur: v, libelle: l, image: DRAPEAUX[v as Region] }))}
+            />
+          </div>
         </div>
         <div className="rangee">
           <label className="champ">

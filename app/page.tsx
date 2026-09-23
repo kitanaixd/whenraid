@@ -5,14 +5,13 @@ import { utilisateurConnecte } from "@/lib/session";
 import { db } from "@/lib/db";
 import { afficherDate, localVersUtc } from "@/lib/dates";
 import { nomRaid, raids } from "@/lib/raids";
-import { libelleRuleset } from "@/lib/libelles";
 import { rolesPourRaid } from "@/lib/eligibilite";
 import { chargerMesRaids } from "@/lib/mesRaids";
 import { fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 import { compoActuelle, compoParRole } from "@/lib/annonces";
 import { Contenu, type Classe } from "@/generated/prisma/enums";
 import type { AnnonceWhereInput } from "@/generated/prisma/models";
-import { ClasseIcone, FactionIcone, NomRole, PastilleFaction, RoleIcone } from "./ClasseIcone";
+import { ClasseIcone, FactionIcone, NomRole, PastilleFaction, PastilleRuleset, RoleIcone } from "./ClasseIcone";
 import { nomEnJeu } from "@/lib/jeu";
 
 const NOMBRE_DE_CLASSES = 9;
@@ -286,9 +285,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   <span className="quand">{afficherDate(a.debutUtc, fuseau)}</span>
                   <span className="pastilles">
                     <PastilleFaction faction={a.faction} />
-                    <span className="pastille">
-                      Ruleset {libelleRuleset[a.ruleset]} · {a.region}
-                    </span>
+                    <PastilleRuleset ruleset={a.ruleset} region={a.region} />
                     {a.statut === "COMPLETE" ? (
                       <span className="pastille complet">Complet · liste d&apos;attente</span>
                     ) : (

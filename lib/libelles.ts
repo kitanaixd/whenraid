@@ -35,8 +35,9 @@ export const libelleFaction: Record<Faction, string> = {
 };
 
 export const libelleRuleset: Record<Ruleset, string> = {
-  NORMAL: "Normal",
-  PVP: "JcJ",
+  NORMAL: "PvE",
+  PVP: "PvP",
+  RP: "RP",
   HARDCORE: "Hardcore",
 };
 

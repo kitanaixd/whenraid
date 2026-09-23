@@ -31,7 +31,7 @@ import { placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite"
 import type { Classe, Role } from "@/generated/prisma/enums";
 import { BoutonAnnuler } from "./BoutonAnnuler";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
-import { ClasseIcone, NomClasse, NomRole, PastilleFaction, RoleIcone } from "@/app/ClasseIcone";
+import { ClasseIcone, NomClasse, NomRole, PastilleFaction, PastilleRuleset, RoleIcone } from "@/app/ClasseIcone";
 import { FormCandidature } from "./FormCandidature";
 import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 
@@ -182,9 +182,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         </p>
         <div className="pastilles centre">
           <PastilleFaction faction={annonce.faction} />
-          <span className="pastille">
-            Ruleset : {libelleRuleset[annonce.ruleset]} · {annonce.region}
-          </span>
+          <PastilleRuleset ruleset={annonce.ruleset} region={annonce.region} />
           <span className="pastille">Loot : {libelleReglesLoot[annonce.reglesLoot]}</span>
           <span className="pastille">Vocal : {libelleVocal[annonce.vocal]}</span>
           {annonce.langueRequise && (

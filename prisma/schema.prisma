@@ -44,8 +44,9 @@ enum Faction {
 }
 
 enum Ruleset {
-  NORMAL
+  NORMAL // affiché « PvE »
   PVP
+  RP
   HARDCORE
 }
 
