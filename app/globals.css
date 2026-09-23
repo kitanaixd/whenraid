@@ -1897,3 +1897,38 @@ a.bouton.petit {
   --bord-biseau: var(--or);
   background: rgb(0 0 0 / 0.55);
 }
+
+/* ─── Espacement unique entre les blocs : même écart vertical et horizontal ── */
+:root {
+  --espace: 1.5rem;
+}
+.grille-raid {
+  gap: var(--espace);
+  margin-top: var(--espace);
+}
+.bloc-rl {
+  gap: var(--espace);
+  margin-bottom: 0;
+}
+.colonne-principale,
+.colonne-compo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace);
+}
+.colonne-principale > .carte + .carte,
+.colonne-compo > .carte + .carte {
+  margin-top: 0;
+}
+/* L'en-tête de colonne est suivi du même écart que les cartes entre elles. */
+.entete-colonne h2 {
+  margin-bottom: 0;
+}
+.liste-raids,
+.liste-persos {
+  gap: var(--espace);
+}
+.filtres,
+.choix-perso {
+  margin-bottom: var(--espace);
+}
