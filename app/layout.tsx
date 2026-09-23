@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { Marcellus, Poppins } from "next/font/google";
+import { Cinzel, Poppins } from "next/font/google";
 import "./globals.css";
-import "./wow.css";
+import "./fantasy.css";
 import { EnTete } from "./EnTete";
 import { PiedDePage } from "./PiedDePage";
 
 // Polices libres (licence OFL), servies par le site lui-même :
-// Marcellus (proche de la police de l'interface WoW) pour les titres, Poppins (sans serif) pour le texte.
-const marcellus = Marcellus({ subsets: ["latin"], weight: "400", variable: "--police-titre", display: "swap" });
+// Cinzel (capitales romaines gravées) pour les titres, Poppins (sans serif) pour le texte.
+const cinzel = Cinzel({ subsets: ["latin"], variable: "--police-titre", display: "swap" });
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={`${marcellus.variable} ${poppins.variable}`}>
+    <html lang="fr" className={`${cinzel.variable} ${poppins.variable}`}>
       <body>
         <EnTete />
         {children}

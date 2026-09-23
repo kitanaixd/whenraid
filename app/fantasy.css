@@ -1,0 +1,320 @@
+/* ─── Thème « heroic fantasy moderne » ──────────────────────────────────────
+   Chargé après globals.css. Couleurs de WoW Forever (bleu nuit, or, turquoise) ;
+   panneaux en verre sombre, fin liseré doré, équerres dorées aux coins, boutons
+   dorés, lueur turquoise pour la sélection et le survol.
+   Pour revenir au style précédent (coins biseautés) : retirer l'import dans layout.tsx. */
+
+:root {
+  --verre: linear-gradient(180deg, rgb(22 34 60 / 0.72) 0%, rgb(8 13 26 / 0.88) 100%);
+  --verre-plein: linear-gradient(180deg, #16223c 0%, #080d1a 100%);
+  --lisere: rgb(217 181 106 / 0.28);
+  --lisere-fort: rgb(217 181 106 / 0.55);
+  --lueur: 0 0 0 1px rgb(69 201 220 / 0.55), 0 0 18px rgb(69 201 220 / 0.35);
+  --reflet: inset 0 1px 0 rgb(243 223 168 / 0.12);
+  --ombre-panneau: 0 24px 48px -24px rgb(0 0 0 / 0.85);
+  --rayon: 4px;
+  --filet: var(--lisere);
+  --filet-fort: var(--lisere-fort);
+  --panneau: rgb(8 13 26 / 0.86);
+}
+
+/* ─── Plus de coins biseautés ─────────────────────────────────────────────── */
+.carte,
+.parchemin,
+.encadre,
+.ligne-raid,
+.filtres,
+.candidat,
+.compo-chiffres > div,
+dialog.confirmation,
+button,
+a.bouton,
+.pastille,
+.perso-choix,
+.cloche,
+.notification > a,
+.notification > div,
+.banniere,
+.apercu-notifications,
+.menu-compte-liste,
+.menu-liste,
+.candidature-rapide,
+.case-role,
+fieldset {
+  clip-path: none !important;
+}
+.carte::before,
+.parchemin::before,
+.encadre::before,
+.ligne-raid::before,
+.filtres::before,
+.candidat::before,
+.compo-chiffres > div::before,
+dialog.confirmation::before,
+button::before,
+a.bouton::before,
+.pastille::before,
+.perso-choix::before,
+.cloche::before,
+.notification > a::before,
+.notification > div::before,
+.banniere::before,
+.apercu-notifications::before,
+.menu-compte-liste::before,
+.menu-liste::before,
+.candidature-rapide::before,
+.case-role::before,
+fieldset::before {
+  content: none !important;
+}
+
+/* ─── Panneaux en verre sombre ────────────────────────────────────────────── */
+.carte,
+.parchemin,
+.encadre,
+.filtres,
+.candidature-rapide,
+dialog.confirmation,
+.menu-compte-liste,
+.apercu-notifications,
+.menu-liste,
+.banniere {
+  border: 1px solid var(--lisere);
+  border-radius: var(--rayon);
+  box-shadow: var(--reflet), var(--ombre-panneau);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+}
+.carte,
+.parchemin,
+.encadre,
+.filtres,
+.candidature-rapide {
+  background: var(--verre);
+}
+.parchemin {
+  outline: none;
+}
+/* Les cartes de la page d'un raid gardent l'illustration du raid, sous un voile bleu nuit. */
+main[data-fond] .carte {
+  background:
+    linear-gradient(180deg, rgb(14 22 42 / 0.86), rgb(6 10 20 / 0.94)),
+    var(--image-fond) center / cover no-repeat;
+}
+dialog.confirmation,
+.menu-compte-liste,
+.apercu-notifications,
+.menu-liste,
+.banniere {
+  background: var(--verre-plein);
+}
+
+/* Équerres dorées aux quatre coins des grands panneaux. */
+.carte,
+.parchemin,
+dialog.confirmation {
+  position: relative;
+}
+.carte::after,
+.parchemin::after,
+dialog.confirmation::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  border-radius: var(--rayon);
+  --equerre: var(--or);
+  --long: 16px;
+  --ep: 2px;
+  background:
+    linear-gradient(var(--equerre), var(--equerre)) top left / var(--long) var(--ep) no-repeat,
+    linear-gradient(var(--equerre), var(--equerre)) top left / var(--ep) var(--long) no-repeat,
+    linear-gradient(var(--equerre), var(--equerre)) top right / var(--long) var(--ep) no-repeat,
+    linear-gradient(var(--equerre), var(--equerre)) top right / var(--ep) var(--long) no-repeat,
+    linear-gradient(var(--equerre), var(--equerre)) bottom left / var(--long) var(--ep) no-repeat,
+    linear-gradient(var(--equerre), var(--equerre)) bottom left / var(--ep) var(--long) no-repeat,
+    linear-gradient(var(--equerre), var(--equerre)) bottom right / var(--long) var(--ep) no-repeat,
+    linear-gradient(var(--equerre), var(--equerre)) bottom right / var(--ep) var(--long) no-repeat;
+}
+dialog.confirmation::after {
+  --equerre: var(--danger);
+}
+dialog.confirmation.invitations::after {
+  --equerre: var(--or);
+}
+
+/* Éléments secondaires : même verre, plus discret. */
+.candidat,
+.compo-chiffres > div,
+.notification > a,
+.notification > div,
+fieldset,
+.perso-choix,
+.case-role {
+  border: 1px solid var(--lisere);
+  border-radius: var(--rayon);
+  background: rgb(10 18 34 / 0.6);
+  box-shadow: var(--reflet);
+}
+
+/* ─── Lignes de raid ──────────────────────────────────────────────────────── */
+.ligne-raid {
+  border: 1px solid var(--lisere);
+  border-radius: var(--rayon);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+.ligne-raid:not(.ligne-organise):not(.ligne-convie):not(.ligne-candidat):not(.ligne-attente) {
+  border: 1px solid var(--lisere);
+  box-shadow:
+    inset 3px 0 0 var(--or),
+    var(--reflet),
+    var(--ombre-panneau);
+}
+.ligne-raid.ligne-organise,
+.ligne-raid.ligne-convie,
+.ligne-raid.ligne-candidat,
+.ligne-raid.ligne-attente {
+  border: 1px solid var(--bord-biseau);
+  box-shadow:
+    inset 4px 0 0 var(--bord-biseau),
+    0 0 22px -6px var(--bord-biseau),
+    var(--ombre-panneau);
+}
+.ligne-raid:hover {
+  border-color: var(--lisere-fort);
+  transform: translateY(-1px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ligne-raid:hover {
+    transform: none;
+  }
+}
+
+/* ─── Boutons ─────────────────────────────────────────────────────────────── */
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton),
+a.bouton {
+  border-radius: 3px;
+  border: 1px solid var(--lisere-fort);
+  background: rgb(10 18 34 / 0.7);
+  box-shadow: var(--reflet);
+  transition:
+    box-shadow 0.2s,
+    border-color 0.2s,
+    background 0.2s,
+    color 0.2s;
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton):hover:not(:disabled),
+a.bouton:hover {
+  border-color: var(--turquoise);
+  color: #e9fbff;
+  background: rgb(18 40 60 / 0.8);
+  box-shadow: var(--lueur);
+}
+/* Action principale : or plein, reflet et halo doré. */
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).principal,
+a.bouton.principal {
+  color: #1b1307;
+  border: 1px solid #f3dfa8;
+  background: linear-gradient(180deg, #f6e3a6 0%, #dcb66c 50%, #b88a4a 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.5),
+    0 6px 18px -6px rgb(217 181 106 / 0.6);
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).principal:hover:not(:disabled),
+a.bouton.principal:hover {
+  color: #1b1307;
+  border-color: #fff3cf;
+  background: linear-gradient(180deg, #fff0c2 0%, #e8c47c 50%, #c4955a 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.6),
+    0 0 0 1px rgb(69 201 220 / 0.5),
+    0 0 22px rgb(217 181 106 / 0.45);
+}
+/* Suppression / annulation : contour pourpre. */
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).danger {
+  color: #ffd9d4;
+  border-color: rgb(201 73 63 / 0.7);
+  background: rgb(60 14 18 / 0.55);
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).danger:hover:not(:disabled) {
+  color: #fff;
+  border-color: var(--danger);
+  background: rgb(110 22 28 / 0.7);
+  box-shadow: 0 0 0 1px rgb(201 73 63 / 0.5), 0 0 18px rgb(201 73 63 / 0.4);
+}
+
+/* ─── Sélection et focus : lueur turquoise ────────────────────────────────── */
+.perso-choix.choisi,
+.case-role:has(input:checked),
+.choix-roles button.choisi {
+  color: #e9fbff !important;
+  border-color: var(--turquoise) !important;
+  background: linear-gradient(180deg, rgb(69 201 220 / 0.22), rgb(69 201 220 / 0.08)) !important;
+  box-shadow: var(--lueur) !important;
+}
+.menu-liste li.actif {
+  background: rgb(69 201 220 / 0.14);
+}
+.menu-liste li[aria-selected="true"] {
+  color: var(--or-clair);
+}
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+button.menu-choisi {
+  border: 1px solid var(--lisere);
+  border-radius: 3px;
+  background: rgb(6 11 22 / 0.75);
+}
+input:focus,
+select:focus,
+textarea:focus,
+button.menu-choisi:focus-visible {
+  outline: none;
+  border-color: var(--turquoise);
+  box-shadow: var(--lueur);
+}
+
+/* ─── Pastilles en pilule ─────────────────────────────────────────────────── */
+.pastille,
+.badge-raid,
+.badge-fiabilite {
+  border-radius: 999px;
+  padding-left: 0.65rem;
+  padding-right: 0.65rem;
+}
+
+/* ─── En-tête : bandeau de verre ──────────────────────────────────────────── */
+.en-tete {
+  background: linear-gradient(180deg, rgb(7 13 25 / 0.85), rgb(7 13 25 / 0.4));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--lisere);
+}
+.cloche,
+button.menu-compte-bouton {
+  border: 1px solid var(--lisere-fort);
+  border-radius: 3px;
+  background: rgb(10 18 34 / 0.7);
+  clip-path: none;
+}
+.cloche:hover,
+button.menu-compte-bouton:hover:not(:disabled) {
+  border-color: var(--turquoise);
+  box-shadow: var(--lueur);
+}
+button.menu-compte-bouton::before {
+  content: none;
+}
+
+/* ─── Détails ─────────────────────────────────────────────────────────────── */
+.compo-chiffres > div {
+  background: linear-gradient(180deg, rgb(22 34 60 / 0.6), rgb(8 13 26 / 0.7));
+}
+.notif-symbole,
+.banniere-symbole {
+  box-shadow: 0 0 12px -2px var(--ton);
+}
