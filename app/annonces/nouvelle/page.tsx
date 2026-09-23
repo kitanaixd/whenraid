@@ -6,7 +6,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { exigerUtilisateur } from "@/lib/session";
 import { localVersUtc } from "@/lib/dates";
 import { raids } from "@/lib/raids";
-import { LIGNES_EXIGENCES, rolePossible, rolesParClasse } from "@/lib/jeu";
+import { rolePossible, rolesParClasse } from "@/lib/jeu";
 import { ChoixCompo } from "./ChoixCompo";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { choix, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
@@ -89,7 +89,11 @@ async function creerAnnonce(form: FormData) {
     // Les besoins précis ; les places restantes sont libres.
     const toutes = Object.keys(Classe) as Classe[];
     const places: { role: Role | null; classesAcceptees: Classe[] }[] = [];
-    for (const i of LIGNES_EXIGENCES) {
+    const numerosDeLignes = [...form.keys()]
+      .map((k) => /^exigences\.(\d+)\.nombre$/.exec(k)?.[1])
+      .filter((n): n is string => n !== undefined)
+      .slice(0, 20);
+    for (const i of numerosDeLignes) {
       const nombre = entier(form, `exigences.${i}.nombre`, { min: 0, max: nbPlaces }) ?? 0;
       if (nombre === 0) continue;
       const classe = form.get(`exigences.${i}.classe`) ? choix(form, `exigences.${i}.classe`, Classe) : null;
@@ -177,50 +181,28 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
       </p>
       <h1>Créer un raid</h1>
       {typeof erreur === "string" && <p role="alert">⚠ {erreur}</p>}
-      <form action={creerAnnonce}>
-        <p>
-          <label>
-            Avec quel personnage ?{" "}
-            <select name="personnageId" required>
-              {personnages.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nom} — {libelleClasse[p.classe]}, {libelleFaction[p.faction]}, {libelleRuleset[p.ruleset]}{" "}
-                  {p.region}
-                </option>
-              ))}
-            </select>
-          </label>
-        </p>
-        <ChoixCompo />
-        <h2>Quand et comment</h2>
-        <p>
-          <label>
-            Date <input type="date" name="date" required />
-          </label>{" "}
-          <label>
-            Heure <input type="time" name="heure" required defaultValue="21:00" />
-          </label>{" "}
-          <small>(fuseau : {utilisateur.fuseauHoraire})</small>
-        </p>
-        <p>
-          <small>
-            À la fin prévue (début + durée), le bot t&apos;enverra un MP pour valider les présences. Sans validation
-            sous 24 h, tous les joueurs confirmés seront comptés présents.
-          </small>
-        </p>
-        <p>
-          <label>
-            Durée estimée{" "}
-            <select name="dureeHeures" defaultValue="3">
-              {[1, 2, 3, 4, 5, 6].map((h) => (
-                <option key={h} value={h}>
-                  {h} h
-                </option>
-              ))}
-            </select>
-          </label>{" "}
-          <label>
-            Loot{" "}
+      <form action={creerAnnonce} className="formulaire">
+        <ChoixCompo
+          fuseau={utilisateur.fuseauHoraire}
+          personnage={
+            <label className="champ">
+              Avec quel personnage ?
+              <select name="personnageId" required>
+                {personnages.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.nom} — {libelleClasse[p.classe]}, {libelleFaction[p.faction]}, {libelleRuleset[p.ruleset]}{" "}
+                    {p.region}
+                  </option>
+                ))}
+              </select>
+            </label>
+          }
+        />
+
+        <h2>Organisation</h2>
+        <div className="rangee">
+          <label className="champ">
+            Loot
             <select name="reglesLoot" required>
               {options(libelleReglesLoot).map(([v, l]) => (
                 <option key={v} value={v}>
@@ -228,14 +210,13 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
                 </option>
               ))}
             </select>
-          </label>{" "}
-          <label>
-            Niveau minimum <input type="number" name="niveauMin" min={1} max={60} defaultValue={60} />
           </label>
-        </p>
-        <p>
-          <label>
-            Langue{" "}
+          <label className="champ">
+            Niveau minimum
+            <input type="number" name="niveauMin" min={1} max={60} defaultValue={60} />
+          </label>
+          <label className="champ">
+            Langue
             <select name="langueRequise" defaultValue="fr">
               {options(LANGUES).map(([v, l]) => (
                 <option key={v} value={v}>
@@ -244,41 +225,47 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
               ))}
               <option value="">Peu importe</option>
             </select>
-          </label>{" "}
-        </p>
+          </label>
+        </div>
         <fieldset className="vocal">
           <legend>Vocal</legend>
-          {options(libelleVocal).map(([v, l]) => (
-            <label key={v}>
-              <input type="radio" name="vocal" value={v} defaultChecked={v === "AUCUN"} /> {l}{" "}
-            </label>
-          ))}
-          <p className="si-discord">
-            <label>
-              Lien d&apos;invitation Discord{" "}
+          <div className="cases">
+            {options(libelleVocal).map(([v, l]) => (
+              <label key={v}>
+                <input type="radio" name="vocal" value={v} defaultChecked={v === "AUCUN"} /> {l}
+              </label>
+            ))}
+          </div>
+          <div className="si-discord">
+            <label className="champ">
+              Lien d&apos;invitation Discord
               <input name="vocalDiscordLien" type="url" maxLength={200} placeholder="https://discord.gg/abc123" />
             </label>
-          </p>
-          <p className="si-teamspeak">
-            <label>
-              Adresse du serveur TeamSpeak{" "}
+          </div>
+          <div className="si-teamspeak rangee">
+            <label className="champ">
+              Adresse du serveur TeamSpeak
               <input name="vocalTsAdresse" maxLength={100} placeholder="ts.mon-serveur.fr" />
-            </label>{" "}
-            <label>
-              Mot de passe (facultatif) <input name="vocalTsMotDePasse" maxLength={100} />
             </label>
-          </p>
-          <p>
-            <small>
-              Les joueurs ne verront jamais ces identifiants sur le site : le bot WhenRaid les enverra en MP
-              aux joueurs confirmés quand tu enverras les invitations.
-            </small>
+            <label className="champ">
+              Mot de passe (facultatif)
+              <input name="vocalTsMotDePasse" maxLength={100} />
+            </label>
+          </div>
+          <p className="doux">
+            Les joueurs ne verront jamais ces identifiants sur le site : le bot WhenRaid les enverra en MP aux joueurs
+            confirmés quand tu enverras les invitations.
           </p>
         </fieldset>
-
-        <p>
-          <BoutonEnvoi enCours="Publication…">Publier le raid</BoutonEnvoi>
+        <p className="doux">
+          À la fin prévue (début + durée), le bot t&apos;enverra un MP pour valider les présences. Sans validation sous
+          24 h, tous les joueurs confirmés seront comptés présents.
         </p>
+        <div>
+          <BoutonEnvoi className="principal" enCours="Publication…">
+            Publier le raid
+          </BoutonEnvoi>
+        </div>
       </form>
     </main>
   );

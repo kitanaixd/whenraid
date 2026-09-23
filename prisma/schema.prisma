@@ -35,8 +35,7 @@ enum Classe {
 enum Role {
   TANK
   SOIGNEUR
-  DPS_MELEE
-  DPS_DISTANCE
+  DPS
 }
 
 enum Faction {

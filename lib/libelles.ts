@@ -26,8 +26,7 @@ export const libelleClasse: Record<Classe, string> = {
 export const libelleRole: Record<Role, string> = {
   TANK: "Tank",
   SOIGNEUR: "Soigneur",
-  DPS_MELEE: "DPS corps à corps",
-  DPS_DISTANCE: "DPS distance",
+  DPS: "DPS",
 };
 
 export const libelleFaction: Record<Faction, string> = {

@@ -2,15 +2,15 @@ import type { Classe, Role } from "@/generated/prisma/enums";
 
 /** Les rôles qu'une classe peut tenir en raid. */
 export const rolesParClasse: Record<Classe, Role[]> = {
-  GUERRIER: ["TANK", "DPS_MELEE"],
-  PALADIN: ["TANK", "SOIGNEUR", "DPS_MELEE"],
-  CHASSEUR: ["DPS_DISTANCE"],
-  VOLEUR: ["DPS_MELEE"],
-  PRETRE: ["SOIGNEUR", "DPS_DISTANCE"],
-  CHAMAN: ["SOIGNEUR", "DPS_MELEE", "DPS_DISTANCE"],
-  MAGE: ["DPS_DISTANCE"],
-  DEMONISTE: ["DPS_DISTANCE"],
-  DRUIDE: ["TANK", "SOIGNEUR", "DPS_MELEE", "DPS_DISTANCE"],
+  GUERRIER: ["TANK", "DPS"],
+  PALADIN: ["TANK", "SOIGNEUR", "DPS"],
+  CHASSEUR: ["DPS"],
+  VOLEUR: ["DPS"],
+  PRETRE: ["SOIGNEUR", "DPS"],
+  CHAMAN: ["TANK", "SOIGNEUR", "DPS"], // WoW Forever : le Chaman peut tanker
+  MAGE: ["DPS"],
+  DEMONISTE: ["DPS"],
+  DRUIDE: ["TANK", "SOIGNEUR", "DPS"],
 };
 
 export function rolePossible(classe: Classe, role: Role) {
@@ -35,5 +35,5 @@ export function seChevauchent(
   return x.debut < y.fin && y.debut < x.fin;
 }
 
-/** Nombre de lignes « besoins précis » dans le formulaire de création. */
-export const LIGNES_EXIGENCES = [0, 1, 2, 3];
+/** Nombre maximum de lignes « besoins précis » dans le formulaire de création. */
+export const MAX_EXIGENCES = 10;

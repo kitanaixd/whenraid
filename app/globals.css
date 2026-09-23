@@ -846,3 +846,102 @@ dialog.confirmation.invitations {
   flex-wrap: wrap;
   gap: 0.5rem 1.5rem;
 }
+
+/* ─── Création de raid ────────────────────────────────────────────────────── */
+
+.rangee-raid {
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+}
+.champ .fuseau {
+  font-family: var(--police-texte), serif;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
+}
+.compteur-compo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: var(--police-titre), serif;
+  font-size: 1.35rem;
+  color: var(--or-clair);
+  margin-bottom: 0.8rem;
+}
+.compteur-compo .separateur {
+  color: var(--filet-fort);
+}
+.compteur-compo strong {
+  margin-left: 0.6rem;
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--filet);
+}
+.compteur-compo small {
+  flex-basis: 100%;
+  font-family: var(--police-texte), serif;
+  font-size: 0.95rem;
+}
+.tableau-compo th,
+.tableau-compo td {
+  text-align: center;
+}
+.tableau-compo tbody th {
+  text-align: left;
+}
+.tableau-compo .impossible {
+  color: var(--filet-fort);
+}
+.compteur-pas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.compteur-pas input {
+  width: 2.8rem;
+  text-align: center;
+  font-size: 1.15rem;
+  padding: 0.35rem 0.2rem;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.compteur-pas input::-webkit-outer-spin-button,
+.compteur-pas input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+/* Gros boutons − / + (et ✕) carrés */
+button.pas {
+  width: 2.4rem;
+  height: 2.4rem;
+  padding: 0;
+  font-family: system-ui, sans-serif;
+  font-size: 1.4rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+.ligne-besoin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+.ligne-besoin input[type="number"] {
+  width: 4.5rem;
+}
+.ligne-besoin select {
+  flex: 1 1 10rem;
+}
+@media (max-width: 640px) {
+  .tableau-compo th,
+  .tableau-compo td {
+    padding: 0.35rem 0.15rem;
+  }
+  button.pas {
+    width: 2.1rem;
+    height: 2.1rem;
+  }
+  .compteur-pas input {
+    width: 2.2rem;
+  }
+}
