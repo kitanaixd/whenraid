@@ -8,6 +8,11 @@ import { nomRaid } from "@/lib/raids";
 import { libelleFaction, libelleRole, libelleRuleset } from "@/lib/libelles";
 import { chargerMesRaids } from "@/lib/mesRaids";
 import { fiabiliteRls, texteBadge } from "@/lib/fiabilite";
+import { compoActuelle, compoParRole } from "@/lib/annonces";
+import type { Classe } from "@/generated/prisma/enums";
+import { ClasseIcone } from "./ClasseIcone";
+
+const NOMBRE_DE_CLASSES = 9;
 
 export default async function Accueil() {
   const utilisateur = await utilisateurConnecte();
@@ -47,7 +52,19 @@ export default async function Accueil() {
       take: 50,
       include: {
         createur: { select: { pseudo: true } },
-        _count: { select: { places: { where: { statut: "OUVERTE" } } } },
+        composition: true,
+        places: {
+          select: {
+            statut: true,
+            classesAcceptees: true,
+            inscriptions: {
+              where: { statut: "CONFIRME" },
+              orderBy: { inscritLe: "asc" },
+              take: 1, // le titulaire de la place (les suivants sont des remplaçants)
+              select: { role: true, personnage: { select: { classe: true } } },
+            },
+          },
+        },
       },
     }),
     chargerMesRaids(utilisateur.id),
@@ -107,34 +124,67 @@ export default async function Accueil() {
             Aucun raid publié pour l&apos;instant. <Link href="/annonces/nouvelle">Crée le premier !</Link>
           </p>
         ) : (
-          <ul className="grille-cartes">
-            {annonces.map((a) => (
-              <li key={a.id} className="carte carte-raid">
-                <h3>
-                  <Link href={`/annonces/${a.id}`}>{nomRaid(a.contenu)}</Link>
-                </h3>
-                <span className="quand">{afficherDate(a.debutUtc, fuseau)}</span>
-                <span>
-                  <span className={`pastille ${a.faction === "HORDE" ? "horde" : "alliance"}`}>
-                    {libelleFaction[a.faction]}
-                  </span>{" "}
-                  <span className="pastille">
-                    {libelleRuleset[a.ruleset]} {a.region}
-                  </span>{" "}
-                  {a.statut === "COMPLETE" ? (
-                    <span className="pastille complet">Complet · liste d&apos;attente</span>
-                  ) : (
-                    <span className="pastille ouvert">
-                      {a._count.places} place{a._count.places > 1 ? "s" : ""} ouverte{a._count.places > 1 ? "s" : ""}
+          <ul className="liste-raids">
+          {annonces.map((a) => {
+            const ouvertes = a.places.filter((p) => p.statut === "OUVERTE");
+            const titulaires = a.places.flatMap((p) =>
+              p.inscriptions.flatMap((i) => (i.role && i.personnage ? [{ classe: i.personnage.classe, role: i.role }] : [])),
+            );
+            const compo = compoActuelle(a.composition, titulaires);
+            const roles = compoParRole(compo.lignes);
+            const placeLibre = ouvertes.some((p) => p.classesAcceptees.length === NOMBRE_DE_CLASSES);
+            const classesRecherchees = [
+              ...new Set(
+                ouvertes.filter((p) => p.classesAcceptees.length < NOMBRE_DE_CLASSES).flatMap((p) => p.classesAcceptees),
+              ),
+            ] as Classe[];
+            return (
+              <li key={a.id} className="ligne-raid">
+                <Link href={`/annonces/${a.id}`} className="ligne-raid-lien" aria-label={`${nomRaid(a.contenu)}, ${afficherDate(a.debutUtc, fuseau)}`} />
+                <div className="ligne-raid-infos">
+                  <h3>{nomRaid(a.contenu)}</h3>
+                  <span className="quand">{afficherDate(a.debutUtc, fuseau)}</span>
+                  <span className="pastilles">
+                    <span className={`pastille ${a.faction === "HORDE" ? "horde" : "alliance"}`}>
+                      {libelleFaction[a.faction]}
                     </span>
+                    <span className="pastille">
+                      {libelleRuleset[a.ruleset]} {a.region}
+                    </span>
+                    {a.statut === "COMPLETE" ? (
+                      <span className="pastille complet">Complet · liste d&apos;attente</span>
+                    ) : (
+                      <span className="pastille ouvert">
+                        {ouvertes.length} place{ouvertes.length > 1 ? "s" : ""} ouverte{ouvertes.length > 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </span>
+                  <small>
+                    par {a.createur.pseudo} · {texteBadge(fiabilite.get(a.createurId)!)}
+                  </small>
+                </div>
+                <div className="ligne-raid-droite">
+                  {a.statut !== "COMPLETE" && (
+                    <div className="recherche" aria-label="Classes recherchées">
+                      {classesRecherchees.map((c) => (
+                        <ClasseIcone key={c} classe={c} taille={28} />
+                      ))}
+                      {placeLibre && <span className="pastille">Toutes classes</span>}
+                    </div>
                   )}
-                </span>
-                <small>
-                  par {a.createur.pseudo} · {texteBadge(fiabilite.get(a.createurId)!)}
-                </small>
+                  <div className="compo-roles" title="Tanks · Soigneurs · DPS">
+                    <span aria-label={`${roles.tanks} tanks`}>🛡 {roles.tanks}</span>
+                    <span aria-label={`${roles.soigneurs} soigneurs`}>✚ {roles.soigneurs}</span>
+                    <span aria-label={`${roles.dps} DPS`}>⚔ {roles.dps}</span>
+                    <strong>
+                      {compo.total}/{a.taille}
+                    </strong>
+                  </div>
+                </div>
               </li>
-            ))}
-          </ul>
+            );
+          })}
+        </ul>
         )}
       </section>
     </main>

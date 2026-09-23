@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { Classe, Faction, Region, Role, Ruleset } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
+import { ClasseIcone } from "@/app/ClasseIcone";
 import { exigerUtilisateur } from "@/lib/session";
 import { choix, choixMultiples, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
 import {
@@ -99,25 +100,32 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
       {personnages.length === 0 ? (
         <p>Tu n&apos;as encore déclaré aucun personnage.</p>
       ) : (
-        <ul>
+        <ul className="liste-persos">
           {personnages.map((p) => (
-            <li key={p.id}>
-              <form action={basculerPrincipal} style={{ display: "inline" }}>
+            <li key={p.id} className="carte">
+              <form action={basculerPrincipal}>
                 <input type="hidden" name="personnageId" value={p.id} />
                 <button
                   type="submit"
+                  className="petit"
                   title={p.estPrincipal ? "Retirer le statut principal" : "Définir comme principal"}
                   aria-pressed={p.estPrincipal}
                 >
                   {p.estPrincipal ? "★" : "☆"}
                 </button>
-              </form>{" "}
-              <strong>
-                {p.nom}
-                {p.nomDeFamille && ` ${p.nomDeFamille}`}
-              </strong>{" "}
-              — {libelleClasse[p.classe]} niveau {p.niveau}, {libelleFaction[p.faction]},{" "}
-              {libelleRuleset[p.ruleset]} {p.region} — {p.rolesJouables.map((r) => libelleRole[r]).join(", ")}
+              </form>
+              <ClasseIcone classe={p.classe} taille={34} />
+              <div>
+                <strong className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
+                  {p.nom}
+                  {p.nomDeFamille && ` ${p.nomDeFamille}`}
+                </strong>
+                <br />
+                <small>
+                  {libelleClasse[p.classe]} niveau {p.niveau} · {libelleFaction[p.faction]} ·{" "}
+                  {libelleRuleset[p.ruleset]} {p.region} · {p.rolesJouables.map((r) => libelleRole[r]).join(", ")}
+                </small>
+              </div>
             </li>
           ))}
         </ul>
@@ -125,41 +133,10 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
 
       <h2>Déclarer un personnage</h2>
       {typeof erreur === "string" && <p role="alert">⚠ {erreur}</p>}
-      <form action={creerPersonnage}>
-        <p>
-          <label>
-            Nom <input name="nom" required maxLength={24} />
-          </label>{" "}
-          <label>
-            Nom de famille <input name="nomDeFamille" maxLength={24} />
-          </label>
-        </p>
-        <p>
-          <label>
-            Classe{" "}
-            <select name="classe" required>
-              {options(libelleClasse).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>{" "}
-          <label>
-            Niveau <input name="niveau" type="number" min={1} max={60} defaultValue={60} required />
-          </label>
-        </p>
-        <fieldset>
-          <legend>Rôles jouables</legend>
-          {options(libelleRole).map(([v, l]) => (
-            <label key={v}>
-              <input type="checkbox" name="rolesJouables" value={v} /> {l}{" "}
-            </label>
-          ))}
-        </fieldset>
-        <p>
-          <label>
-            Faction{" "}
+      <form action={creerPersonnage} className="formulaire">
+        <div className="rangee">
+          <label className="champ">
+            Faction
             <select name="faction" required>
               {options(libelleFaction).map(([v, l]) => (
                 <option key={v} value={v}>
@@ -167,9 +144,9 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 </option>
               ))}
             </select>
-          </label>{" "}
-          <label>
-            Ruleset{" "}
+          </label>
+          <label className="champ">
+            Ruleset
             <select name="ruleset" required>
               {options(libelleRuleset).map(([v, l]) => (
                 <option key={v} value={v}>
@@ -177,9 +154,9 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 </option>
               ))}
             </select>
-          </label>{" "}
-          <label>
-            Région{" "}
+          </label>
+          <label className="champ">
+            Région
             <select name="region" required>
               {options(libelleRegion).map(([v, l]) => (
                 <option key={v} value={v}>
@@ -188,14 +165,52 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
               ))}
             </select>
           </label>
-        </p>
-        <p>
-          <label>
-            <input type="checkbox" name="estPrincipal" defaultChecked={personnages.length === 0} /> Personnage
-            principal
+        </div>
+        <div className="rangee">
+          <label className="champ">
+            Nom
+            <input name="nom" required maxLength={24} />
           </label>
-        </p>
-        <BoutonEnvoi enCours="Ajout…">Ajouter ce personnage</BoutonEnvoi>
+          <label className="champ">
+            Nom de famille
+            <input name="nomDeFamille" maxLength={24} />
+          </label>
+        </div>
+        <div className="rangee">
+          <label className="champ">
+            Classe
+            <select name="classe" required>
+              {options(libelleClasse).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="champ">
+            Niveau
+            <input name="niveau" type="number" min={1} max={60} defaultValue={60} required />
+          </label>
+        </div>
+        <fieldset>
+          <legend>Rôles jouables</legend>
+          <div className="cases">
+            {options(libelleRole).map(([v, l]) => (
+              <label key={v}>
+                <input type="checkbox" name="rolesJouables" value={v} /> {l}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <label>
+          <input type="checkbox" name="estPrincipal" defaultChecked={personnages.length === 0} /> Personnage
+          principal
+        </label>
+        <div>
+          <BoutonEnvoi className="principal" enCours="Ajout…">
+            Ajouter ce personnage
+          </BoutonEnvoi>
+        </div>
       </form>
     </main>
   );

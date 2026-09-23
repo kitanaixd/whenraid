@@ -65,3 +65,9 @@ export function rlPeutAgir(annonce: { statut: string; debutUtc: Date; dureeEstim
   const fin = annonce.debutUtc.getTime() + (annonce.dureeEstimee ?? 180) * 60_000;
   return ["PUBLIEE", "COMPLETE"].includes(annonce.statut) && Date.now() < fin;
 }
+
+/** Compo regroupée par rôle, pour l'affichage « tanks / soigneurs / DPS ». */
+export function compoParRole(lignes: { role: string; nombre: number }[]) {
+  const total = (roles: string[]) => lignes.filter((l) => roles.includes(l.role)).reduce((t, l) => t + l.nombre, 0);
+  return { tanks: total(["TANK"]), soigneurs: total(["SOIGNEUR"]), dps: total(["DPS_MELEE", "DPS_DISTANCE"]) };
+}
