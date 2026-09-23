@@ -11,6 +11,7 @@ import { fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 import { compoActuelle, compoParRole } from "@/lib/annonces";
 import type { Classe } from "@/generated/prisma/enums";
 import { ClasseIcone } from "./ClasseIcone";
+import { nomEnJeu } from "@/lib/jeu";
 
 const NOMBRE_DE_CLASSES = 9;
 
@@ -89,7 +90,7 @@ export default async function Accueil() {
               ✔ <strong>Convié</strong> :{" "}
               <Link href={`/annonces/${i.place.annonce.id}`}>{nomRaid(i.place.annonce.contenu)}</Link> —{" "}
               <strong>{afficherDate(i.place.annonce.debutUtc, fuseau)}</strong> avec{" "}
-              {i.personnage && <ClasseIcone classe={i.personnage.classe} />} <strong>{i.personnage?.nom}</strong>
+              {i.personnage && <ClasseIcone classe={i.personnage.classe} />} <strong>{i.personnage && nomEnJeu(i.personnage)}</strong>
               {i.role && ` (${libelleRole[i.role]})`}
             </p>
           ))}
@@ -108,7 +109,7 @@ export default async function Accueil() {
                   <li key={i.id}>
                     <Link href={`/annonces/${i.place.annonce.id}`}>{nomRaid(i.place.annonce.contenu)}</Link> —{" "}
                     {afficherDate(i.place.annonce.debutUtc, fuseau)} avec{" "}
-                    {i.personnage && <ClasseIcone classe={i.personnage.classe} />} {i.personnage?.nom}
+                    {i.personnage && <ClasseIcone classe={i.personnage.classe} />} {i.personnage && nomEnJeu(i.personnage)}
                     {i.statut === "LISTE_ATTENTE" && " (liste d'attente)"}
                   </li>
                 ))}

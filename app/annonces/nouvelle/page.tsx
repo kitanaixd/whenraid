@@ -6,8 +6,9 @@ import { Prisma } from "@/generated/prisma/client";
 import { exigerUtilisateur } from "@/lib/session";
 import { localVersUtc } from "@/lib/dates";
 import { raids } from "@/lib/raids";
-import { rolePossible, rolesParClasse } from "@/lib/jeu";
+import { nomEnJeu, rolePossible, rolesParClasse } from "@/lib/jeu";
 import { ChoixCompo } from "./ChoixCompo";
+import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { choix, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
 import {
@@ -185,17 +186,18 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
         <ChoixCompo
           fuseau={utilisateur.fuseauHoraire}
           personnage={
-            <label className="champ">
+            <div className="champ">
               Avec quel personnage ?
-              <select name="personnageId" required>
-                {personnages.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nom} — {libelleClasse[p.classe]}, {libelleFaction[p.faction]}, {libelleRuleset[p.ruleset]}{" "}
-                    {p.region}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <MenuDeroulant
+                name="personnageId"
+                etiquette="Avec quel personnage ?"
+                options={personnages.map((p) => ({
+                  valeur: p.id,
+                  classe: p.classe,
+                  libelle: `${nomEnJeu(p)} — ${libelleClasse[p.classe]}, ${libelleFaction[p.faction]}, ${libelleRuleset[p.ruleset]} ${p.region}`,
+                }))}
+              />
+            </div>
           }
         />
 

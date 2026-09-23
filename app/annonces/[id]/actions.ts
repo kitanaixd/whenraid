@@ -21,6 +21,7 @@ import { envoyerMp } from "@/lib/discord";
 import { texteNotification } from "@/lib/notifications";
 import { libelleRole } from "@/lib/libelles";
 import { envoyerInvitation, envoyerInvitations, URL_SITE } from "@/lib/invitations";
+import { nomEnJeu } from "@/lib/jeu";
 
 /** Envoie en MP Discord, après la réponse, la même information que la notification du site. */
 function prevenirEnMp(inscriptionId: string, type: TypeNotification) {
@@ -33,7 +34,7 @@ function prevenirEnMp(inscriptionId: string, type: TypeNotification) {
     const { annonce } = i.place;
     const avec =
       type === "CANDIDATURE_ACCEPTEE" && i.personnage
-        ? ` Personnage : ${i.personnage.nom}${i.role ? ` (${libelleRole[i.role]})` : ""}.`
+        ? ` Personnage : ${nomEnJeu(i.personnage)}${i.role ? ` (${libelleRole[i.role]})` : ""}.`
         : "";
     const texte = texteNotification(type, annonce, i.utilisateur.fuseauHoraire);
     await envoyerMp(i.utilisateur.discordId, `${texte}${avec}

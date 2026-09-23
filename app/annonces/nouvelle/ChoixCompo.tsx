@@ -6,6 +6,7 @@ import { MAX_EXIGENCES, rolesParClasse } from "@/lib/jeu";
 import { libelleClasse, libelleRole, options } from "@/lib/libelles";
 import { nomRaid, raids } from "@/lib/raids";
 import { NomClasse } from "@/app/ClasseIcone";
+import { MenuDeroulant } from "@/app/MenuDeroulant";
 
 const tousLesRoles = Object.keys(libelleRole) as Role[];
 const cle = (classe: Classe, role: Role) => `${classe}.${role}`;
@@ -168,14 +169,16 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
             onChange={(e) => setExigences({ ...exigences, [l]: Number(e.target.value) || 0 })}
           />
           <span>place(s) pour</span>
-          <select name={`exigences.${l}.classe`} aria-label="Classe" defaultValue="">
-            <option value="">toute classe</option>
-            {options(libelleClasse).map(([v, lib]) => (
-              <option key={v} value={v}>
-                {lib}
-              </option>
-            ))}
-          </select>
+          <div className="besoin-classe">
+            <MenuDeroulant
+              name={`exigences.${l}.classe`}
+              etiquette="Classe"
+              options={[
+                { valeur: "", libelle: "toute classe" },
+                ...options(libelleClasse).map(([v, lib]) => ({ valeur: v, libelle: lib, classe: v })),
+              ]}
+            />
+          </div>
           <select name={`exigences.${l}.role`} aria-label="Rôle" defaultValue="">
             <option value="">tout rôle</option>
             {options(libelleRole).map(([v, lib]) => (

@@ -5,6 +5,8 @@ import { Classe, Faction, Region, Role, Ruleset } from "@/generated/prisma/enums
 import { db } from "@/lib/db";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { ClasseIcone } from "@/app/ClasseIcone";
+import { MenuDeroulant } from "@/app/MenuDeroulant";
+import { nomEnJeu } from "@/lib/jeu";
 import { exigerUtilisateur } from "@/lib/session";
 import { choix, choixMultiples, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
 import {
@@ -117,8 +119,7 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
               <ClasseIcone classe={p.classe} taille={34} />
               <div>
                 <strong className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
-                  {p.nom}
-                  {p.nomDeFamille && ` ${p.nomDeFamille}`}
+                  {nomEnJeu(p)}
                 </strong>
                 <br />
                 <small>
@@ -177,16 +178,14 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
           </label>
         </div>
         <div className="rangee">
-          <label className="champ">
+          <div className="champ">
             Classe
-            <select name="classe" required>
-              {options(libelleClasse).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
-                </option>
-              ))}
-            </select>
-          </label>
+            <MenuDeroulant
+              name="classe"
+              etiquette="Classe"
+              options={options(libelleClasse).map(([v, l]) => ({ valeur: v, libelle: l, classe: v }))}
+            />
+          </div>
           <label className="champ">
             Niveau
             <input name="niveau" type="number" min={1} max={60} defaultValue={60} required />

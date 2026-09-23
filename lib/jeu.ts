@@ -37,3 +37,8 @@ export function seChevauchent(
 
 /** Nombre maximum de lignes « besoins précis » dans le formulaire de création. */
 export const MAX_EXIGENCES = 10;
+
+/** « Swallow Deesnuts » : prénom + nom de famille, partout où un personnage s'affiche. */
+export function nomEnJeu(perso: { nom: string; nomDeFamille: string | null }) {
+  return [perso.nom, perso.nomDeFamille].filter(Boolean).join(" ");
+}

@@ -32,6 +32,7 @@ import { rolesPourPlace } from "./eligibilite";
 import { BoutonAnnuler } from "./BoutonAnnuler";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { ClasseIcone, NomClasse } from "@/app/ClasseIcone";
+import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 
 const NOMBRE_DE_CLASSES = Object.keys(libelleClasse).length;
@@ -139,7 +140,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         <p className="encadre">
           {maCandidature.statut === "CONFIRME" ? "✔ Tu es convié" : "⏳ Ta candidature est envoyée"} avec{" "}
           {maCandidature.personnage && <ClasseIcone classe={maCandidature.personnage.classe} />}{" "}
-          <strong>{maCandidature.personnage?.nom}</strong>
+          <strong>{maCandidature.personnage && nomEnJeu(maCandidature.personnage)}</strong>
           {maCandidature.role && ` (${libelleRole[maCandidature.role]})`} —{" "}
           {libelleStatutInscription[maCandidature.statut]}.
           {maCandidature.statut === "LISTE_ATTENTE" &&
@@ -172,7 +173,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           {remplacants.map((i, n) => (
             <span key={i.id}>
               {n > 0 && ", "}
-              <ClasseIcone classe={i.personnage!.classe} /> {i.personnage!.nom} ({libelleRole[i.role!]})
+              <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)} ({libelleRole[i.role!]})
             </span>
           ))}
         </p>
@@ -262,14 +263,14 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                       <tr key={i.id}>
                         <td>
                           <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> —{" "}
-                          <ClasseIcone classe={i.personnage!.classe} /> {i.personnage!.nom}
+                          <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)}
                         </td>
                         <td>
                           <select
                             name={`presence.${i.id}`}
                             defaultValue={p?.resultat ?? "PRESENT"}
                             disabled={!presences.modifiable}
-                            aria-label={`Présence de ${i.personnage!.nom}`}
+                            aria-label={`Présence de ${nomEnJeu(i.personnage!)}`}
                           >
                             <option value="PRESENT">Présent</option>
                             <option value="ABSENT">Absent</option>
@@ -282,7 +283,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                             name={`distinction.${i.id}`}
                             defaultChecked={p?.distinction ?? false}
                             disabled={!presences.modifiable}
-                            aria-label={`${i.personnage!.nom} s'est distingué`}
+                            aria-label={`${nomEnJeu(i.personnage!)} s'est distingué`}
                           />
                         </td>
                       </tr>
@@ -334,7 +335,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>
                       </strong>{" "}
                       <small>{fiabCandidats.get(i.utilisateurId) && texteBadge(fiabCandidats.get(i.utilisateurId)!)}</small>{" "}
-                      — {i.personnage && <ClasseIcone classe={i.personnage.classe} />} {i.personnage?.nom} (niv.{" "}
+                      — {i.personnage && <ClasseIcone classe={i.personnage.classe} />} {i.personnage && nomEnJeu(i.personnage)} (niv.{" "}
                       {i.personnage?.niveau}
                       {i.role && `, ${libelleRole[i.role]}`}) — {libelleStatutInscription[i.statut]}
                       {remplacants.some((r) => r.id === i.id) && " (remplaçant)"}
@@ -366,13 +367,17 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
               {choix.length > 0 && place.statut !== "ANNULEE" && (
                 <form action={candidater}>
                   <input type="hidden" name="placeId" value={place.id} />
-                  <select name="choix" aria-label="Personnage et rôle">
-                    {choix.map((c) => (
-                      <option key={c.valeur} value={c.valeur}>
-                        {c.perso.nom} ({libelleClasse[c.perso.classe]} {c.perso.niveau}) — {libelleRole[c.role]}
-                      </option>
-                    ))}
-                  </select>{" "}
+                  <div className="choix-candidature">
+                    <MenuDeroulant
+                      name="choix"
+                      etiquette="Personnage et rôle"
+                      options={choix.map((c) => ({
+                        valeur: c.valeur,
+                        classe: c.perso.classe,
+                        libelle: `${nomEnJeu(c.perso)} (niv. ${c.perso.niveau}) — ${libelleRole[c.role]}`,
+                      }))}
+                    />
+                  </div>{" "}
                   <input
                     name="note"
                     maxLength={80}

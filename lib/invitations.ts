@@ -5,10 +5,9 @@ import { nomRaid } from "@/lib/raids";
 
 export const URL_SITE = process.env.SITE_URL ?? "https://www.whenraid.com";
 
-/** « Swallow Deesnuts » : le nom complet à utiliser dans un /w en jeu. */
-export function nomEnJeu(perso: { nom: string; nomDeFamille: string | null }) {
-  return [perso.nom, perso.nomDeFamille].filter(Boolean).join(" ");
-}
+import { nomEnJeu } from "@/lib/jeu";
+
+export { nomEnJeu };
 
 /** Charge un raid avec tout ce qu'il faut pour écrire les invitations. */
 async function chargerRaid(annonceId: string) {

@@ -945,3 +945,89 @@ button.pas {
     width: 2.2rem;
   }
 }
+
+/* ─── Menu déroulant avec icônes ──────────────────────────────────────────── */
+
+.menu-deroulant {
+  position: relative;
+  width: 100%;
+}
+/* Même allure qu'un champ, pas celle d'un bouton doré. */
+button.menu-choisi {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  font-family: var(--police-texte), serif;
+  font-size: 1.05rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  text-align: left;
+  color: var(--texte);
+  background: rgb(7 13 25 / 0.8);
+  border: 1px solid var(--filet);
+  padding: 0.5rem 0.7rem;
+  box-shadow: none;
+}
+button.menu-choisi:hover:not(:disabled),
+button.menu-choisi[aria-expanded="true"] {
+  background: rgb(7 13 25 / 0.8);
+  border-color: var(--turquoise);
+}
+.menu-libelle {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.menu-fleche {
+  color: var(--or);
+}
+.menu-liste {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  max-height: 18rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  background: var(--panneau-plein);
+  border: 1px solid var(--filet-fort);
+  box-shadow: var(--ombre);
+}
+.menu-liste li {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+  font-family: var(--police-texte), serif;
+  font-size: 1.05rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--texte);
+}
+.menu-liste li.actif {
+  background: rgb(217 181 106 / 0.14);
+}
+.menu-liste li[aria-selected="true"] {
+  color: var(--or-clair);
+}
+.menu-sans-icone {
+  display: inline-block;
+  width: 22px;
+}
+
+.besoin-classe {
+  flex: 1 1 12rem;
+}
+.choix-candidature {
+  display: inline-block;
+  width: min(100%, 24rem);
+  vertical-align: middle;
+}
