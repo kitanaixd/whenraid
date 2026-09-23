@@ -3,7 +3,7 @@ import { signIn, signOut } from "@/lib/auth";
 import { utilisateurConnecte } from "@/lib/session";
 import { db } from "@/lib/db";
 import { afficherDate } from "@/lib/dates";
-import { raids } from "@/lib/raids";
+import { nomRaid } from "@/lib/raids";
 import { libelleFaction, libelleRuleset } from "@/lib/libelles";
 
 export default async function Accueil() {
@@ -66,7 +66,7 @@ export default async function Accueil() {
           {annonces.map((a) => (
             <li key={a.id}>
               <Link href={`/annonces/${a.id}`}>
-                {raids[a.contenu].nom} — {afficherDate(a.debutUtc, utilisateur.fuseauHoraire)}
+                {nomRaid(a.contenu)} — {afficherDate(a.debutUtc, utilisateur.fuseauHoraire)}
               </Link>{" "}
               · {libelleFaction[a.faction]} {libelleRuleset[a.ruleset]} {a.region} · {a._count.places} place
               {a._count.places > 1 ? "s" : ""} ouverte{a._count.places > 1 ? "s" : ""} · par {a.createur.pseudo}

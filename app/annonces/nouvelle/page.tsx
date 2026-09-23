@@ -1,16 +1,51 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Classe, Contenu, ReglesLoot, Role } from "@/generated/prisma/enums";
+import { Classe, Contenu, ReglesLoot, Role, Vocal } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { localVersUtc } from "@/lib/dates";
-import { raids } from "@/lib/raids";
-import { choix, choixMultiples, entier, ErreurFormulaire } from "@/lib/formulaire";
-import { libelleClasse, libelleFaction, libelleReglesLoot, libelleRole, libelleRuleset, options } from "@/lib/libelles";
+import { nomRaid, raids } from "@/lib/raids";
+import { choix, choixMultiples, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
+import {
+  libelleClasse,
+  libelleFaction,
+  libelleReglesLoot,
+  libelleRole,
+  libelleRuleset,
+  libelleVocal,
+  options,
+} from "@/lib/libelles";
 
 const LIGNES_DE_PLACES = [0, 1, 2, 3];
 
 const LANGUES = { fr: "Français", en: "Anglais" } as const;
+
+// Ces valeurs seront envoyées en jeu par /w : pas d'espace, format strict.
+const LIEN_DISCORD = /^https:\/\/(discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]+$/;
+const ADRESSE_TS = /^[A-Za-z0-9.-]+(:\d{1,5})?$/;
+
+function lireVocal(form: FormData) {
+  const vocal = choix(form, "vocal", Vocal);
+  if (vocal === "DISCORD") {
+    const lien = texte(form, "vocalDiscordLien", { requis: true, max: 200 })!;
+    if (!LIEN_DISCORD.test(lien)) {
+      throw new ErreurFormulaire("Le lien Discord doit ressembler à https://discord.gg/abc123.");
+    }
+    return { vocal, vocalDiscordLien: lien, vocalTsAdresse: null, vocalTsMotDePasse: null };
+  }
+  if (vocal === "TEAMSPEAK") {
+    const adresse = texte(form, "vocalTsAdresse", { requis: true, max: 100 })!;
+    if (!ADRESSE_TS.test(adresse)) {
+      throw new ErreurFormulaire("L'adresse TeamSpeak doit ressembler à ts.mon-serveur.fr ou ts.mon-serveur.fr:9987.");
+    }
+    const motDePasse = texte(form, "vocalTsMotDePasse", { max: 100 });
+    if (motDePasse && /\s/.test(motDePasse)) {
+      throw new ErreurFormulaire("Le mot de passe TeamSpeak ne doit pas contenir d'espace.");
+    }
+    return { vocal, vocalDiscordLien: null, vocalTsAdresse: adresse, vocalTsMotDePasse: motDePasse };
+  }
+  return { vocal, vocalDiscordLien: null, vocalTsAdresse: null, vocalTsMotDePasse: null };
+}
 
 async function creerAnnonce(form: FormData) {
   "use server";
@@ -50,6 +85,7 @@ async function creerAnnonce(form: FormData) {
       throw new ErreurFormulaire(`Un raid de ${taille} ne peut pas avoir plus de ${taille - 1} places ouvertes.`);
     }
 
+    const vocal = lireVocal(form);
     const langue = String(form.get("langueRequise") ?? "");
     const dureeHeures = entier(form, "dureeHeures", { min: 1, max: 8 });
 
@@ -65,7 +101,7 @@ async function creerAnnonce(form: FormData) {
         dureeEstimee: dureeHeures ? dureeHeures * 60 : null,
         reglesLoot: choix(form, "reglesLoot", ReglesLoot),
         langueRequise: langue in LANGUES ? langue : null,
-        vocalRequis: form.get("vocalRequis") === "on",
+        ...vocal,
         niveauMin: entier(form, "niveauMin", { min: 1, max: 60 }),
         statut: "PUBLIEE",
         publieeLe: new Date(),
@@ -130,9 +166,9 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
           <label>
             Raid{" "}
             <select name="contenu" required>
-              {options(raids).map(([v, r]) => (
+              {options(raids).map(([v]) => (
                 <option key={v} value={v}>
-                  {r.nom} ({r.taille})
+                  {nomRaid(v)}
                 </option>
               ))}
             </select>
@@ -184,10 +220,36 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
               <option value="">Peu importe</option>
             </select>
           </label>{" "}
-          <label>
-            <input type="checkbox" name="vocalRequis" /> Vocal obligatoire
-          </label>
         </p>
+        <fieldset className="vocal">
+          <legend>Vocal</legend>
+          {options(libelleVocal).map(([v, l]) => (
+            <label key={v}>
+              <input type="radio" name="vocal" value={v} defaultChecked={v === "AUCUN"} /> {l}{" "}
+            </label>
+          ))}
+          <p className="si-discord">
+            <label>
+              Lien d&apos;invitation Discord{" "}
+              <input name="vocalDiscordLien" type="url" maxLength={200} placeholder="https://discord.gg/abc123" />
+            </label>
+          </p>
+          <p className="si-teamspeak">
+            <label>
+              Adresse du serveur TeamSpeak{" "}
+              <input name="vocalTsAdresse" maxLength={100} placeholder="ts.mon-serveur.fr" />
+            </label>{" "}
+            <label>
+              Mot de passe (facultatif) <input name="vocalTsMotDePasse" maxLength={100} />
+            </label>
+          </p>
+          <p>
+            <small>
+              Les joueurs ne verront jamais ces identifiants sur le site : ils leur seront envoyés en jeu par
+              l&apos;addon au moment du raid.
+            </small>
+          </p>
+        </fieldset>
 
         <h2>Places ouvertes</h2>
         <p>

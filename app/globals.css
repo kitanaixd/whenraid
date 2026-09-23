@@ -4,3 +4,47 @@ body {
   margin: 0 auto;
   padding: 1rem;
 }
+
+/* Formulaire de raid : n'affiche que les champs du vocal choisi. */
+.vocal .si-discord,
+.vocal .si-teamspeak {
+  display: none;
+}
+.vocal:has(input[value="DISCORD"]:checked) .si-discord,
+.vocal:has(input[value="TEAMSPEAK"]:checked) .si-teamspeak {
+  display: block;
+}
+
+/* Annulation d'un raid */
+button.danger {
+  background: #b91c1c;
+  color: #fff;
+  border: 1px solid #7f1d1d;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+dialog.confirmation {
+  max-width: 32rem;
+  border: 3px solid #b91c1c;
+  padding: 1.5rem;
+}
+dialog.confirmation::backdrop {
+  background: rgb(0 0 0 / 0.6);
+}
+dialog.confirmation h2 {
+  color: #b91c1c;
+  margin-top: 0;
+}
+.avertissement {
+  font-size: 1.1rem;
+}
+.avertissement.grave {
+  background: #fee2e2;
+  color: #7f1d1d;
+  border-left: 4px solid #b91c1c;
+  padding: 0.6rem;
+}
+.actions {
+  display: flex;
+  justify-content: space-between;
+}

@@ -51,13 +51,15 @@ enum Ruleset {
 }
 
 enum Contenu {
-  MOLTEN_CORE
+  MONT_HYJAL_10
+  MONT_HYJAL_20
   ONYXIA
-  ZUL_GURUB
-  BLACKWING_LAIR
-  AQ20
-  AQ40
-  NAXXRAMAS
+}
+
+enum Vocal {
+  AUCUN
+  DISCORD
+  TEAMSPEAK
 }
 
 enum Region {
@@ -197,10 +199,20 @@ model Annonce {
   reglesLoot    ReglesLoot
   prerequis     String?
   langueRequise String?
-  vocalRequis   Boolean       @default(false)
   niveauMin     Int?
   statut        StatutAnnonce @default(BROUILLON)
   publieeLe     DateTime?     @db.Timestamptz(3)
+
+  // Identifiants vocaux : jamais affichés aux joueurs sur le site, ils leur
+  // seront envoyés en jeu par l'addon du RL au moment du raid.
+  vocal             Vocal   @default(AUCUN)
+  vocalDiscordLien  String?
+  vocalTsAdresse    String?
+  vocalTsMotDePasse String?
+
+  // Faits de l'annulation (règle 3 : la réputation se calcule à la lecture).
+  annuleeLe       DateTime? @db.Timestamptz(3)
+  annuleeComplete Boolean? // le raid était-il complet au moment de l'annulation ?
 
   groupe         Groupe?         @relation(fields: [groupeId], references: [id], onDelete: SetNull)
   createur       Utilisateur     @relation(fields: [createurId], references: [id], onDelete: Restrict)

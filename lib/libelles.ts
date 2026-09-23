@@ -8,6 +8,7 @@ import type {
   StatutAnnonce,
   StatutInscription,
   StatutPlace,
+  Vocal,
 } from "@/generated/prisma/enums";
 
 export const libelleClasse: Record<Classe, string> = {
@@ -79,3 +80,9 @@ export const libelleStatutInscription: Record<StatutInscription, string> = {
 export function options<T extends string, V>(libelles: Record<T, V>) {
   return Object.entries(libelles) as [T, V][];
 }
+
+export const libelleVocal: Record<Vocal, string> = {
+  AUCUN: "Pas de vocal",
+  DISCORD: "Discord",
+  TEAMSPEAK: "TeamSpeak",
+};
