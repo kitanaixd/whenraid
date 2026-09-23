@@ -1,0 +1,546 @@
+/* ─── Thème « moderne » ─────────────────────────────────────────────────────
+   Chargé après globals.css. Esprit application web actuelle : une seule police
+   (Geist), titres blancs serrés, base noir neutre, surfaces à peine plus claires,
+   bordures fines grises, angles arrondis, un seul accent (l'or de WoW Forever, en
+   aplat). Pas d'ornements, pas de dégradés dorés, pas de capitales forcées.
+   Autre version gardée de côté : fantasy.css (voir l'import dans layout.tsx). */
+
+:root {
+  --fond: #09090b;
+  --surface: #111113;
+  --surface-2: #17171a;
+  --surface-3: #1e1e22;
+  --bord: #26262b;
+  --bord-fort: #3a3a41;
+  --accent: #e2bd6f;
+  --accent-fort: #f0cf88;
+  --accent-texte: #18120a;
+  --anneau: 0 0 0 3px rgb(226 189 111 / 0.25);
+  --rayon: 14px;
+  --rayon-2: 10px;
+  --rayon-3: 8px;
+
+  /* Les jetons de globals.css prennent les valeurs du thème. */
+  --texte: #ededef;
+  --texte-doux: #8b8b93;
+  --filet: var(--bord);
+  --filet-fort: var(--bord-fort);
+  --panneau: var(--surface);
+  --or: var(--accent);
+  --or-clair: var(--accent-fort);
+}
+
+body {
+  background: var(--fond);
+  font-size: 15px;
+  line-height: 1.6;
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+}
+/* Illustration de fond très estompée, fondue dans le noir. */
+body::before,
+body:has(main[data-fond])::before {
+  background:
+    linear-gradient(180deg, rgb(9 9 11 / 0.82) 0%, rgb(9 9 11 / 0.97) 38%, var(--fond) 70%),
+    var(--image-fond, url("/fond.webp")) center top / cover no-repeat;
+  filter: grayscale(0.35);
+}
+
+/* ─── Aucun biseau, aucun ornement ────────────────────────────────────────── */
+.carte,
+.parchemin,
+.encadre,
+.ligne-raid,
+.filtres,
+.candidat,
+.compo-chiffres > div,
+dialog.confirmation,
+button,
+a.bouton,
+.pastille,
+.perso-choix,
+.cloche,
+.notification > a,
+.notification > div,
+.banniere,
+.apercu-notifications,
+.menu-compte-liste,
+.menu-liste,
+.candidature-rapide,
+.case-role,
+fieldset {
+  clip-path: none !important;
+}
+.carte::before,
+.parchemin::before,
+.encadre::before,
+.ligne-raid::before,
+.filtres::before,
+.candidat::before,
+.compo-chiffres > div::before,
+dialog.confirmation::before,
+button::before,
+a.bouton::before,
+.pastille::before,
+.perso-choix::before,
+.cloche::before,
+.notification > a::before,
+.notification > div::before,
+.banniere::before,
+.apercu-notifications::before,
+.menu-compte-liste::before,
+.menu-liste::before,
+.candidature-rapide::before,
+.case-role::before,
+fieldset::before,
+.surtitre::before,
+.surtitre::after {
+  content: none !important;
+}
+.ornement {
+  display: none;
+}
+
+/* ─── Typographie ─────────────────────────────────────────────────────────── */
+h1,
+h2,
+h3 {
+  font-family: var(--police-titre), system-ui, sans-serif;
+  text-transform: none;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--texte);
+  filter: none;
+  text-shadow: none;
+  font-weight: 600;
+}
+h1 {
+  font-size: clamp(2rem, 4.5vw, 2.9rem);
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+}
+h2 {
+  font-size: 1.35rem;
+  letter-spacing: -0.02em;
+}
+h3 {
+  font-size: 1rem;
+  letter-spacing: -0.01em;
+}
+.surtitre {
+  font-family: var(--police-texte), sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--texte-doux);
+}
+.marque {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--texte);
+  font-family: var(--police-titre), sans-serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+/* Tout ce qui était en petites capitales espacées repasse en casse normale. */
+.pastille,
+.badge-raid,
+.badge-fiabilite,
+.champ,
+legend,
+.etiquette-place,
+.compo-chiffres small,
+.compo-groupe h3,
+.navigation a,
+.place-role,
+.menu-compte-liste a,
+button.menu-compte-deconnexion,
+.retour,
+.banniere-texte strong,
+button,
+a.bouton {
+  font-family: var(--police-texte), sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
+}
+a {
+  color: var(--accent);
+}
+a:hover {
+  color: var(--accent-fort);
+}
+
+/* ─── Surfaces ────────────────────────────────────────────────────────────── */
+.carte,
+.parchemin,
+.encadre,
+dialog.confirmation,
+.menu-compte-liste,
+.apercu-notifications,
+.menu-liste,
+.banniere {
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 20px 40px -24px rgb(0 0 0 / 0.8);
+  outline: none;
+}
+.encadre {
+  border-left: 1px solid var(--bord);
+}
+main[data-fond] .carte {
+  background: var(--surface);
+}
+.parchemin {
+  padding: 1.8rem;
+}
+.carte {
+  padding: 1.25rem 1.4rem;
+}
+/* Titre de carte : petit libellé gris, aligné à gauche. */
+.carte > .surtitre:first-child {
+  justify-content: flex-start;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texte);
+  margin-bottom: 0.9rem;
+}
+.parchemin > .surtitre,
+.accueil-connecte .surtitre,
+.entete-raid .surtitre {
+  justify-content: center;
+}
+/* Blocs intérieurs. */
+.filtres,
+.candidature-rapide,
+.candidat,
+.compo-chiffres > div,
+.notification > a,
+.notification > div,
+fieldset {
+  background: var(--surface-2);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-2);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+fieldset.rapide-roles {
+  border: none;
+  background: none;
+  padding: 0;
+}
+
+/* ─── Libellés et champs ──────────────────────────────────────────────────── */
+.champ,
+legend {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--texte-doux);
+}
+.etiquette-place {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texte);
+}
+.champ .fuseau {
+  font-weight: 400;
+  color: #6b6b73;
+}
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea,
+button.menu-choisi {
+  font-family: var(--police-texte), sans-serif;
+  font-size: 0.95rem;
+  color: var(--texte);
+  background: var(--fond);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-3);
+  box-shadow: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+input:not([type="checkbox"]):not([type="radio"]):hover,
+select:hover,
+button.menu-choisi:hover:not(:disabled) {
+  border-color: var(--bord-fort);
+}
+input:focus,
+select:focus,
+textarea:focus,
+button.menu-choisi:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--anneau);
+}
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--accent);
+}
+
+/* ─── Boutons ─────────────────────────────────────────────────────────────── */
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton),
+a.bouton {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--texte);
+  background: var(--surface-3);
+  border: 1px solid var(--bord-fort);
+  border-radius: var(--rayon-3);
+  box-shadow: none;
+  padding: 0.55rem 1rem;
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton):hover:not(:disabled),
+a.bouton:hover {
+  color: #fff;
+  background: #26262b;
+  border-color: #4a4a52;
+  box-shadow: none;
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton):focus-visible,
+a.bouton:focus-visible {
+  outline: none;
+  box-shadow: var(--anneau);
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).petit,
+a.bouton.petit {
+  font-size: 0.82rem;
+  padding: 0.35rem 0.75rem;
+}
+/* Action principale : aplat or. */
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).principal,
+a.bouton.principal {
+  font-weight: 600;
+  color: var(--accent-texte);
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: none;
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).principal:hover:not(:disabled),
+a.bouton.principal:hover {
+  color: var(--accent-texte);
+  background: var(--accent-fort);
+  border-color: var(--accent-fort);
+}
+/* Suppression / annulation : texte rouge, fond neutre. */
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).danger {
+  color: #f87171;
+  background: var(--surface-3);
+  border-color: var(--bord-fort);
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).danger:hover:not(:disabled) {
+  color: #fff;
+  background: #b42318;
+  border-color: #b42318;
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).bouton-icone {
+  padding: 0;
+  width: 2.4rem;
+  height: 2.4rem;
+}
+.filtres-boutons {
+  align-self: end;
+}
+.filtres-boutons button.petit {
+  height: var(--hauteur-champ);
+}
+
+/* ─── Sélection : contour accent ──────────────────────────────────────────── */
+.perso-choix,
+.case-role,
+.choix-roles button {
+  background: var(--surface-2);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-3);
+  box-shadow: none;
+}
+.perso-choix:hover,
+.case-role:hover {
+  border-color: var(--bord-fort);
+}
+.perso-choix.choisi,
+.case-role:has(input:checked),
+.choix-roles button.choisi {
+  color: var(--texte) !important;
+  background: rgb(226 189 111 / 0.08) !important;
+  border-color: var(--accent) !important;
+  box-shadow: none !important;
+}
+.menu-liste li.actif {
+  background: var(--surface-3);
+}
+.menu-liste li[aria-selected="true"] {
+  color: var(--accent);
+}
+
+/* ─── Pastilles ───────────────────────────────────────────────────────────── */
+.pastille,
+.badge-raid,
+.badge-fiabilite {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #c4c4cc;
+  background: var(--surface-3);
+  border: 1px solid var(--bord);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+}
+.pastille.alliance {
+  color: #93b4ff;
+  border-color: rgb(77 116 184 / 0.5);
+}
+.pastille.horde {
+  color: #ff9e95;
+  border-color: rgb(166 58 49 / 0.55);
+}
+.pastille.ouvert,
+.badge-raid-candidat {
+  color: #6ee7f5;
+  border-color: rgb(69 201 220 / 0.4);
+}
+.pastille.complet,
+.badge-raid-attente {
+  color: #fbbf24;
+  border-color: rgb(227 163 59 / 0.45);
+}
+.pastille.succes,
+.badge-raid-convie {
+  color: #4ade80;
+  border-color: rgb(108 192 139 / 0.45);
+}
+.badge-raid-organise {
+  color: var(--accent);
+  border-color: rgb(226 189 111 / 0.45);
+}
+.ligne-raid-droite .recherche .pastille {
+  font-size: 0.8rem;
+  color: var(--texte);
+  background: var(--surface-3);
+  border-color: var(--bord-fort);
+}
+
+/* ─── Lignes de raid ──────────────────────────────────────────────────────── */
+.ligne-raid {
+  border-radius: var(--rayon-2);
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.ligne-raid[data-fond] {
+  background:
+    linear-gradient(90deg, var(--surface-2) 45%, rgb(23 23 26 / 0.86) 72%, rgb(23 23 26 / 0.7) 100%),
+    var(--vignette) right center / cover no-repeat;
+}
+.ligne-raid[data-fond]:hover {
+  background:
+    linear-gradient(90deg, #1b1b1f 45%, rgb(27 27 31 / 0.8) 72%, rgb(27 27 31 / 0.6) 100%),
+    var(--vignette) right center / cover no-repeat;
+}
+.ligne-raid:not(.ligne-organise):not(.ligne-convie):not(.ligne-candidat):not(.ligne-attente) {
+  border: 1px solid var(--bord);
+  box-shadow: none;
+}
+.ligne-raid:not(.ligne-organise):not(.ligne-convie):not(.ligne-candidat):not(.ligne-attente):hover {
+  border-color: var(--bord-fort);
+}
+/* Raids qui me concernent : liseré gauche coloré, bordure neutre. */
+.ligne-raid.ligne-organise,
+.ligne-raid.ligne-convie,
+.ligne-raid.ligne-candidat,
+.ligne-raid.ligne-attente {
+  border: 1px solid var(--bord);
+  box-shadow: inset 3px 0 0 var(--bord-biseau);
+}
+.ligne-raid.ligne-organise {
+  --bord-biseau: var(--accent);
+}
+.ligne-raid h3 {
+  font-size: 1.05rem;
+  color: var(--texte);
+}
+.compo-chiffres strong,
+.compo-roles strong,
+.compo-total strong {
+  font-family: var(--police-titre), sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--texte);
+}
+.compo-roles {
+  font-family: var(--police-texte), sans-serif;
+  font-weight: 500;
+}
+.compo-roles strong {
+  border-left-color: var(--bord-fort);
+}
+
+/* ─── En-tête ─────────────────────────────────────────────────────────────── */
+.en-tete {
+  background: rgb(9 9 11 / 0.75);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  border-bottom: 1px solid var(--bord);
+}
+.navigation a {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--texte-doux);
+}
+.navigation a:hover {
+  color: var(--texte);
+}
+.navigation a::after {
+  display: none;
+}
+.cloche,
+button.menu-compte-bouton {
+  color: var(--texte);
+  background: var(--surface-2);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-3);
+  box-shadow: none;
+}
+.cloche.a-lire {
+  color: var(--accent);
+  border-color: var(--bord-fort);
+}
+.cloche:hover,
+button.menu-compte-bouton:hover:not(:disabled) {
+  background: var(--surface-3);
+  border-color: var(--bord-fort);
+}
+button.menu-compte-bouton::before {
+  content: none;
+}
+
+/* ─── Divers ──────────────────────────────────────────────────────────────── */
+.compo-groupe h3 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--texte-doux);
+  border-bottom-color: var(--bord);
+}
+.notification.non-lue > a,
+.notification.non-lue > div {
+  background: var(--surface-3);
+  border-color: var(--bord-fort);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.notif-symbole,
+.banniere-symbole {
+  box-shadow: none;
+}
+.avertissement.grave {
+  border-radius: var(--rayon-2);
+}
