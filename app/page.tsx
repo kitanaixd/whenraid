@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { signIn, signOut } from "@/lib/auth";
 import { utilisateurConnecte } from "@/lib/session";
 
@@ -31,6 +32,9 @@ export default async function Accueil() {
         )}{" "}
         Connecté en tant que <strong>{utilisateur.pseudo}</strong>
       </p>
+      <nav>
+        <Link href="/personnages">Mes personnages</Link>
+      </nav>
       <form
         action={async () => {
           "use server";
