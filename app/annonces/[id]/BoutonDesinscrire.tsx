@@ -9,23 +9,32 @@ export function BoutonDesinscrire({
   inscriptionId,
   resume,
   convie,
+  retourListe,
 }: {
   action: (form: FormData) => void;
   inscriptionId: string;
   resume: string;
   convie: boolean;
+  /** Depuis la liste des raids : filtres à retrouver après la désinscription. */
+  retourListe?: string;
 }) {
   const dialogue = useRef<HTMLDialogElement>(null);
 
   return (
     <>
       <button type="button" className="petit danger" onClick={() => dialogue.current?.showModal()}>
-        {convie ? "Me désister" : "Retirer ma candidature"}
+        {convie ? "Me désister" : retourListe !== undefined ? "Annuler" : "Retirer ma candidature"}
       </button>
 
       <dialog ref={dialogue} className="confirmation" aria-labelledby="titre-desinscription">
         <form action={action}>
           <input type="hidden" name="inscriptionId" value={inscriptionId} />
+          {retourListe !== undefined && (
+            <>
+              <input type="hidden" name="depuis" value="liste" />
+              <input type="hidden" name="retour" value={retourListe} />
+            </>
+          )}
           <h2 id="titre-desinscription">{convie ? "Te désister de ce raid ?" : "Retirer ta candidature ?"}</h2>
           <p>
             <strong>{resume}</strong>

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { STATUTS_ACTIFS } from "@/lib/annonces";
 import { creneau } from "@/lib/jeu";
+import { includeLigneRaid } from "@/lib/ligneRaid";
 
 /** Les raids pas encore terminés d'un joueur : convocations, candidatures, raids organisés. */
 export async function chargerMesRaids(utilisateurId: string) {
@@ -13,13 +14,17 @@ export async function chargerMesRaids(utilisateurId: string) {
   const inscriptions = (
     await db.inscription.findMany({
       where: { utilisateurId, statut: { in: [...STATUTS_ACTIFS] }, place: { annonce: actif } },
-      include: { personnage: true, place: { include: { annonce: true } } },
+      include: { personnage: true, place: { include: { annonce: { include: includeLigneRaid } } } },
       orderBy: { place: { annonce: { debutUtc: "asc" } } },
     })
   ).filter((i) => pasTermine(i.place.annonce));
 
   const organises = (
-    await db.annonce.findMany({ where: { createurId: utilisateurId, ...actif }, orderBy: { debutUtc: "asc" } })
+    await db.annonce.findMany({
+      where: { createurId: utilisateurId, ...actif },
+      orderBy: { debutUtc: "asc" },
+      include: includeLigneRaid,
+    })
   ).filter(pasTermine);
 
   return {

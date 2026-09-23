@@ -52,3 +52,15 @@ export function afficherDate(instant: Date, fuseau: string) {
     timeStyle: "short",
   }).format(instant);
 }
+
+/** Date courte pour les lignes compactes : « jeu. 24 sept. · 21:00 ». */
+export function afficherDateCourte(instant: Date, fuseau: string) {
+  const jour = new Intl.DateTimeFormat("fr-FR", {
+    timeZone: fuseau,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(instant);
+  const heure = new Intl.DateTimeFormat("fr-FR", { timeZone: fuseau, timeStyle: "short" }).format(instant);
+  return `${jour} · ${heure}`;
+}

@@ -50,6 +50,21 @@ const retourVers =
   (erreur?: string): never =>
     redirect(`/annonces/${annonceId}${erreur ? `?erreur=${encodeURIComponent(erreur)}` : ""}`);
 
+/** Retour à la liste des raids, en gardant uniquement les filtres connus (jamais une adresse libre). */
+function retourListe(form: FormData) {
+  const recue = new URLSearchParams(String(form.get("retour") ?? ""));
+  const params = new URLSearchParams();
+  for (const nom of ["perso", "raid", "du", "au", "duree"]) {
+    const v = recue.get(nom);
+    if (v && /^[\w-]{1,40}$/.test(v)) params.set(nom, v);
+  }
+  return (erreur?: string): never => {
+    if (erreur) params.set("erreur", erreur);
+    const requete = params.toString();
+    return redirect(`/${requete ? `?${requete}` : ""}#titre-raids`);
+  };
+}
+
 function rafraichir(annonceId: string) {
   revalidatePath(`/annonces/${annonceId}`);
   revalidatePath("/");
@@ -79,23 +94,25 @@ export async function candidater(form: FormData) {
     include: { places: true },
   });
   if (!annonce) notFound();
-  const retour = retourVers(annonce.id);
+  // Candidature rapide depuis la liste : on y revient (mêmes filtres), sinon sur la page du raid.
+  const retour = form.get("depuis") === "liste" ? retourListe(form) : retourVers(annonce.id);
 
   const personnageId = String(form.get("personnageId") ?? "");
   const personnage = await db.personnage.findFirst({
     where: { id: personnageId, utilisateurId: utilisateur.id, supprimeLe: null },
   });
-  // Rôles coches, dans l'ordre Tank, Soigneur, DPS ; le RL choisira à l'acceptation.
   const coches = new Set(form.getAll("roles").map(String));
-  const roles = (Object.keys(Role) as Role[]).filter((r) => coches.has(r));
   const note = String(form.get("note") ?? "").trim();
 
   if (annonce.createurId === utilisateur.id) retour("Tu organises ce raid, tu ne peux pas y candidater.");
   if (!accepteCandidatures(annonce)) retour("Ce raid n'accepte plus de candidatures.");
   if (!personnage) retour("Choisis un de tes personnages.");
-  if (roles.length === 0) retour("Coche au moins un rôle.");
+  if (coches.size === 0) retour("Coche au moins un rôle.");
+  // Rôles cochés que ce personnage peut tenir dans ce raid, dans l'ordre Tank, Soigneur, DPS.
+  // Le RL choisira à l'acceptation.
   const possibles = rolesPourRaid(personnage!, annonce.places, annonce);
-  if (roles.some((r) => !possibles.includes(r))) retour("Ce personnage ne peut pas tenir ce rôle dans ce raid.");
+  const roles = possibles.filter((r) => coches.has(r));
+  if (roles.length === 0) retour(`Ce raid ne cherche pas ${nomEnJeu(personnage!)} dans les rôles choisis.`);
   // Le site choisit la place : une place ouverte compatible, sinon la liste d'attente.
   const choix = placePourRoles(annonce.places, personnage!, roles, annonce);
   if (!choix) retour("Ce personnage ne correspond à aucune place de ce raid.");
@@ -372,7 +389,7 @@ export async function seDesinscrire(form: FormData) {
   });
   if (!inscription) notFound();
   const { annonce } = inscription.place;
-  const retour = retourVers(annonce.id);
+  const retour = form.get("depuis") === "liste" ? retourListe(form) : retourVers(annonce.id);
 
   if (!estActive(inscription.statut)) retour("Tu n'es plus inscrit à ce raid.");
   if (!accepteCandidatures(annonce)) retour("Ce raid a commencé ou n'est plus actif : tu ne peux plus te désinscrire.");

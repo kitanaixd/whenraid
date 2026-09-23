@@ -8,13 +8,15 @@ import { nomRaid, raids } from "@/lib/raids";
 import { rolesPourRaid } from "@/lib/eligibilite";
 import { chargerMesRaids } from "@/lib/mesRaids";
 import { fiabiliteRls, texteBadge } from "@/lib/fiabilite";
-import { compoActuelle, compoParRole } from "@/lib/annonces";
-import { Contenu, type Classe } from "@/generated/prisma/enums";
+import { includeLigneRaid, resumeLigneRaid } from "@/lib/ligneRaid";
+import { Contenu } from "@/generated/prisma/enums";
 import type { AnnonceWhereInput } from "@/generated/prisma/models";
-import { ClasseIcone, FactionIcone, NomRole, PastilleFaction, PastilleRuleset, RoleIcone } from "./ClasseIcone";
-import { nomEnJeu } from "@/lib/jeu";
+import { ClasseIcone, FactionIcone, NomRole } from "./ClasseIcone";
+import { LigneRaid, type Marque } from "./LigneRaid";
+import { candidater, seDesinscrire } from "./annonces/[id]/actions";
+import { BoutonDesinscrire } from "./annonces/[id]/BoutonDesinscrire";
+import { nomEnJeu, rolePossible } from "@/lib/jeu";
 
-const NOMBRE_DE_CLASSES = 9;
 const DUREES_MAX = [2, 3, 4, 6];
 
 /** Le lendemain d'une date « AAAA-MM-JJ », au même format. */
@@ -91,39 +93,56 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
       where,
       orderBy: { debutUtc: "asc" },
       take: 100,
-      include: {
-        createur: { select: { pseudo: true } },
-        composition: true,
-        places: {
-          select: {
-            id: true,
-            statut: true,
-            role: true,
-            classesAcceptees: true,
-            inscriptions: {
-              where: { statut: "CONFIRME" },
-              orderBy: { inscritLe: "asc" },
-              take: 1, // le titulaire de la place (les suivants sont des remplaçants)
-              select: { role: true, personnage: { select: { classe: true } } },
-            },
-          },
-        },
-      },
+      include: includeLigneRaid,
     }),
     chargerMesRaids(utilisateur.id),
   ]);
   const { convocations, candidatures, organises } = mesRaids;
+  // Mes inscriptions en cours, par raid (tous personnages confondus) : pour marquer les lignes.
+  const monInscription = new Map([...convocations, ...candidatures].map((i) => [i.place.annonce.id, i]));
   // Un raid n'apparaît que si le personnage choisi peut y tenir une place (classe, niveau…),
   // ou s'il y a déjà candidaté.
-  const dejaInscrit = new Set(
-    [...convocations, ...candidatures].filter((i) => i.personnageId === perso?.id).map((i) => i.place.annonce.id),
-  );
   const annonces = perso
     ? annoncesBrutes
-        .filter((a) => dejaInscrit.has(a.id) || rolesPourRaid(perso, a.places, a).length > 0)
+        .filter(
+          (a) =>
+            monInscription.get(a.id)?.personnageId === perso.id || rolesPourRaid(perso, a.places, a).length > 0,
+        )
         .slice(0, 50)
     : [];
   const fiabilite = await fiabiliteRls([...new Set(annonces.map((a) => a.createurId))]);
+  const rolesPerso = perso ? perso.rolesJouables.filter((r) => rolePossible(perso.classe, r)) : [];
+  const requete = new URLSearchParams(
+    ["perso", "raid", "du", "au", "duree"].flatMap((n) => (valeur(n) ? [[n, valeur(n)]] : [])),
+  ).toString();
+  const erreur = valeur("erreur");
+
+  /** Bouton « Annuler » (ou « Me désister ») pour un raid où je suis inscrit. */
+  const annulation = (annonceId: string) => {
+    const i = monInscription.get(annonceId);
+    if (!i) return undefined;
+    const a = i.place.annonce;
+    return (
+      <BoutonDesinscrire
+        action={seDesinscrire}
+        inscriptionId={i.id}
+        resume={`${nomRaid(a.contenu)} — ${afficherDate(a.debutUtc, fuseau)}`}
+        convie={i.statut === "CONFIRME"}
+        retourListe={requete}
+      />
+    );
+  };
+
+  /** Ce qui distingue un raid où je suis inscrit ou que j'organise. */
+  const marqueDe = (annonceId: string, createurId: string): Marque | undefined => {
+    if (createurId === utilisateur.id) return { type: "organise", texte: "★ Tu organises" };
+    const i = monInscription.get(annonceId);
+    if (!i) return undefined;
+    const perso = i.personnage ? { classe: i.personnage.classe, nom: nomEnJeu(i.personnage) } : undefined;
+    if (i.statut === "CONFIRME") return { type: "convie", texte: "✔ Convié", perso };
+    if (i.statut === "LISTE_ATTENTE") return { type: "attente", texte: "Liste d'attente", perso };
+    return { type: "candidat", texte: "⏳ Candidat", perso };
+  };
 
   return (
     <main>
@@ -134,50 +153,50 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
       </header>
 
       {(convocations.length > 0 || candidatures.length > 0 || organises.length > 0) && (
-        <section className="encadre" aria-labelledby="titre-mes-raids">
+        <section className="parchemin" aria-labelledby="titre-mes-raids">
+          <p className="surtitre">Organisés, convocations, candidatures</p>
           <h2 id="titre-mes-raids">Tes raids</h2>
-          {convocations.map((i) => (
-            <p key={i.id}>
-              ✔ <strong>Convié</strong> :{" "}
-              <Link href={`/annonces/${i.place.annonce.id}`}>{nomRaid(i.place.annonce.contenu)}</Link> —{" "}
-              <strong>{afficherDate(i.place.annonce.debutUtc, fuseau)}</strong> avec{" "}
-              {i.personnage && <ClasseIcone classe={i.personnage.classe} />} <strong>{i.personnage && nomEnJeu(i.personnage)}</strong>
-              {i.role && (
-                <>
-                  {" "}
-                  (<NomRole role={i.role} taille={18} />)
-                </>
-              )}
-            </p>
-          ))}
-          {organises.map((a) => (
-            <p key={a.id}>
-              ★ <strong>Tu organises</strong> : <Link href={`/annonces/${a.id}`}>{nomRaid(a.contenu)}</Link> —{" "}
-              {afficherDate(a.debutUtc, fuseau)}
-              {a.statut === "COMPLETE" && " (complet)"}
-            </p>
-          ))}
-          {candidatures.length > 0 && (
-            <>
-              <p className="doux">Candidatures en attente :</p>
-              <ul>
-                {candidatures.map((i) => (
-                  <li key={i.id}>
-                    <Link href={`/annonces/${i.place.annonce.id}`}>{nomRaid(i.place.annonce.contenu)}</Link> —{" "}
-                    {afficherDate(i.place.annonce.debutUtc, fuseau)} avec{" "}
-                    {i.personnage && <ClasseIcone classe={i.personnage.classe} />} {i.personnage && nomEnJeu(i.personnage)}
-                    {i.statut === "LISTE_ATTENTE" && " (liste d'attente)"}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          <ul className="liste-raids">
+            {organises.map((a) => {
+              const n = resumeLigneRaid(a).enAttente;
+              return (
+                <LigneRaid
+                  key={a.id}
+                  compact
+                  annonce={a}
+                  fuseau={fuseau}
+                  lien={`/annonces/${a.id}`}
+                  marque={{
+                    type: "organise",
+                    texte: "★ Tu organises",
+                    detail: n > 0 ? `${n} candidature${n > 1 ? "s" : ""}` : undefined,
+                  }}
+                />
+              );
+            })}
+            {[...convocations, ...candidatures].map((i) => (
+              <LigneRaid
+                key={i.id}
+                compact
+                annonce={i.place.annonce}
+                fuseau={fuseau}
+                lien={`/annonces/${i.place.annonce.id}`}
+                marque={marqueDe(i.place.annonce.id, i.place.annonce.createurId)}
+                action={annulation(i.place.annonce.id)}
+              />
+            ))}
+          </ul>
         </section>
       )}
 
       <section className="parchemin" aria-labelledby="titre-raids">
         <p className="surtitre">Ce soir et les jours à venir</p>
         <h2 id="titre-raids">Raids qui recrutent</h2>
+        {typeof erreur === "string" && erreur && (
+          <p className="avertissement grave" role="alert">
+            ⚠ {erreur}
+          </p>
+        )}
         {personnages.length === 0 ? (
           <div className="encadre appel-perso">
             <p>
@@ -210,6 +229,31 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               ))}
             </ul>
           </nav>
+          {perso && (
+            /* Candidature rapide : rôle(s) et note choisis une fois, puis « Candidater » sur chaque raid.
+               Les boutons des lignes envoient ce formulaire avec l'identifiant de leur raid. */
+            <form id="candidature-rapide" action={candidater} className="candidature-rapide">
+              <input type="hidden" name="personnageId" value={perso.id} />
+              <input type="hidden" name="depuis" value="liste" />
+              <input type="hidden" name="retour" value={requete} />
+              <p className="etiquette-place">Candidature rapide avec {nomEnJeu(perso)}</p>
+              <div className="rapide-champs">
+                <fieldset className="rapide-roles">
+                  <legend className="sr-only">Rôles proposés</legend>
+                  {rolesPerso.map((r, n) => (
+                    <label key={r} className="case-role">
+                      <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
+                      <NomRole role={r} taille={20} />
+                    </label>
+                  ))}
+                </fieldset>
+                <label className="champ rapide-note">
+                  Note pour les RL <small className="fuseau">(facultatif, envoyée avec chaque candidature)</small>
+                  <input name="note" maxLength={80} placeholder="Ex. : stuff T2, dispo jusqu'à minuit" />
+                </label>
+              </div>
+            </form>
+          )}
           <form className="filtres" method="get" role="search" aria-label="Filtrer les raids">
             {perso && <input type="hidden" name="perso" value={perso.id} />}
             <label className="champ">
@@ -264,71 +308,39 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
           </p>
         ) : (
           <ul className="liste-raids">
-          {annonces.map((a) => {
-            const ouvertes = a.places.filter((p) => p.statut === "OUVERTE");
-            const titulaires = a.places.flatMap((p) =>
-              p.inscriptions.flatMap((i) => (i.role && i.personnage ? [{ classe: i.personnage.classe, role: i.role }] : [])),
-            );
-            const compo = compoActuelle(a.composition, titulaires);
-            const roles = compoParRole(compo.lignes);
-            const placeLibre = ouvertes.some((p) => p.classesAcceptees.length === NOMBRE_DE_CLASSES);
-            const classesRecherchees = [
-              ...new Set(
-                ouvertes.filter((p) => p.classesAcceptees.length < NOMBRE_DE_CLASSES).flatMap((p) => p.classesAcceptees),
-              ),
-            ] as Classe[];
-            return (
-              <li key={a.id} className="ligne-raid" data-fond={raids[a.contenu].image}>
-                <Link href={`/annonces/${a.id}${perso ? `?perso=${perso.id}` : ""}`} className="ligne-raid-lien" aria-label={`${nomRaid(a.contenu)}, ${afficherDate(a.debutUtc, fuseau)}`} />
-                <div className="ligne-raid-infos">
-                  <h3>{nomRaid(a.contenu)}</h3>
-                  <span className="quand">{afficherDate(a.debutUtc, fuseau)}</span>
-                  <span className="pastilles">
-                    <PastilleFaction faction={a.faction} />
-                    <PastilleRuleset ruleset={a.ruleset} region={a.region} />
-                    {a.statut !== "COMPLETE" && (
-                      <span className="pastille ouvert">
-                        {ouvertes.length} place{ouvertes.length > 1 ? "s" : ""} ouverte{ouvertes.length > 1 ? "s" : ""}
-                      </span>
-                    )}
-                  </span>
-                  <small>
-                    par {a.createur.pseudo} · {texteBadge(fiabilite.get(a.createurId)!)}
-                  </small>
-                </div>
-                <div className="ligne-raid-droite">
-                  {/* Sous la compo : « Complet », sinon les classes recherchées. */}
-                  {a.statut === "COMPLETE" ? (
-                    <div className="recherche">
-                      <span className="pastille complet">Complet · liste d&apos;attente</span>
-                    </div>
-                  ) : (
-                    <div className="recherche" aria-label="Classes recherchées">
-                      {classesRecherchees.map((c) => (
-                        <ClasseIcone key={c} classe={c} taille={40} />
-                      ))}
-                      {placeLibre && <span className="pastille">Toutes classes</span>}
-                    </div>
-                  )}
-                  <div className="compo-roles" title="Tanks · Soigneurs · DPS">
-                    <span aria-label={`${roles.tanks} tanks`}>
-                      <RoleIcone role="TANK" taille={34} /> {roles.tanks}
-                    </span>
-                    <span aria-label={`${roles.soigneurs} soigneurs`}>
-                      <RoleIcone role="SOIGNEUR" taille={34} /> {roles.soigneurs}
-                    </span>
-                    <span aria-label={`${roles.dps} DPS`}>
-                      <RoleIcone role="DPS" taille={34} /> {roles.dps}
-                    </span>
-                    <strong>
-                      {compo.total}/{a.taille}
-                    </strong>
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+            {annonces.map((a) => {
+              const marque = marqueDe(a.id, a.createurId);
+              return (
+                <LigneRaid
+                  key={a.id}
+                  annonce={a}
+                  fuseau={fuseau}
+                  lien={`/annonces/${a.id}${perso ? `?perso=${perso.id}` : ""}`}
+                  marque={marque}
+                  auteur={
+                    <>
+                      par {a.createur.pseudo} · {texteBadge(fiabilite.get(a.createurId)!)}
+                    </>
+                  }
+                  action={
+                    marque ? (
+                      annulation(a.id)
+                    ) : (
+                      <button
+                        type="submit"
+                        form="candidature-rapide"
+                        name="annonceId"
+                        value={a.id}
+                        className="petit principal"
+                      >
+                        {a.statut === "COMPLETE" ? "Liste d'attente" : "Candidater"}
+                      </button>
+                    )
+                  }
+                />
+              );
+            })}
+          </ul>
         )}
       </section>
     </main>
