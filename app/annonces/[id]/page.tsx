@@ -247,6 +247,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                 annonceId={annonce.id}
                 resume={resumeRaid}
                 nbConfirmes={confirmes.length}
+                nbAInviter={confirmes.filter((i) => !i.invitationEnvoyeeLe).length}
                 vocal={
                   annonce.vocal === "DISCORD"
                     ? `Discord (${annonce.vocalDiscordLien})`

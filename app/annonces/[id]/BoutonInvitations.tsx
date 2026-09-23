@@ -8,6 +8,7 @@ export function BoutonInvitations({
   annonceId,
   resume,
   nbConfirmes,
+  nbAInviter,
   vocal,
   commandeWhisper,
   dejaEnvoyeesLe,
@@ -16,6 +17,8 @@ export function BoutonInvitations({
   annonceId: string;
   resume: string;
   nbConfirmes: number;
+  /** Joueurs confirmés qui n'ont pas encore reçu l'invitation. */
+  nbAInviter: number;
   vocal: string;
   commandeWhisper: string | null;
   dejaEnvoyeesLe: string | null;
@@ -24,10 +27,19 @@ export function BoutonInvitations({
 
   return (
     <>
-      <button type="button" className="principal" onClick={() => dialogue.current?.showModal()}>
-        {dejaEnvoyeesLe ? "Renvoyer les invitations" : "Envoyer les invitations"}
+      <button
+        type="button"
+        className="principal"
+        disabled={nbAInviter === 0}
+        onClick={() => dialogue.current?.showModal()}
+      >
+        {!dejaEnvoyeesLe
+          ? "Envoyer les invitations"
+          : nbAInviter > 0
+            ? `Inviter les nouveaux (${nbAInviter})`
+            : "Tous les joueurs sont invités"}
       </button>
-      {dejaEnvoyeesLe && <small> Déjà envoyées le {dejaEnvoyeesLe}.</small>}
+      {dejaEnvoyeesLe && <small> Premier envoi le {dejaEnvoyeesLe}.</small>}
 
       <dialog ref={dialogue} className="confirmation invitations" aria-labelledby="titre-invitations">
         <form action={action}>
@@ -39,7 +51,7 @@ export function BoutonInvitations({
           <p>
             Le bot WhenRaid va envoyer un MP Discord à{" "}
             <strong>
-              {nbConfirmes} joueur{nbConfirmes > 1 ? "s" : ""} confirmé{nbConfirmes > 1 ? "s" : ""}
+              {nbAInviter} joueur{nbAInviter > 1 ? "s" : ""} confirmé{nbAInviter > 1 ? "s" : ""}
             </strong>{" "}
             avec :
           </p>
@@ -47,8 +59,12 @@ export function BoutonInvitations({
             <li>le vocal : {vocal}</li>
             <li>{commandeWhisper ? <>la commande à copier en jeu : <code>{commandeWhisper}</code></> : "le lien vers le raid"}</li>
           </ul>
-          {dejaEnvoyeesLe && (
-            <p className="avertissement">Les invitations sont déjà parties : les joueurs les recevront une seconde fois.</p>
+          {nbAInviter < nbConfirmes && (
+            <p className="doux">
+              {nbConfirmes - nbAInviter > 1
+                ? `${nbConfirmes - nbAInviter} joueurs l'ont déjà reçue : ils ne la recevront pas une seconde fois.`
+                : "1 joueur l'a déjà reçue : il ne la recevra pas une seconde fois."}
+            </p>
           )}
           <p>
             <label>
@@ -59,7 +75,7 @@ export function BoutonInvitations({
             <button type="button" onClick={() => dialogue.current?.close()} autoFocus>
               Pas maintenant
             </button>{" "}
-            <BoutonEnvoi className="principal" disabled={nbConfirmes === 0} enCours="Envoi…">
+            <BoutonEnvoi className="principal" disabled={nbAInviter === 0} enCours="Envoi…">
               Envoyer
             </BoutonEnvoi>
           </p>

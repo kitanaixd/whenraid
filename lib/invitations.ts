@@ -46,22 +46,32 @@ function texteInvitation({ annonce, perso }: Raid, fuseau: string) {
   return lignes.join("\n");
 }
 
-/** Envoie l'invitation (vocal + /w) à un joueur confirmé. */
+/**
+ * Envoie l'invitation (vocal + /w) à un joueur confirmé, une seule fois : l'envoi est
+ * « réservé » avant de partir, et libéré si le MP échoue (le joueur pourra la recevoir plus tard).
+ */
 export async function envoyerInvitation(inscriptionId: string) {
+  const reservee = await db.inscription.updateMany({
+    where: { id: inscriptionId, statut: "CONFIRME", invitationEnvoyeeLe: null },
+    data: { invitationEnvoyeeLe: new Date() },
+  });
+  if (reservee.count === 0) return; // déjà invité, ou plus confirmé
   const inscription = await db.inscription.findUnique({
     where: { id: inscriptionId },
     include: { utilisateur: true, place: true },
   });
-  if (!inscription || inscription.statut !== "CONFIRME") return;
+  if (!inscription) return;
   const raid = await chargerRaid(inscription.place.annonceId);
-  if (!raid) return;
-  await envoyerMp(inscription.utilisateur.discordId, texteInvitation(raid, inscription.utilisateur.fuseauHoraire));
+  const envoye =
+    raid !== null &&
+    (await envoyerMp(inscription.utilisateur.discordId, texteInvitation(raid, inscription.utilisateur.fuseauHoraire)));
+  if (!envoye) await db.inscription.update({ where: { id: inscriptionId }, data: { invitationEnvoyeeLe: null } });
 }
 
-/** Envoie l'invitation à tous les joueurs confirmés du raid. Renvoie le nombre de destinataires. */
+/** Envoie l'invitation aux joueurs confirmés qui ne l'ont pas encore reçue. Renvoie leur nombre. */
 export async function envoyerInvitations(annonceId: string) {
   const confirmes = await db.inscription.findMany({
-    where: { statut: "CONFIRME", place: { annonceId } },
+    where: { statut: "CONFIRME", invitationEnvoyeeLe: null, place: { annonceId } },
     select: { id: true },
   });
   // Un par un : on reste loin des limites de débit de Discord.

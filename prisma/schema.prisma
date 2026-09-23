@@ -279,16 +279,18 @@ model Place {
 }
 
 model Inscription {
-  id            String            @id @default(cuid())
-  placeId       String
-  personnageId  String? // règle 1 : exactement un des deux
-  groupeId      String? // règle 1 : exactement un des deux
-  utilisateurId String // qui a fait l'inscription
-  role          Role? // rôle retenu : le préféré du candidat, puis celui choisi par le RL (null pour un groupe)
-  rolesProposes Role[]            @default([]) // rôles cochés par le candidat ; le RL choisit à l'acceptation
-  statut        StatutInscription @default(INSCRIT)
-  note          String? // 80 caractères max (CHECK en SQL), visible du seul RL
-  inscritLe     DateTime          @default(now()) @db.Timestamptz(3)
+  id                  String            @id @default(cuid())
+  placeId             String
+  personnageId        String? // règle 1 : exactement un des deux
+  groupeId            String? // règle 1 : exactement un des deux
+  utilisateurId       String // qui a fait l'inscription
+  role                Role? // rôle retenu : le préféré du candidat, puis celui choisi par le RL (null pour un groupe)
+  rolesProposes       Role[]            @default([]) // rôles cochés par le candidat ; le RL choisit à l'acceptation
+  statut              StatutInscription @default(INSCRIT)
+  note                String? // 80 caractères max (CHECK en SQL), visible du seul RL
+  inscritLe           DateTime          @default(now()) @db.Timestamptz(3)
+  // Invitation (vocal + /w) envoyée à ce joueur : on ne la lui renvoie pas.
+  invitationEnvoyeeLe DateTime?         @db.Timestamptz(3)
 
   place       Place       @relation(fields: [placeId], references: [id], onDelete: Cascade)
   personnage  Personnage? @relation(fields: [personnageId], references: [id], onDelete: Cascade)

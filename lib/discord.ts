@@ -38,14 +38,16 @@ export async function ajouterAuServeur(discordId: string, jetonAcces: string) {
 }
 
 /** Envoie un message privé. Échoue silencieusement si le joueur bloque les MP. */
+/** Envoie un MP Discord. Renvoie false si le message n'a pas pu partir (MP fermés, bot absent…). */
 export async function envoyerMp(discordId: string, contenu: string) {
   const canal = await appel("/users/@me/channels", {
     method: "POST",
     body: JSON.stringify({ recipient_id: discordId }),
   });
-  if (!canal?.id) return;
-  await appel(`/channels/${canal.id}/messages`, {
+  if (!canal?.id) return false;
+  const message = await appel(`/channels/${canal.id}/messages`, {
     method: "POST",
     body: JSON.stringify({ content: contenu.slice(0, 2000), allowed_mentions: { parse: [] } }),
   });
+  return message !== null;
 }

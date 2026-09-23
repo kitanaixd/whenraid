@@ -321,8 +321,15 @@ export async function envoyerLesInvitations(form: FormData) {
   const annonce = await db.annonce.findFirst({ where: { id: annonceId, createurId: utilisateur.id } });
   if (!annonce) notFound();
   if (!rlPeutAgir(annonce)) retour("Ce raid n'est plus modifiable.");
+  const aInviter = await db.inscription.count({
+    where: { statut: "CONFIRME", invitationEnvoyeeLe: null, place: { annonceId: annonce.id } },
+  });
+  if (aInviter === 0) retour("Tous les joueurs confirmés ont déjà reçu l'invitation.");
 
-  await db.annonce.update({ where: { id: annonce.id }, data: { invitationsEnvoyeesLe: new Date() } });
+  // Date du premier envoi ; ensuite, seuls les joueurs pas encore invités reçoivent un MP.
+  if (!annonce.invitationsEnvoyeesLe) {
+    await db.annonce.update({ where: { id: annonce.id }, data: { invitationsEnvoyeesLe: new Date() } });
+  }
   after(() => envoyerInvitations(annonce.id));
   rafraichir(annonce.id);
   retour();
