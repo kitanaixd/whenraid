@@ -286,9 +286,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   <span className="pastilles">
                     <PastilleFaction faction={a.faction} />
                     <PastilleRuleset ruleset={a.ruleset} region={a.region} />
-                    {a.statut === "COMPLETE" ? (
-                      <span className="pastille complet">Complet · liste d&apos;attente</span>
-                    ) : (
+                    {a.statut !== "COMPLETE" && (
                       <span className="pastille ouvert">
                         {ouvertes.length} place{ouvertes.length > 1 ? "s" : ""} ouverte{ouvertes.length > 1 ? "s" : ""}
                       </span>
@@ -299,7 +297,12 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   </small>
                 </div>
                 <div className="ligne-raid-droite">
-                  {a.statut !== "COMPLETE" && (
+                  {/* Sous la compo : « Complet », sinon les classes recherchées. */}
+                  {a.statut === "COMPLETE" ? (
+                    <div className="recherche">
+                      <span className="pastille complet">Complet · liste d&apos;attente</span>
+                    </div>
+                  ) : (
                     <div className="recherche" aria-label="Classes recherchées">
                       {classesRecherchees.map((c) => (
                         <ClasseIcone key={c} classe={c} taille={40} />
