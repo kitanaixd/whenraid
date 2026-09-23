@@ -1551,3 +1551,186 @@ a.bouton.petit {
 .appel-perso p {
   margin-top: 0;
 }
+
+/* ─── Angles biseautés (rappel du logo) ─────────────────────────────────────
+   Les coins sont coupés à 45° par clip-path ; ::before redessine le filet sur
+   chaque diagonale, puisque la bordure y est coupée. --biseau règle la taille
+   du coin, --bord-biseau la couleur du filet. */
+.carte,
+.parchemin,
+.encadre,
+.ligne-raid,
+.filtres,
+.candidat,
+.compo-chiffres > div,
+dialog.confirmation,
+button:not(.bouton-lien):not(.menu-choisi),
+a.bouton,
+.pastille {
+  --biseau: 12px;
+  --bord-biseau: var(--filet);
+  clip-path: polygon(
+    var(--biseau) 0,
+    calc(100% - var(--biseau)) 0,
+    100% var(--biseau),
+    100% calc(100% - var(--biseau)),
+    calc(100% - var(--biseau)) 100%,
+    var(--biseau) 100%,
+    0 calc(100% - var(--biseau)),
+    0 var(--biseau)
+  );
+}
+.carte,
+.parchemin,
+.encadre,
+.filtres,
+.candidat,
+.compo-chiffres > div,
+button:not(.bouton-lien):not(.menu-choisi),
+a.bouton,
+.pastille {
+  position: relative;
+}
+.carte::before,
+.parchemin::before,
+.encadre::before,
+.ligne-raid::before,
+.filtres::before,
+.candidat::before,
+.compo-chiffres > div::before,
+dialog.confirmation::before,
+button:not(.bouton-lien):not(.menu-choisi)::before,
+a.bouton::before,
+.pastille::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  z-index: 1;
+  --trait: transparent calc(50% - 0.9px), var(--bord-biseau) 50%, transparent calc(50% + 0.9px);
+  background:
+    linear-gradient(135deg, var(--trait)) top left / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(225deg, var(--trait)) top right / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(45deg, var(--trait)) bottom left / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(315deg, var(--trait)) bottom right / var(--biseau) var(--biseau) no-repeat;
+}
+
+/* Tailles et couleurs de filet selon l'élément. */
+button:not(.bouton-lien):not(.menu-choisi),
+a.bouton {
+  --biseau: 9px;
+  --bord-biseau: var(--filet-fort);
+}
+button.petit,
+a.bouton.petit {
+  --biseau: 6px;
+}
+button.principal,
+a.bouton.principal,
+button.choisi {
+  --bord-biseau: #f3dfa8;
+}
+button.danger {
+  --bord-biseau: rgb(201 73 63 / 0.8);
+}
+.pastille {
+  --biseau: 5px;
+}
+.candidat,
+.compo-chiffres > div {
+  --biseau: 8px;
+}
+dialog.confirmation {
+  --bord-biseau: var(--danger);
+}
+.ligne-raid:hover {
+  --bord-biseau: var(--or);
+}
+
+/* Un menu déroulant ouvert dépasse de sa carte : on lève la découpe le temps qu'il est ouvert. */
+:is(.carte, .parchemin, .encadre, .filtres):has(.menu-liste) {
+  clip-path: none;
+}
+:is(.carte, .parchemin, .encadre, .filtres):has(.menu-liste)::before {
+  display: none;
+}
+/* Le contour de focus reste visible malgré la découpe. */
+button:focus-visible,
+a.bouton:focus-visible {
+  outline-offset: -4px;
+}
+.pastille.alliance {
+  --bord-biseau: #4d74b8;
+}
+.pastille.horde {
+  --bord-biseau: #a63a31;
+}
+.pastille.complet {
+  --bord-biseau: var(--attention);
+}
+.pastille.ouvert {
+  --bord-biseau: rgb(69 201 220 / 0.6);
+}
+.pastille.succes {
+  --bord-biseau: var(--succes);
+}
+.pastille.alerte {
+  --bord-biseau: var(--danger);
+}
+
+/* ─── Accueil : choix du personnage ───────────────────────────────────────── */
+.choix-perso {
+  margin: 0 0 1rem;
+}
+.choix-perso ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.perso-choix {
+  --biseau: 9px;
+  --bord-biseau: var(--filet);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  text-decoration: none;
+  background: rgb(7 13 25 / 0.55);
+  border: 1px solid var(--filet);
+  clip-path: polygon(
+    var(--biseau) 0,
+    calc(100% - var(--biseau)) 0,
+    100% var(--biseau),
+    100% calc(100% - var(--biseau)),
+    calc(100% - var(--biseau)) 100%,
+    var(--biseau) 100%,
+    0 calc(100% - var(--biseau)),
+    0 var(--biseau)
+  );
+  transition: border-color 0.15s, background 0.15s;
+}
+.perso-choix::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  --trait: transparent calc(50% - 0.9px), var(--bord-biseau) 50%, transparent calc(50% + 0.9px);
+  background:
+    linear-gradient(135deg, var(--trait)) top left / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(225deg, var(--trait)) top right / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(45deg, var(--trait)) bottom left / var(--biseau) var(--biseau) no-repeat,
+    linear-gradient(315deg, var(--trait)) bottom right / var(--biseau) var(--biseau) no-repeat;
+}
+.perso-choix:hover {
+  border-color: var(--filet-fort);
+  --bord-biseau: var(--filet-fort);
+}
+.perso-choix.choisi {
+  border-color: var(--or);
+  --bord-biseau: var(--or);
+  background: rgb(217 181 106 / 0.14);
+}

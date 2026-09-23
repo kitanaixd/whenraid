@@ -12,7 +12,7 @@ import { fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 import { compoActuelle, compoParRole } from "@/lib/annonces";
 import { Contenu, type Classe } from "@/generated/prisma/enums";
 import type { AnnonceWhereInput } from "@/generated/prisma/models";
-import { ClasseIcone, NomRole, PastilleFaction, RoleIcone } from "./ClasseIcone";
+import { ClasseIcone, FactionIcone, NomRole, PastilleFaction, RoleIcone } from "./ClasseIcone";
 import { nomEnJeu } from "@/lib/jeu";
 
 const NOMBRE_DE_CLASSES = 9;
@@ -66,17 +66,25 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
   const debutMax = (au && /^\d{4}-\d{2}-\d{2}$/.test(au) && localVersUtc(lendemain(au), "00:00", fuseau)) || null;
   const filtreActif = Boolean(contenu || debutMin || debutMax || dureeMax);
 
-  const personnages = await db.personnage.findMany({ where: { utilisateurId: utilisateur.id, supprimeLe: null } });
-  // Premier tri en base : même faction, ruleset et région qu'un de mes personnages (ou mes propres raids).
-  const combinaisons = [
-    ...new Map(personnages.map((p) => [`${p.faction}.${p.ruleset}.${p.region}`, p])).values(),
-  ].map((p) => ({ faction: p.faction, ruleset: p.ruleset, region: p.region }));
+  const personnages = await db.personnage.findMany({
+    where: { utilisateurId: utilisateur.id, supprimeLe: null },
+    orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }],
+  });
+  // Le joueur choisit le personnage pour lequel il cherche un raid (par défaut : son principal).
+  const perso = personnages.find((p) => p.id === valeur("perso")) ?? personnages[0];
+  // Lien vers la même liste avec un autre personnage, en gardant les autres filtres.
+  const lienPerso = (id: string) => {
+    const params = new URLSearchParams({ perso: id });
+    for (const nom of ["raid", "du", "au", "duree"]) if (valeur(nom)) params.set(nom, valeur(nom));
+    return `/?${params}`;
+  };
   const where: AnnonceWhereInput = {
     statut: { in: ["PUBLIEE", "COMPLETE"] },
     debutUtc: { gt: new Date(), ...(debutMin && { gte: debutMin }), ...(debutMax && { lt: debutMax }) },
     ...(contenu && { contenu }),
     ...(dureeMax && { dureeEstimee: { lte: dureeMax * 60 } }),
-    OR: [{ createurId: utilisateur.id }, ...combinaisons],
+    // Premier tri en base : même faction, ruleset et région que le personnage choisi.
+    ...(perso ? { faction: perso.faction, ruleset: perso.ruleset, region: perso.region } : { id: "" }),
   };
 
   const [annoncesBrutes, mesRaids] = await Promise.all([
@@ -106,17 +114,16 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
     chargerMesRaids(utilisateur.id),
   ]);
   const { convocations, candidatures, organises } = mesRaids;
-  // Un raid n'apparaît que si l'un de mes personnages peut y tenir une place
-  // (classe, niveau…), sauf mes propres raids et ceux où j'ai déjà candidaté.
-  const dejaInscrit = new Set([...convocations, ...candidatures].map((i) => i.place.annonce.id));
-  const annonces = annoncesBrutes
-    .filter(
-      (a) =>
-        a.createurId === utilisateur.id ||
-        dejaInscrit.has(a.id) ||
-        personnages.some((p) => rolesPourRaid(p, a.places, a).length > 0),
-    )
-    .slice(0, 50);
+  // Un raid n'apparaît que si le personnage choisi peut y tenir une place (classe, niveau…),
+  // ou s'il y a déjà candidaté.
+  const dejaInscrit = new Set(
+    [...convocations, ...candidatures].filter((i) => i.personnageId === perso?.id).map((i) => i.place.annonce.id),
+  );
+  const annonces = perso
+    ? annoncesBrutes
+        .filter((a) => dejaInscrit.has(a.id) || rolesPourRaid(perso, a.places, a).length > 0)
+        .slice(0, 50)
+    : [];
   const fiabilite = await fiabiliteRls([...new Set(annonces.map((a) => a.createurId))]);
 
   return (
@@ -183,7 +190,29 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
             </Link>
           </div>
         ) : (
+          <>
+          <nav className="choix-perso" aria-label="Personnage pour lequel chercher un raid">
+            <p className="etiquette-place">Je cherche un raid pour</p>
+            <ul>
+              {personnages.map((p) => (
+                <li key={p.id}>
+                  <Link
+                    href={lienPerso(p.id)}
+                    className={`perso-choix ${p.id === perso?.id ? "choisi" : ""}`}
+                    aria-current={p.id === perso?.id ? "true" : undefined}
+                  >
+                    <ClasseIcone classe={p.classe} taille={26} />
+                    <span className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
+                      {nomEnJeu(p)}
+                    </span>
+                    <FactionIcone faction={p.faction} taille={18} />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
           <form className="filtres" method="get" role="search" aria-label="Filtrer les raids">
+            {perso && <input type="hidden" name="perso" value={perso.id} />}
             <label className="champ">
               Raid
               <select name="raid" defaultValue={contenu ?? ""}>
@@ -219,18 +248,19 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 Filtrer
               </button>
               {filtreActif && (
-                <Link href="/" className="bouton petit">
+                <Link href={perso ? `/?perso=${perso.id}` : "/"} className="bouton petit">
                   Effacer
                 </Link>
               )}
             </div>
           </form>
+          </>
         )}
         {personnages.length === 0 ? null : annonces.length === 0 ? (
           <p className="doux">
             {filtreActif
               ? "Aucun raid ne correspond à ces filtres."
-              : "Aucun raid ouvert à tes personnages pour l'instant."}{" "}
+              : `Aucun raid ouvert à ${perso ? nomEnJeu(perso) : "ce personnage"} pour l'instant.`}{" "}
             <Link href="/annonces/nouvelle">Crée le tien !</Link>
           </p>
         ) : (
@@ -250,7 +280,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
             ] as Classe[];
             return (
               <li key={a.id} className="ligne-raid" data-fond={raids[a.contenu].image}>
-                <Link href={`/annonces/${a.id}`} className="ligne-raid-lien" aria-label={`${nomRaid(a.contenu)}, ${afficherDate(a.debutUtc, fuseau)}`} />
+                <Link href={`/annonces/${a.id}${perso ? `?perso=${perso.id}` : ""}`} className="ligne-raid-lien" aria-label={`${nomRaid(a.contenu)}, ${afficherDate(a.debutUtc, fuseau)}`} />
                 <div className="ligne-raid-infos">
                   <h3>{nomRaid(a.contenu)}</h3>
                   <span className="quand">{afficherDate(a.debutUtc, fuseau)}</span>

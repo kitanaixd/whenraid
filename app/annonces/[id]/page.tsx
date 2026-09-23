@@ -51,7 +51,7 @@ const CLASSE_STATUT_INSCRIPTION: Record<string, string> = {
 export default async function PageAnnonce({ params, searchParams }: PageProps<"/annonces/[id]">) {
   const utilisateur = await exigerUtilisateur();
   const { id } = await params;
-  const { erreur } = await searchParams;
+  const { erreur, perso: persoChoisi } = await searchParams;
 
   const annonce = await db.annonce.findUnique({
     where: { id },
@@ -496,6 +496,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                     action={candidater}
                     annonceId={annonce.id}
                     listeAttente={complet}
+                    persoInitial={typeof persoChoisi === "string" ? persoChoisi : undefined}
                     persos={persosCandidats.map(({ perso, roles }) => ({
                       id: perso.id,
                       classe: perso.classe,

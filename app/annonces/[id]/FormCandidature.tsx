@@ -17,13 +17,18 @@ export function FormCandidature({
   annonceId,
   persos,
   listeAttente,
+  persoInitial,
 }: {
   action: (form: FormData) => void;
   annonceId: string;
   persos: PersoCandidat[];
   listeAttente: boolean;
+  /** Personnage choisi sur la liste des raids, présélectionné s'il est éligible. */
+  persoInitial?: string;
 }) {
-  const [persoId, setPersoId] = useState(persos[0]?.id ?? "");
+  const [persoId, setPersoId] = useState(
+    persos.some((p) => p.id === persoInitial) ? persoInitial! : (persos[0]?.id ?? ""),
+  );
   const perso = persos.find((p) => p.id === persoId) ?? persos[0];
   const [coches, setCoches] = useState<Role[]>(perso?.roles.slice(0, 1) ?? []);
   // On ne garde que les rôles possibles pour le personnage choisi ; au moins un par défaut.
@@ -44,6 +49,7 @@ export function FormCandidature({
         <MenuDeroulant
           name="personnageId"
           etiquette="Personnage"
+          valeurInitiale={persoId}
           options={persos.map((p) => ({ valeur: p.id, libelle: p.libelle, classe: p.classe }))}
           surChangement={setPersoId}
         />
