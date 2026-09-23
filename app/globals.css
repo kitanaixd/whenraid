@@ -7,7 +7,7 @@
 :root {
   --fond: #070d19;
   --nuit: #0b1426;
-  --panneau: rgb(0 0 0 / 0.9);
+  --panneau: rgb(0 0 0 / 0.75);
   --panneau-plein: #050505;
   --filet: rgb(217 181 106 / 0.28);
   --filet-fort: rgb(217 181 106 / 0.6);
@@ -1312,4 +1312,11 @@ body:has(main[data-fond])::before {
   gap: 0.6rem;
   font-size: 1.15rem;
   margin: 0.2rem 0;
+}
+
+/* Page d'un raid : l'illustration du raid en fond de chaque carte, sous un voile sombre. */
+main[data-fond] .carte {
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.78), rgb(0 0 0 / 0.86)),
+    var(--image-fond) center / cover no-repeat;
 }
