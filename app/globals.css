@@ -2641,3 +2641,69 @@ button.danger:hover:not(:disabled) {
   border-left-color: var(--filet-fort);
   box-shadow: inset 4px 0 0 var(--or);
 }
+
+/* ─── Aperçu des notifications au survol de la cloche ─────────────────────── */
+.zone-cloche {
+  position: relative;
+}
+.apercu-notifications {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 30;
+  width: min(26rem, calc(100vw - 2rem));
+  /* L'espace transparent au-dessus garde le survol actif entre la cloche et le panneau. */
+  padding-top: 0.5rem;
+  display: none;
+}
+.zone-cloche:hover .apercu-notifications,
+.zone-cloche:focus-within .apercu-notifications {
+  display: flex;
+}
+.apercu-notifications {
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.apercu-notifications::after {
+  /* Fond du panneau, sous l'espace transparent du haut. */
+  content: "";
+  position: absolute;
+  inset: 0.5rem 0 0;
+  z-index: -1;
+  background: rgb(5 8 14 / 0.97);
+  border: 2px solid var(--filet-fort);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.6);
+}
+.apercu-notifications > * {
+  margin-left: 0.9rem;
+  margin-right: 0.9rem;
+}
+.apercu-notifications > .surtitre {
+  margin-top: 0.8rem;
+  justify-content: center;
+}
+.apercu-notifications > .bouton {
+  align-self: center;
+  margin-bottom: 0.9rem;
+}
+.apercu-notifications .notification > a,
+.apercu-notifications .notification > div {
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.2rem 0.7rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.85rem;
+}
+.apercu-notifications .notif-symbole {
+  width: 2rem;
+  height: 2rem;
+  grid-row: span 2;
+}
+.apercu-notifications .notif-date {
+  grid-column: 2;
+  font-size: 0.72rem;
+}
+@media (hover: none) {
+  .apercu-notifications {
+    display: none !important;
+  }
+}

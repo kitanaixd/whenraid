@@ -44,23 +44,26 @@ export function localVersUtc(date: string, heure: string, fuseau: string): Date 
   return new Date(utc);
 }
 
-/** Affiche un instant UTC dans le fuseau de la personne qui regarde. */
-export function afficherDate(instant: Date, fuseau: string) {
-  return new Intl.DateTimeFormat("fr-FR", {
-    timeZone: fuseau,
-    dateStyle: "full",
-    timeStyle: "short",
-  }).format(instant);
-}
-
-/** Date courte pour les lignes compactes : « jeu. 24 sept. · 21:00 ». */
-export function afficherDateCourte(instant: Date, fuseau: string) {
+/** Jour au format JJ/MM/AAAA et heure HH:MM, dans le fuseau de la personne qui regarde. */
+function jourEtHeure(instant: Date, fuseau: string) {
   const jour = new Intl.DateTimeFormat("fr-FR", {
     timeZone: fuseau,
-    weekday: "short",
-    day: "numeric",
-    month: "short",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   }).format(instant);
-  const heure = new Intl.DateTimeFormat("fr-FR", { timeZone: fuseau, timeStyle: "short" }).format(instant);
+  const heure = new Intl.DateTimeFormat("fr-FR", { timeZone: fuseau, hour: "2-digit", minute: "2-digit" }).format(instant);
+  return { jour, heure };
+}
+
+/** Affiche un instant UTC dans le fuseau de la personne qui regarde : « 24/09/2026 à 21:00 ». */
+export function afficherDate(instant: Date, fuseau: string) {
+  const { jour, heure } = jourEtHeure(instant, fuseau);
+  return `${jour} à ${heure}`;
+}
+
+/** Date pour les lignes compactes : « 24/09/2026 · 21:00 ». */
+export function afficherDateCourte(instant: Date, fuseau: string) {
+  const { jour, heure } = jourEtHeure(instant, fuseau);
   return `${jour} · ${heure}`;
 }

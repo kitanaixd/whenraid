@@ -5,6 +5,7 @@ import { utilisateurConnecte } from "@/lib/session";
 import { db } from "@/lib/db";
 import { IconeCloche } from "./Icones";
 import { MenuCompte } from "./MenuCompte";
+import { LigneNotification } from "./notifications/LigneNotification";
 
 /**
  * En-tête commun : logo et navigation à gauche ; à droite, le bouton « Créer un raid »,
@@ -12,9 +13,17 @@ import { MenuCompte } from "./MenuCompte";
  */
 export async function EnTete() {
   const utilisateur = await utilisateurConnecte();
-  const nonLues = utilisateur
-    ? await db.notification.count({ where: { utilisateurId: utilisateur.id, lue: false } })
-    : 0;
+  const [nonLues, dernieres] = utilisateur
+    ? await Promise.all([
+        db.notification.count({ where: { utilisateurId: utilisateur.id, lue: false } }),
+        db.notification.findMany({
+          where: { utilisateurId: utilisateur.id },
+          orderBy: { creeLe: "desc" },
+          take: 5,
+          include: { annonce: { select: { id: true, contenu: true, debutUtc: true } } },
+        }),
+      ])
+    : [0, []];
 
   return (
     <header className="en-tete">
@@ -33,15 +42,34 @@ export async function EnTete() {
               <Link href="/annonces/nouvelle" className="bouton principal petit">
                 Créer un raid
               </Link>
-              <Link
-                href="/notifications"
-                className={`cloche ${nonLues > 0 ? "a-lire" : ""}`}
-                aria-label={`Notifications : ${nonLues} non lue${nonLues > 1 ? "s" : ""}`}
-                title="Notifications"
-              >
-                <IconeCloche />
-                {nonLues > 0 && <span className="compteur">{nonLues > 9 ? "9+" : nonLues}</span>}
-              </Link>
+              {/* Aperçu des dernières notifications au survol (ou au focus clavier) de la cloche. */}
+              <div className="zone-cloche">
+                <Link
+                  href="/notifications"
+                  className={`cloche ${nonLues > 0 ? "a-lire" : ""}`}
+                  aria-label={`Notifications : ${nonLues} non lue${nonLues > 1 ? "s" : ""}`}
+                >
+                  <IconeCloche />
+                  {nonLues > 0 && <span className="compteur">{nonLues > 9 ? "9+" : nonLues}</span>}
+                </Link>
+                <div className="apercu-notifications">
+                  <p className="surtitre">
+                    {nonLues > 0 ? `${nonLues} non lue${nonLues > 1 ? "s" : ""}` : "Notifications"}
+                  </p>
+                  {dernieres.length === 0 ? (
+                    <p className="doux centre">Aucune notification pour l&apos;instant.</p>
+                  ) : (
+                    <ul className="liste-notifications">
+                      {dernieres.map((n) => (
+                        <LigneNotification key={n.id} n={n} fuseau={utilisateur.fuseauHoraire} />
+                      ))}
+                    </ul>
+                  )}
+                  <Link href="/notifications" className="bouton petit">
+                    Voir toutes les notifications
+                  </Link>
+                </div>
+              </div>
               <MenuCompte pseudo={utilisateur.pseudo} avatarUrl={utilisateur.avatarUrl}>
                 <Link href={`/joueurs/${utilisateur.id}`} role="menuitem">
                   Mon profil
