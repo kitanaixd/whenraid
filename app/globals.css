@@ -1788,3 +1788,17 @@ button.menu-choisi {
 .ligne-raid-droite .recherche {
   flex-wrap: nowrap;
 }
+/* Classes recherchées sous la compo. */
+.ligne-raid-droite {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+.ligne-raid-droite .recherche {
+  order: 2;
+}
+@media (max-width: 640px) {
+  .ligne-raid-droite {
+    align-items: flex-start;
+  }
+}
