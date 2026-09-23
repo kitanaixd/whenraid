@@ -117,3 +117,9 @@ dialog.confirmation.invitations h2 {
 .face dd.alerte {
   color: #b91c1c;
 }
+
+.face .badge {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-top: -0.5rem;
+}

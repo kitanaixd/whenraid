@@ -31,6 +31,7 @@ import { nomEnJeu } from "@/lib/invitations";
 import { rolesPourPlace } from "./eligibilite";
 import { BoutonAnnuler } from "./BoutonAnnuler";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
+import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 
 const NOMBRE_DE_CLASSES = Object.keys(libelleClasse).length;
 const ORDRE_ROLES = Object.keys(libelleRole);
@@ -89,6 +90,10 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   const maCandidature = inscriptions.find((i) => i.utilisateurId === utilisateur.id && estActive(i.statut));
   const ouvert = accepteCandidatures(annonce);
   const presences = etatPresences(annonce);
+  const [fiabRl, fiabCandidats] = await Promise.all([
+    fiabiliteRls([annonce.createurId]),
+    estRl ? fiabiliteMercenaires([...new Set(inscriptions.map((i) => i.utilisateurId))]) : new Map(),
+  ]);
   const participationDe = (personnageId: string | null) =>
     annonce.participations.find((p) => p.personnageId === personnageId);
   const mesPersonnages =
@@ -116,7 +121,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         <li>Vocal : {libelleVocal[annonce.vocal]}</li>
         <li>
           Organisé par{" "}
-          {estRl ? "toi" : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>} — {libelleStatutAnnonce[annonce.statut]}
+          {estRl ? "toi" : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>}{" "}
+          <small>({texteBadge(fiabRl.get(annonce.createurId)!)})</small> — {libelleStatutAnnonce[annonce.statut]}
         </li>
       </ul>
 
@@ -317,6 +323,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                       <strong>
                         <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>
                       </strong>{" "}
+                      <small>{fiabCandidats.get(i.utilisateurId) && texteBadge(fiabCandidats.get(i.utilisateurId)!)}</small>{" "}
                       — {i.personnage?.nom} (
                       {i.personnage && libelleClasse[i.personnage.classe]} {i.personnage?.niveau}
                       {i.role && `, ${libelleRole[i.role]}`}) — {libelleStatutInscription[i.statut]}

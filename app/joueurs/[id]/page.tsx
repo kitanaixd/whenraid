@@ -5,6 +5,7 @@ import { exigerUtilisateur } from "@/lib/session";
 import { statsMercenaire, statsRl } from "@/lib/profil";
 import { libelleClasse, libelleFaction } from "@/lib/libelles";
 import { nomEnJeu } from "@/lib/invitations";
+import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 
 export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">) {
   const moi = await exigerUtilisateur();
@@ -15,7 +16,12 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
   });
   if (!joueur) notFound();
 
-  const [rl, mercenaire] = await Promise.all([statsRl(joueur.id), statsMercenaire(joueur.id)]);
+  const [rl, mercenaire, fiabRl, fiabMerc] = await Promise.all([
+    statsRl(joueur.id),
+    statsMercenaire(joueur.id),
+    fiabiliteRls([joueur.id]),
+    fiabiliteMercenaires([joueur.id]),
+  ]);
 
   return (
     <main>
@@ -42,6 +48,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
       <div className="faces">
         <section className="face">
           <h2>🛡️ Raid Leader</h2>
+          <p className="badge">{texteBadge(fiabRl.get(joueur.id)!)}</p>
           <dl>
             <dt>Raids organisés</dt>
             <dd>{rl.organises}</dd>
@@ -52,6 +59,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
 
         <section className="face">
           <h2>⚔️ Mercenaire</h2>
+          <p className="badge">{texteBadge(fiabMerc.get(joueur.id)!)}</p>
           <dl>
             <dt>Raids participés</dt>
             <dd>{mercenaire.participes}</dd>
@@ -65,7 +73,8 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
         </section>
       </div>
       <p>
-        <small>Ces chiffres sont recalculés à chaque visite à partir des raids et des présences validées par les RL.</small>
+        <small>La fiabilité est recalculée à chaque visite : chaque raid compte (présent 1, parti en cours ½, absent 0 ;
+          raid tenu 1, annulé à moins de 2 h 0), les plus récents pèsent davantage, et chacun démarre à 80 %.</small>
       </p>
     </main>
   );
