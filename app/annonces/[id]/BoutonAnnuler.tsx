@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 
 export function BoutonAnnuler({
   action,
@@ -51,9 +52,9 @@ export function BoutonAnnuler({
             <button type="button" onClick={() => dialogue.current?.close()} autoFocus>
               Garder le raid
             </button>{" "}
-            <button type="submit" className="danger">
+            <BoutonEnvoi className="danger" enCours="Annulation…">
               Annuler définitivement
-            </button>
+            </BoutonEnvoi>
           </p>
         </form>
       </dialog>

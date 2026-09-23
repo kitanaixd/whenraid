@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Classe, Faction, Region, Role, Ruleset } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
+import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { exigerUtilisateur } from "@/lib/session";
 import { choix, choixMultiples, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
 import {
@@ -194,7 +195,7 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
             principal
           </label>
         </p>
-        <button type="submit">Ajouter ce personnage</button>
+        <BoutonEnvoi enCours="Ajout…">Ajouter ce personnage</BoutonEnvoi>
       </form>
     </main>
   );

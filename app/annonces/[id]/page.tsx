@@ -22,6 +22,7 @@ import { BoutonInvitations } from "./BoutonInvitations";
 import { nomEnJeu } from "@/lib/invitations";
 import { rolesPourPlace } from "./eligibilite";
 import { BoutonAnnuler } from "./BoutonAnnuler";
+import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 
 const NOMBRE_DE_CLASSES = Object.keys(libelleClasse).length;
 const ORDRE_ROLES = Object.keys(libelleRole);
@@ -238,13 +239,13 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                           <br />
                           <form action={accepter} style={{ display: "inline" }}>
                             <input type="hidden" name="inscriptionId" value={i.id} />
-                            <button type="submit">
+                            <BoutonEnvoi enCours="…">
                               {place.statut === "POURVUE" ? "Appeler en remplaçant" : "Accepter"}
-                            </button>
+                            </BoutonEnvoi>
                           </form>{" "}
                           <form action={refuser} style={{ display: "inline" }}>
                             <input type="hidden" name="inscriptionId" value={i.id} />
-                            <button type="submit">Refuser</button>
+                            <BoutonEnvoi enCours="…">Refuser</BoutonEnvoi>
                           </form>
                         </>
                       )}
@@ -270,7 +271,9 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                     aria-label="Note pour le RL"
                     size={36}
                   />{" "}
-                  <button type="submit">{place.statut === "POURVUE" ? "Liste d'attente" : "Candidater"}</button>
+                  <BoutonEnvoi enCours="Envoi…">
+                    {place.statut === "POURVUE" ? "Liste d'attente" : "Candidater"}
+                  </BoutonEnvoi>
                 </form>
               )}
             </li>

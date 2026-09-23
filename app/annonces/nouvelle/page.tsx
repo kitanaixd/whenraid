@@ -2,11 +2,13 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Classe, Contenu, ReglesLoot, Role, Vocal } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { exigerUtilisateur } from "@/lib/session";
 import { localVersUtc } from "@/lib/dates";
 import { raids } from "@/lib/raids";
 import { LIGNES_EXIGENCES, rolePossible, rolesParClasse } from "@/lib/jeu";
 import { ChoixCompo } from "./ChoixCompo";
+import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { choix, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
 import {
   libelleClasse,
@@ -106,28 +108,36 @@ async function creerAnnonce(form: FormData) {
     const langue = String(form.get("langueRequise") ?? "");
     const dureeHeures = entier(form, "dureeHeures", { min: 1, max: 8 });
 
-    const annonce = await db.annonce.create({
-      data: {
-        createurId: utilisateur.id,
-        contenu,
-        faction: personnage.faction,
-        ruleset: personnage.ruleset,
-        region: personnage.region,
-        organisateurPersonnageId: personnage.id,
-        taille,
-        debutUtc,
-        dureeEstimee: dureeHeures ? dureeHeures * 60 : null,
-        reglesLoot: choix(form, "reglesLoot", ReglesLoot),
-        langueRequise: langue in LANGUES ? langue : null,
-        ...vocal,
-        niveauMin: entier(form, "niveauMin", { min: 1, max: 60 }),
-        statut: "PUBLIEE",
-        publieeLe: new Date(),
-        composition: { create: composition },
-        places: { create: places },
-      },
-    });
-    annonceId = annonce.id;
+    const donnees = {
+      createurId: utilisateur.id,
+      contenu,
+      faction: personnage.faction,
+      ruleset: personnage.ruleset,
+      region: personnage.region,
+      organisateurPersonnageId: personnage.id,
+      taille,
+      debutUtc,
+      dureeEstimee: dureeHeures ? dureeHeures * 60 : null,
+      reglesLoot: choix(form, "reglesLoot", ReglesLoot),
+      langueRequise: langue in LANGUES ? langue : null,
+      ...vocal,
+      niveauMin: entier(form, "niveauMin", { min: 1, max: 60 }),
+      statut: "PUBLIEE",
+      publieeLe: new Date(),
+      composition: { create: composition },
+      places: { create: places },
+    } satisfies Prisma.AnnonceUncheckedCreateInput;
+    try {
+      annonceId = (await db.annonce.create({ data: donnees })).id;
+    } catch (e) {
+      // Double envoi du formulaire : la base refuse le doublon, on renvoie vers le raid déjà créé.
+      if (!(e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002")) throw e;
+      const existant = await db.annonce.findFirst({
+        where: { createurId: utilisateur.id, contenu, debutUtc, statut: { in: ["BROUILLON", "PUBLIEE", "COMPLETE"] } },
+      });
+      if (!existant) throw e;
+      annonceId = existant.id;
+    }
   } catch (e) {
     if (!(e instanceof ErreurFormulaire)) throw e;
     erreur = e.message;
@@ -261,7 +271,7 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
         </fieldset>
 
         <p>
-          <button type="submit">Publier le raid</button>
+          <BoutonEnvoi enCours="Publication…">Publier le raid</BoutonEnvoi>
         </p>
       </form>
     </main>

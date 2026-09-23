@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 
 export function BoutonInvitations({
   action,
@@ -58,9 +59,9 @@ export function BoutonInvitations({
             <button type="button" onClick={() => dialogue.current?.close()} autoFocus>
               Pas maintenant
             </button>{" "}
-            <button type="submit" className="principal" disabled={nbConfirmes === 0}>
+            <BoutonEnvoi className="principal" disabled={nbConfirmes === 0} enCours="Envoi…">
               Envoyer
-            </button>
+            </BoutonEnvoi>
           </p>
         </form>
       </dialog>
