@@ -69,17 +69,22 @@ export async function candidater(form: FormData) {
     retour("Tu es déjà confirmé dans un autre raid sur ce créneau.");
   }
 
-  await db.inscription.create({
-    data: {
-      placeId: place.id,
+  await db.$transaction([
+    db.inscription.create({
+      data: {
+        placeId: place.id,
       personnageId: personnage!.id,
       utilisateurId: utilisateur.id,
       role: role as never,
       note: note || null,
-      // Place déjà pourvue (raid plein) : directement en liste d'attente.
-      statut: place.statut === "OUVERTE" ? "INSCRIT" : "LISTE_ATTENTE",
-    },
-  });
+        // Place déjà pourvue (raid plein) : directement en liste d'attente.
+        statut: place.statut === "OUVERTE" ? "INSCRIT" : "LISTE_ATTENTE",
+      },
+    }),
+    db.notification.create({
+      data: { utilisateurId: annonce.createurId, type: "NOUVELLE_CANDIDATURE", annonceId: annonce.id },
+    }),
+  ]);
   rafraichir(annonce.id);
   retour();
 }
@@ -110,6 +115,9 @@ export async function accepter(form: FormData) {
 
   await db.$transaction(async (tx) => {
     await tx.inscription.update({ where: { id: inscription.id }, data: { statut: "CONFIRME" } });
+    await tx.notification.create({
+      data: { utilisateurId: inscription.utilisateurId, type: "CANDIDATURE_ACCEPTEE", annonceId: annonce.id },
+    });
 
     // Première acceptation sur la place : elle devient pourvue, les autres candidats
     // de cette place passent en liste d'attente. Sinon, c'est un remplaçant.
@@ -127,11 +135,25 @@ export async function accepter(form: FormData) {
     // Raid plein : il passe « complet » et tous les candidats restants en liste d'attente.
     const places = await tx.place.findMany({ where: { annonceId: annonce.id }, select: { statut: true } });
     if (estComplet(places)) {
-      await tx.annonce.updateMany({ where: { id: annonce.id, statut: "PUBLIEE" }, data: { statut: "COMPLETE" } });
+      const devientComplet = await tx.annonce.updateMany({
+        where: { id: annonce.id, statut: "PUBLIEE" },
+        data: { statut: "COMPLETE" },
+      });
       await tx.inscription.updateMany({
         where: { place: { annonceId: annonce.id }, statut: "INSCRIT" },
         data: { statut: "LISTE_ATTENTE" },
       });
+      // Une seule fois, au moment où le raid devient complet : on prévient ceux qui attendent.
+      if (devientComplet.count === 1) {
+        const enAttente = await tx.inscription.findMany({
+          where: { place: { annonceId: annonce.id }, statut: "LISTE_ATTENTE" },
+          select: { utilisateurId: true },
+        });
+        const destinataires = [...new Set(enAttente.map((i) => i.utilisateurId))];
+        await tx.notification.createMany({
+          data: destinataires.map((utilisateurId) => ({ utilisateurId, type: "RAID_COMPLET" as const, annonceId: annonce.id })),
+        });
+      }
     }
 
     // Le joueur est pris : ses candidatures sur le même créneau sont retirées.
@@ -162,7 +184,12 @@ export async function refuser(form: FormData) {
   if (!estActive(inscription.statut) || inscription.statut === "CONFIRME") {
     retour("Cette candidature n'est plus en attente.");
   }
-  await db.inscription.update({ where: { id: inscription.id }, data: { statut: "REFUSE" } });
+  await db.$transaction([
+    db.inscription.update({ where: { id: inscription.id }, data: { statut: "REFUSE" } }),
+    db.notification.create({
+      data: { utilisateurId: inscription.utilisateurId, type: "CANDIDATURE_REFUSEE", annonceId: annonce.id },
+    }),
+  ]);
   rafraichir(annonce.id);
   retour();
 }
@@ -183,9 +210,23 @@ export async function annuler(form: FormData) {
 
   // On enregistre les faits ; la réputation se calculera à la lecture (règle 3).
   // Le filtre sur le statut évite une double annulation simultanée.
-  await db.annonce.updateMany({
-    where: { id: annonce.id, statut: { in: ["PUBLIEE", "COMPLETE"] } },
-    data: { statut: "ANNULEE", annuleeLe: new Date(), annuleeComplete: estComplet(annonce.places) },
+  await db.$transaction(async (tx) => {
+    const annulee = await tx.annonce.updateMany({
+      where: { id: annonce.id, statut: { in: ["PUBLIEE", "COMPLETE"] } },
+      data: { statut: "ANNULEE", annuleeLe: new Date(), annuleeComplete: estComplet(annonce.places) },
+    });
+    if (annulee.count === 0) return;
+    const concernes = await tx.inscription.findMany({
+      where: { place: { annonceId: annonce.id }, statut: { in: [...STATUTS_ACTIFS] } },
+      select: { utilisateurId: true },
+    });
+    await tx.notification.createMany({
+      data: [...new Set(concernes.map((i) => i.utilisateurId))].map((utilisateurId) => ({
+        utilisateurId,
+        type: "RAID_ANNULE" as const,
+        annonceId: annonce.id,
+      })),
+    });
   });
   rafraichir(annonce.id);
   retour();
