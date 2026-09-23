@@ -1802,3 +1802,13 @@ button.menu-choisi {
     align-items: flex-start;
   }
 }
+.titre-perso {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.perso-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
