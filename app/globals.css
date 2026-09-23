@@ -1735,3 +1735,16 @@ a.bouton:focus-visible {
   align-items: center;
   gap: 0.3rem;
 }
+
+/* ─── Hauteur unique des champs : textes, listes et menus déroulants ─────── */
+:root {
+  --hauteur-champ: 2.9rem;
+}
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+button.menu-choisi {
+  box-sizing: border-box;
+  height: var(--hauteur-champ);
+  padding-top: 0;
+  padding-bottom: 0;
+}
