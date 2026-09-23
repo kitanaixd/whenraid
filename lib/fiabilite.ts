@@ -31,12 +31,12 @@ export function calculer(evenements: Evenement[], maintenant: number) {
 export type Fiabilite = ReturnType<typeof calculer>;
 
 export function badge({ score, nombre }: Fiabilite) {
-  if (nombre < RAIDS_MINIMUM) return { icone: "🆕", libelle: "Nouveau", pourcent: null };
+  if (nombre < RAIDS_MINIMUM) return { icone: "🆕", niveau: "nouveau", libelle: "Nouveau", pourcent: null };
   const pourcent = Math.round(score * 100);
-  if (pourcent >= 90) return { icone: "🟢", libelle: "Très fiable", pourcent };
-  if (pourcent >= 75) return { icone: "🔵", libelle: "Fiable", pourcent };
-  if (pourcent >= 60) return { icone: "🟠", libelle: "Irrégulier", pourcent };
-  return { icone: "🔴", libelle: "Peu fiable", pourcent };
+  if (pourcent >= 90) return { icone: "🟢", niveau: "tres-fiable", libelle: "Très fiable", pourcent };
+  if (pourcent >= 75) return { icone: "🔵", niveau: "fiable", libelle: "Fiable", pourcent };
+  if (pourcent >= 60) return { icone: "🟠", niveau: "irregulier", libelle: "Irrégulier", pourcent };
+  return { icone: "🔴", niveau: "peu-fiable", libelle: "Peu fiable", pourcent };
 }
 
 /** « 🟢 Très fiable 92 % » ou « 🆕 Nouveau ». */

@@ -42,7 +42,8 @@ import { BoutonAnnuler } from "./BoutonAnnuler";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { ClasseIcone, NomClasse, NomRole, PastilleFaction, PastilleRuleset, RoleIcone } from "@/app/ClasseIcone";
 import { FormCandidature } from "./FormCandidature";
-import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
+import { fiabiliteMercenaires, fiabiliteRls } from "@/lib/fiabilite";
+import { BadgeFiabilite } from "@/app/BadgeFiabilite";
 
 const NOMBRE_DE_CLASSES = Object.keys(libelleClasse).length;
 const ORDRE_ROLES = Object.keys(libelleRole);
@@ -417,7 +418,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         </div>
                         <div className="doux">
                           <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
-                          {fiabCandidats.get(i.utilisateurId) && texteBadge(fiabCandidats.get(i.utilisateurId)!)}
+                          <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} />
                         </div>
                         {i.personnage?.lienLogs && (
                           <a href={i.personnage.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
@@ -653,7 +654,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             )}
             <p className="doux">
               {estRl ? "Toi" : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>} ·{" "}
-              {texteBadge(fiabRl.get(annonce.createurId)!)}
+              <BadgeFiabilite fiabilite={fiabRl.get(annonce.createurId)} />
             </p>
           </section>
         </aside>

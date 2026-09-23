@@ -2150,3 +2150,72 @@ body {
   font-size: 1.2rem;
   padding-left: 0.5rem;
 }
+
+/* Bouton d'une ligne de raid : colonne à droite, centrée verticalement. */
+.ligne-raid:not(.compacte) .ligne-raid-droite {
+  margin-left: auto;
+}
+.ligne-raid:not(.compacte) > .ligne-raid-action {
+  align-self: center;
+  flex-shrink: 0;
+}
+@media (max-width: 640px) {
+  .ligne-raid:not(.compacte) > .ligne-raid-action {
+    align-self: flex-start;
+  }
+}
+
+/* Badge de fiabilité : point de couleur + libellé. */
+.badge-fiabilite {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: 0.4rem;
+  padding: 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--texte);
+  border: 1px solid var(--filet);
+  background: rgb(0 0 0 / 0.4);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.badge-fiabilite::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--point);
+  box-shadow: 0 0 6px var(--point);
+}
+.fiabilite-nouveau {
+  --point: var(--turquoise);
+}
+.fiabilite-tres-fiable {
+  --point: var(--succes);
+}
+.fiabilite-fiable {
+  --point: #5b8dd9;
+}
+.fiabilite-irregulier {
+  --point: var(--attention);
+}
+.fiabilite-peu-fiable {
+  --point: var(--danger);
+}
+.fiabilite-pourcent {
+  color: var(--texte-doux);
+}
+.ligne-raid:not(.compacte) > .ligne-raid-action {
+  width: 8.5rem;
+  display: flex;
+  justify-content: flex-end;
+}
+@media (max-width: 640px) {
+  .ligne-raid:not(.compacte) > .ligne-raid-action {
+    width: auto;
+  }
+  .ligne-raid:not(.compacte) > .ligne-raid-action:empty {
+    display: none;
+  }
+}

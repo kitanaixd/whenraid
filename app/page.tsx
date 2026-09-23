@@ -7,7 +7,8 @@ import { afficherDate, localVersUtc } from "@/lib/dates";
 import { nomRaid, raids } from "@/lib/raids";
 import { rolesPourRaid } from "@/lib/eligibilite";
 import { chargerMesRaids } from "@/lib/mesRaids";
-import { fiabiliteRls, texteBadge } from "@/lib/fiabilite";
+import { fiabiliteRls } from "@/lib/fiabilite";
+import { BadgeFiabilite } from "./BadgeFiabilite";
 import { includeLigneRaid, resumeLigneRaid } from "@/lib/ligneRaid";
 import { Contenu } from "@/generated/prisma/enums";
 import type { AnnonceWhereInput } from "@/generated/prisma/models";
@@ -135,13 +136,13 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
 
   /** Ce qui distingue un raid où je suis inscrit ou que j'organise. */
   const marqueDe = (annonceId: string, createurId: string): Marque | undefined => {
-    if (createurId === utilisateur.id) return { type: "organise", texte: "★ Tu organises" };
+    if (createurId === utilisateur.id) return { type: "organise", texte: "★ Votre raid" };
     const i = monInscription.get(annonceId);
     if (!i) return undefined;
     const perso = i.personnage ? { classe: i.personnage.classe, nom: nomEnJeu(i.personnage) } : undefined;
     if (i.statut === "CONFIRME") return { type: "convie", texte: "✔ Convié", perso };
-    if (i.statut === "LISTE_ATTENTE") return { type: "attente", texte: "Liste d'attente", perso };
-    return { type: "candidat", texte: "⏳ Candidat", perso };
+    if (i.statut === "LISTE_ATTENTE") return { type: "attente", texte: "Réserve", perso };
+    return { type: "candidat", texte: "⏳ Liste d'attente", perso };
   };
 
   return (
@@ -168,7 +169,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   lien={`/annonces/${a.id}`}
                   marque={{
                     type: "organise",
-                    texte: "★ Tu organises",
+                    texte: "★ Votre raid",
                     detail: n > 0 ? `${n} candidature${n > 1 ? "s" : ""}` : undefined,
                   }}
                 />
@@ -319,7 +320,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   marque={marque}
                   auteur={
                     <>
-                      par {a.createur.pseudo} · {texteBadge(fiabilite.get(a.createurId)!)}
+                      par {a.createur.pseudo} <BadgeFiabilite fiabilite={fiabilite.get(a.createurId)} />
                     </>
                   }
                   action={
@@ -333,7 +334,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                         value={a.id}
                         className="petit principal"
                       >
-                        {a.statut === "COMPLETE" ? "Liste d'attente" : "Candidater"}
+                        {a.statut === "COMPLETE" ? "Réserve" : "Candidater"}
                       </button>
                     )
                   }

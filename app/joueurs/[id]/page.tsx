@@ -6,7 +6,8 @@ import { statsMercenaire, statsRl } from "@/lib/profil";
 import { libelleClasse, libelleFaction } from "@/lib/libelles";
 import { nomEnJeu } from "@/lib/invitations";
 import { ClasseIcone, FactionIcone } from "@/app/ClasseIcone";
-import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
+import { fiabiliteMercenaires, fiabiliteRls } from "@/lib/fiabilite";
+import { BadgeFiabilite } from "@/app/BadgeFiabilite";
 
 export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">) {
   const moi = await exigerUtilisateur();
@@ -67,7 +68,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
       <div className="faces">
         <section className="face">
           <h2>🛡️ Raid Leader</h2>
-          <p className="badge">{texteBadge(fiabRl.get(joueur.id)!)}</p>
+          <p className="badge"><BadgeFiabilite fiabilite={fiabRl.get(joueur.id)} /></p>
           <dl>
             <dt>Raids organisés</dt>
             <dd>{rl.organises}</dd>
@@ -78,7 +79,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
 
         <section className="face">
           <h2>⚔️ Mercenaire</h2>
-          <p className="badge">{texteBadge(fiabMerc.get(joueur.id)!)}</p>
+          <p className="badge"><BadgeFiabilite fiabilite={fiabMerc.get(joueur.id)} /></p>
           <dl>
             <dt>Raids participés</dt>
             <dd>{mercenaire.participes}</dd>

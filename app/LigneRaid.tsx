@@ -107,9 +107,11 @@ export function LigneRaid({
               {r.placeLibre && <span className="pastille">Toutes classes</span>}
             </div>
           )}
-          {action && <div className="ligne-raid-action">{action}</div>}
         </div>
       )}
+      {/* Version complète : le bouton forme une colonne à droite de la compo. */}
+      {/* Colonne toujours présente (même vide) pour que les compos restent alignées d'une ligne à l'autre. */}
+      {!compact && <div className="ligne-raid-action">{action}</div>}
     </li>
   );
 }
