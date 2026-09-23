@@ -11,15 +11,26 @@ export function BoutonEnvoi({
   enCours = "Envoi…",
   className,
   disabled,
+  name,
+  value,
 }: {
   children: React.ReactNode;
   enCours?: string;
   className?: string;
   disabled?: boolean;
+  name?: string;
+  value?: string;
 }) {
   const { pending } = useFormStatus();
   return (
-    <button type="submit" className={className} disabled={pending || disabled} aria-busy={pending}>
+    <button
+      type="submit"
+      name={name}
+      value={value}
+      className={className}
+      disabled={pending || disabled}
+      aria-busy={pending}
+    >
       {pending ? enCours : children}
     </button>
   );

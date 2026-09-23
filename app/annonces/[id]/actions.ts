@@ -6,8 +6,16 @@ import type { TypeNotification } from "@/generated/prisma/enums";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
-import { accepteCandidatures, estActive, estComplet, STATUTS_ACTIFS, STATUTS_EN_ATTENTE } from "@/lib/annonces";
-import { creneau, seChevauchent } from "@/lib/jeu";
+import {
+  accepteCandidatures,
+  estActive,
+  estComplet,
+  etatPresences,
+  rlPeutAgir,
+  STATUTS_ACTIFS,
+  STATUTS_EN_ATTENTE,
+} from "@/lib/annonces";
+import { seChevauchent } from "@/lib/jeu";
 import { rolesPourPlace } from "./eligibilite";
 import { envoyerMp } from "@/lib/discord";
 import { texteNotification } from "@/lib/notifications";
@@ -45,10 +53,6 @@ function rafraichir(annonceId: string) {
   revalidatePath("/");
 }
 
-/** Le RL garde la main sur ses candidats jusqu'à la fin prévue du raid (remplaçants). */
-function rlPeutAgir(annonce: { statut: string; debutUtc: Date; dureeEstimee: number | null }) {
-  return ["PUBLIEE", "COMPLETE"].includes(annonce.statut) && Date.now() < creneau(annonce).fin;
-}
 
 /** Le joueur est-il déjà confirmé dans un autre raid sur ce créneau ? */
 async function dejaConfirmeAilleurs(
@@ -273,6 +277,54 @@ export async function envoyerLesInvitations(form: FormData) {
 
   await db.annonce.update({ where: { id: annonce.id }, data: { invitationsEnvoyeesLe: new Date() } });
   after(() => envoyerInvitations(annonce.id));
+  rafraichir(annonce.id);
+  retour();
+}
+
+const RESULTATS = ["PRESENT", "ABSENT", "PARTI_EN_COURS"] as const;
+
+export async function enregistrerPresences(form: FormData) {
+  const utilisateur = await exigerUtilisateur();
+  const annonceId = String(form.get("annonceId") ?? "");
+  const retour = retourVers(annonceId);
+  const valider = form.get("valider") === "1";
+
+  const annonce = await db.annonce.findFirst({
+    where: { id: annonceId, createurId: utilisateur.id },
+    include: { places: { include: { inscriptions: { where: { statut: "CONFIRME" } } } } },
+  });
+  if (!annonce) notFound();
+  const etat = etatPresences(annonce);
+  if (!etat.modifiable) retour("La feuille de présence n'est pas modifiable.");
+  if (valider && !etat.validable) retour("Tu pourras valider la fin du raid une fois l'heure de fin passée.");
+
+  const confirmes = annonce.places.flatMap((p) => p.inscriptions).filter((i) => i.personnageId);
+  await db.$transaction(async (tx) => {
+    for (const i of confirmes) {
+      const brut = String(form.get(`presence.${i.id}`) ?? "PRESENT");
+      const resultat = (RESULTATS as readonly string[]).includes(brut) ? (brut as (typeof RESULTATS)[number]) : "PRESENT";
+      // On ne peut pas se distinguer en étant absent.
+      const distinction = resultat !== "ABSENT" && form.get(`distinction.${i.id}`) === "on";
+      await tx.participation.upsert({
+        where: { annonceId_personnageId: { annonceId: annonce.id, personnageId: i.personnageId! } },
+        create: {
+          annonceId: annonce.id,
+          personnageId: i.personnageId!,
+          utilisateurId: i.utilisateurId,
+          resultat,
+          distinction,
+          source: "VALIDATION_MANUELLE",
+        },
+        update: { resultat, distinction, enregistreLe: new Date() },
+      });
+    }
+    if (valider) {
+      await tx.annonce.update({
+        where: { id: annonce.id },
+        data: { presencesValideesLe: new Date(), statut: "CLOTUREE" },
+      });
+    }
+  });
   rafraichir(annonce.id);
   retour();
 }

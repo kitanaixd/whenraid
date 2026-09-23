@@ -42,3 +42,26 @@ export function compoActuelle(
 export function accepteCandidatures(annonce: { statut: string; debutUtc: Date }) {
   return ["PUBLIEE", "COMPLETE"].includes(annonce.statut) && annonce.debutUtc.getTime() > Date.now();
 }
+
+/** Feuille de présence : ouverte dès le début du raid, validable après sa fin prévue. */
+export function etatPresences(annonce: {
+  statut: string;
+  debutUtc: Date;
+  dureeEstimee: number | null;
+  presencesValideesLe: Date | null;
+}) {
+  const maintenant = Date.now();
+  const actif = ["PUBLIEE", "COMPLETE"].includes(annonce.statut) && !annonce.presencesValideesLe;
+  const fin = annonce.debutUtc.getTime() + (annonce.dureeEstimee ?? 180) * 60_000;
+  return {
+    visible: annonce.statut === "CLOTUREE" || (actif && maintenant >= annonce.debutUtc.getTime()),
+    modifiable: actif && maintenant >= annonce.debutUtc.getTime(),
+    validable: actif && maintenant >= fin,
+  };
+}
+
+/** Le RL garde la main (candidats, remplaçants, invitations) jusqu'à la fin prévue du raid. */
+export function rlPeutAgir(annonce: { statut: string; debutUtc: Date; dureeEstimee: number | null }) {
+  const fin = annonce.debutUtc.getTime() + (annonce.dureeEstimee ?? 180) * 60_000;
+  return ["PUBLIEE", "COMPLETE"].includes(annonce.statut) && Date.now() < fin;
+}

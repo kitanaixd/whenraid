@@ -5,7 +5,15 @@ import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { afficherDate } from "@/lib/dates";
 import { nomRaid } from "@/lib/raids";
-import { accepteCandidatures, compoActuelle, estActive, estComplet, estEnAttente } from "@/lib/annonces";
+import {
+  accepteCandidatures,
+  compoActuelle,
+  estActive,
+  estComplet,
+  estEnAttente,
+  etatPresences,
+  rlPeutAgir,
+} from "@/lib/annonces";
 import {
   libelleClasse,
   libelleFaction,
@@ -17,7 +25,7 @@ import {
   libelleStatutPlace,
   libelleVocal,
 } from "@/lib/libelles";
-import { accepter, annuler, candidater, envoyerLesInvitations, refuser } from "./actions";
+import { accepter, annuler, candidater, enregistrerPresences, envoyerLesInvitations, refuser } from "./actions";
 import { BoutonInvitations } from "./BoutonInvitations";
 import { nomEnJeu } from "@/lib/invitations";
 import { rolesPourPlace } from "./eligibilite";
@@ -49,6 +57,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
       createur: { select: { pseudo: true } },
       organisateurPersonnage: true,
       composition: true,
+      participations: true,
       places: {
         orderBy: [{ role: "asc" }, { id: "asc" }],
         include: {
@@ -79,6 +88,9 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   const complet = estComplet(annonce.places);
   const maCandidature = inscriptions.find((i) => i.utilisateurId === utilisateur.id && estActive(i.statut));
   const ouvert = accepteCandidatures(annonce);
+  const presences = etatPresences(annonce);
+  const participationDe = (personnageId: string | null) =>
+    annonce.participations.find((p) => p.personnageId === personnageId);
   const mesPersonnages =
     estRl || maCandidature || !ouvert
       ? []
@@ -103,7 +115,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         {annonce.langueRequise && <li>Langue : {annonce.langueRequise === "fr" ? "français" : "anglais"}</li>}
         <li>Vocal : {libelleVocal[annonce.vocal]}</li>
         <li>
-          Organisé par {estRl ? "toi" : annonce.createur.pseudo} — {libelleStatutAnnonce[annonce.statut]}
+          Organisé par{" "}
+          {estRl ? "toi" : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>} — {libelleStatutAnnonce[annonce.statut]}
         </li>
       </ul>
 
@@ -170,7 +183,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
               </small>
             </p>
           )}
-          {["PUBLIEE", "COMPLETE"].includes(annonce.statut) && (
+          {rlPeutAgir(annonce) && (
             <div>
               <BoutonInvitations
                 action={envoyerLesInvitations}
@@ -203,6 +216,82 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         </section>
       )}
 
+      {estRl && presences.visible && (
+        <section id="presences">
+          <h2>Feuille de présence</h2>
+          {annonce.presencesValideesLe ? (
+            <p className="encadre">✔ Présences validées le {afficherDate(annonce.presencesValideesLe, fuseau)}.</p>
+          ) : (
+            <p>
+              <small>
+                Signale les absents pendant le raid, puis valide la fin du raid une fois terminé. Tout le monde est
+                présent par défaut.
+              </small>
+            </p>
+          )}
+          {confirmes.length === 0 ? (
+            <p>Aucun joueur confirmé sur ce raid.</p>
+          ) : (
+            <form action={enregistrerPresences}>
+              <input type="hidden" name="annonceId" value={annonce.id} />
+              <table>
+                <thead>
+                  <tr>
+                    <th>Joueur</th>
+                    <th>Présence</th>
+                    <th>S&apos;est distingué</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {confirmes.map((i) => {
+                    const p = participationDe(i.personnageId);
+                    return (
+                      <tr key={i.id}>
+                        <td>
+                          <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> —{" "}
+                          {i.personnage!.nom} ({libelleClasse[i.personnage!.classe]})
+                        </td>
+                        <td>
+                          <select
+                            name={`presence.${i.id}`}
+                            defaultValue={p?.resultat ?? "PRESENT"}
+                            disabled={!presences.modifiable}
+                            aria-label={`Présence de ${i.personnage!.nom}`}
+                          >
+                            <option value="PRESENT">Présent</option>
+                            <option value="ABSENT">Absent</option>
+                            <option value="PARTI_EN_COURS">Parti en cours</option>
+                          </select>
+                        </td>
+                        <td>
+                          <input
+                            type="checkbox"
+                            name={`distinction.${i.id}`}
+                            defaultChecked={p?.distinction ?? false}
+                            disabled={!presences.modifiable}
+                            aria-label={`${i.personnage!.nom} s'est distingué`}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {presences.modifiable && (
+                <p>
+                  <BoutonEnvoi enCours="Enregistrement…">Enregistrer</BoutonEnvoi>{" "}
+                  {presences.validable && (
+                    <BoutonEnvoi name="valider" value="1" className="principal" enCours="Validation…">
+                      Valider la fin du raid
+                    </BoutonEnvoi>
+                  )}
+                </p>
+              )}
+            </form>
+          )}
+        </section>
+      )}
+
       <h2>Places</h2>
       {complet && !estRl && ouvert && !maCandidature && (
         <p className="encadre">
@@ -225,7 +314,10 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                 <ul>
                   {candidats.map((i) => (
                     <li key={i.id}>
-                      <strong>{i.utilisateur.pseudo}</strong> — {i.personnage?.nom} (
+                      <strong>
+                        <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>
+                      </strong>{" "}
+                      — {i.personnage?.nom} (
                       {i.personnage && libelleClasse[i.personnage.classe]} {i.personnage?.niveau}
                       {i.role && `, ${libelleRole[i.role]}`}) — {libelleStatutInscription[i.statut]}
                       {remplacants.some((r) => r.id === i.id) && " (remplaçant)"}

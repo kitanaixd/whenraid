@@ -93,3 +93,27 @@ dialog.confirmation.invitations {
 dialog.confirmation.invitations h2 {
   color: #1d4ed8;
 }
+
+/* Profil à deux faces */
+.faces {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+}
+.face {
+  border: 1px solid #cbd5e1;
+  padding: 0 1rem;
+}
+.face dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.4rem 1rem;
+}
+.face dd {
+  margin: 0;
+  font-weight: bold;
+  text-align: right;
+}
+.face dd.alerte {
+  color: #b91c1c;
+}

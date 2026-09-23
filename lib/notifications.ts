@@ -20,5 +20,7 @@ export function texteNotification(
       return `⚠ Le raid ${raid} a été annulé par son RL.`;
     case "NOUVELLE_CANDIDATURE":
       return `Nouvelle candidature sur ton raid ${raid}.`;
+    case "VALIDER_PRESENCES":
+      return `✅ Ton raid ${raid} est terminé : valide les présences de tes joueurs.`;
   }
 }

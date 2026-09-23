@@ -1,9 +1,11 @@
 import { timingSafeEqual } from "node:crypto";
 import { db } from "@/lib/db";
-import { envoyerRappelRl } from "@/lib/invitations";
+import { envoyerRappelFin, envoyerRappelRl } from "@/lib/invitations";
+import { creneau } from "@/lib/jeu";
 
-// Appelée toutes les 5 minutes par cron-job.org. Envoie au RL un MP de rappel
-// pour chaque raid qui commence dans les 15 prochaines minutes.
+// Appelée toutes les 5 minutes par cron-job.org. Envoie au RL :
+// - un MP de rappel pour chaque raid qui commence dans les 15 prochaines minutes ;
+// - un MP pour valider les présences de chaque raid terminé.
 const AVANCE_MINUTES = 15;
 
 function autorise(request: Request) {
@@ -42,5 +44,27 @@ export async function GET(request: Request) {
       envoyes++;
     }
   }
-  return Response.json({ rappels: envoyes });
+
+  // Raids terminés (fin prévue dépassée), présences pas encore validées.
+  const enCours = await db.annonce.findMany({
+    where: {
+      statut: { in: ["PUBLIEE", "COMPLETE"] },
+      rappelFinEnvoyeLe: null,
+      presencesValideesLe: null,
+      debutUtc: { lte: maintenant, gt: new Date(maintenant.getTime() - 7 * 24 * 3600_000) },
+    },
+    select: { id: true, debutUtc: true, dureeEstimee: true },
+  });
+  let fins = 0;
+  for (const raid of enCours.filter((r) => creneau(r).fin <= maintenant.getTime())) {
+    const reserve = await db.annonce.updateMany({
+      where: { id: raid.id, rappelFinEnvoyeLe: null },
+      data: { rappelFinEnvoyeLe: maintenant },
+    });
+    if (reserve.count === 1) {
+      await envoyerRappelFin(raid.id);
+      fins++;
+    }
+  }
+  return Response.json({ rappels: envoyes, fins });
 }

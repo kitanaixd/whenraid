@@ -83,3 +83,18 @@ export async function envoyerRappelRl(annonceId: string) {
       `Envoie-leur les invitations (vocal et /w) ici :\n${URL_SITE}/annonces/${annonce.id}`,
   );
 }
+
+/** Fin du raid : on demande au RL de valider les présences (MP + notification sur le site). */
+export async function envoyerRappelFin(annonceId: string) {
+  const raid = await chargerRaid(annonceId);
+  if (!raid) return;
+  const { annonce } = raid;
+  await db.notification.create({
+    data: { utilisateurId: annonce.createurId, type: "VALIDER_PRESENCES", annonceId: annonce.id },
+  });
+  await envoyerMp(
+    annonce.createur.discordId,
+    `✅ Ton raid **${nomRaid(annonce.contenu)}** est terminé !\n` +
+      `Valide les présences (et qui s'est distingué) ici :\n${URL_SITE}/annonces/${annonce.id}#presences`,
+  );
+}

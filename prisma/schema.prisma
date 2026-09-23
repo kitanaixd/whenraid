@@ -110,6 +110,7 @@ enum TypeNotification {
   RAID_COMPLET
   RAID_ANNULE
   NOUVELLE_CANDIDATURE
+  VALIDER_PRESENCES
 }
 
 enum SourceParticipation {
@@ -225,6 +226,9 @@ model Annonce {
   // Envois Discord : rappel au RL 15 min avant, puis invitations aux joueurs.
   rappelRlEnvoyeLe         DateTime? @db.Timestamptz(3)
   invitationsEnvoyeesLe    DateTime? @db.Timestamptz(3)
+  // Fin du raid : rappel au RL pour valider les présences, puis validation.
+  rappelFinEnvoyeLe        DateTime? @db.Timestamptz(3)
+  presencesValideesLe      DateTime? @db.Timestamptz(3)
 
   // Faits de l'annulation (règle 3 : la réputation se calcule à la lecture).
   annuleeLe       DateTime? @db.Timestamptz(3)
@@ -311,6 +315,7 @@ model Participation {
   personnageId  String
   utilisateurId String? // null une fois anonymisé
   resultat      ResultatParticipation
+  distinction   Boolean               @default(false) // le RL a noté que le joueur s'est distingué
   source        SourceParticipation
   anonymise     Boolean               @default(false)
   enregistreLe  DateTime              @default(now()) @db.Timestamptz(3)

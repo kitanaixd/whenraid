@@ -89,7 +89,8 @@ export default async function Accueil() {
         Connecté en tant que <strong>{utilisateur.pseudo}</strong>
       </p>
       <nav>
-        <Link href="/personnages">Mes personnages</Link> · <Link href="/annonces/nouvelle">Créer un raid</Link>
+        <Link href={`/joueurs/${utilisateur.id}`}>Mon profil</Link> · <Link href="/personnages">Mes personnages</Link> ·{" "}
+        <Link href="/annonces/nouvelle">Créer un raid</Link>
       </nav>
       <form
         action={async () => {
