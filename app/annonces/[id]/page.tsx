@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { Classe } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { afficherDate } from "@/lib/dates";
@@ -8,6 +7,7 @@ import { nomRaid, raids } from "@/lib/raids";
 import {
   accepteCandidatures,
   compoActuelle,
+  compoParRole,
   estActive,
   estComplet,
   estEnAttente,
@@ -32,24 +32,22 @@ import { rolesPourPlace } from "./eligibilite";
 import { BoutonAnnuler } from "./BoutonAnnuler";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { ClasseIcone, NomClasse } from "@/app/ClasseIcone";
-import { MenuDeroulant } from "@/app/MenuDeroulant";
+import { FormCandidature } from "./FormCandidature";
 import { fiabiliteMercenaires, fiabiliteRls, texteBadge } from "@/lib/fiabilite";
 
 const NOMBRE_DE_CLASSES = Object.keys(libelleClasse).length;
 const ORDRE_ROLES = Object.keys(libelleRole);
 const ORDRE_CLASSES = Object.keys(libelleClasse);
 
-function LibellePlace({ place }: { place: { classesAcceptees: Classe[]; role: string | null } }) {
-  const toutes = place.classesAcceptees.length === NOMBRE_DE_CLASSES;
-  const role = place.role ? libelleRole[place.role as keyof typeof libelleRole] : null;
-  if (toutes && !role) return <>Place libre (toute classe, tout rôle)</>;
-  return (
-    <span className="nom-classe">
-      {!toutes && place.classesAcceptees.map((c) => <NomClasse key={c} classe={c} />)}
-      {role && <span>{role}</span>}
-    </span>
-  );
-}
+// Couleur des pastilles selon le statut.
+const CLASSE_STATUT_ANNONCE: Record<string, string> = { PUBLIEE: "ouvert", COMPLETE: "complet", ANNULEE: "alerte" };
+const CLASSE_STATUT_PLACE: Record<string, string> = { OUVERTE: "ouvert", POURVUE: "complet", ANNULEE: "" };
+const CLASSE_STATUT_INSCRIPTION: Record<string, string> = {
+  CONFIRME: "succes",
+  LISTE_ATTENTE: "complet",
+  INSCRIT: "ouvert",
+};
+
 
 export default async function PageAnnonce({ params, searchParams }: PageProps<"/annonces/[id]">) {
   const utilisateur = await exigerUtilisateur();
@@ -105,37 +103,63 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
       ? []
       : await db.personnage.findMany({ where: { utilisateurId: utilisateur.id }, orderBy: { nom: "asc" } });
 
+  const roles = compoParRole(compo.lignes);
+  const lignesTriees = [...compo.lignes].sort(
+    (a, b) =>
+      ORDRE_ROLES.indexOf(a.role) - ORDRE_ROLES.indexOf(b.role) ||
+      ORDRE_CLASSES.indexOf(a.classe) - ORDRE_CLASSES.indexOf(b.classe),
+  );
+  const compoParGroupe = ORDRE_ROLES.map((role) => ({
+    role: role as keyof typeof libelleRole,
+    lignes: lignesTriees.filter((l) => l.role === role),
+  })).filter((g) => g.lignes.length > 0);
+  const organisateur = annonce.organisateurPersonnage;
+  const resumeRaid = `${nomRaid(annonce.contenu)} — ${afficherDate(annonce.debutUtc, fuseau)}`;
+
   return (
     <main data-fond={raids[annonce.contenu].image}>
-      <p>
-        <Link href="/">← Accueil</Link>
-      </p>
-      <h1>{nomRaid(annonce.contenu)}</h1>
-      <p>
-        <strong>{afficherDate(annonce.debutUtc, fuseau)}</strong>
-        {annonce.dureeEstimee && ` — environ ${annonce.dureeEstimee / 60} h`}
-      </p>
-      <ul>
-        <li>
-          {libelleFaction[annonce.faction]}, {libelleRuleset[annonce.ruleset]} {annonce.region}
-        </li>
-        <li>Loot : {libelleReglesLoot[annonce.reglesLoot]}</li>
-        {annonce.niveauMin && <li>Niveau minimum : {annonce.niveauMin}</li>}
-        {annonce.langueRequise && <li>Langue : {annonce.langueRequise === "fr" ? "français" : "anglais"}</li>}
-        <li>Vocal : {libelleVocal[annonce.vocal]}</li>
-        <li>
-          Organisé par{" "}
-          {estRl ? "toi" : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>}{" "}
-          <small>({texteBadge(fiabRl.get(annonce.createurId)!)})</small> — {libelleStatutAnnonce[annonce.statut]}
-        </li>
-      </ul>
+      <Link href="/" className="retour">
+        ← Tous les raids
+      </Link>
+
+      <header className="entete-raid">
+        <p className="surtitre">
+          {libelleFaction[annonce.faction]} · {libelleRuleset[annonce.ruleset]} {annonce.region}
+        </p>
+        <h1>{nomRaid(annonce.contenu)}</h1>
+        <div className="ornement" aria-hidden="true">
+          ◆
+        </div>
+        <p className="quand-raid">
+          {afficherDate(annonce.debutUtc, fuseau)}
+          {annonce.dureeEstimee && <span className="doux"> · environ {annonce.dureeEstimee / 60} h</span>}
+        </p>
+        <div className="pastilles centre">
+          <span className={`pastille ${annonce.faction === "HORDE" ? "horde" : "alliance"}`}>
+            {libelleFaction[annonce.faction]}
+          </span>
+          <span className="pastille">Loot : {libelleReglesLoot[annonce.reglesLoot]}</span>
+          <span className="pastille">Vocal : {libelleVocal[annonce.vocal]}</span>
+          {annonce.langueRequise && (
+            <span className="pastille">{annonce.langueRequise === "fr" ? "Français" : "Anglais"}</span>
+          )}
+          {annonce.niveauMin && <span className="pastille">Niveau {annonce.niveauMin}+</span>}
+          <span className={`pastille ${CLASSE_STATUT_ANNONCE[annonce.statut] ?? ""}`}>
+            {libelleStatutAnnonce[annonce.statut]}
+          </span>
+        </div>
+      </header>
 
       {annonce.statut === "ANNULEE" && (
         <p className="avertissement grave" role="status">
           Ce raid a été annulé{annonce.annuleeLe && ` le ${afficherDate(annonce.annuleeLe, fuseau)}`}.
         </p>
       )}
-      {typeof erreur === "string" && <p role="alert">⚠ {erreur}</p>}
+      {typeof erreur === "string" && (
+        <p className="avertissement grave" role="alert">
+          ⚠ {erreur}
+        </p>
+      )}
       {maCandidature && (
         <p className="encadre">
           {maCandidature.statut === "CONFIRME" ? "✔ Tu es convié" : "⏳ Ta candidature est envoyée"} avec{" "}
@@ -148,257 +172,341 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         </p>
       )}
 
-      <h2>
-        Compo actuelle — {compo.total}/{annonce.taille}
-        {complet
-          ? " (complet)"
-          : `, ${placesRestantes} place${placesRestantes > 1 ? "s" : ""} restante${placesRestantes > 1 ? "s" : ""}`}
-      </h2>
-      <ul>
-        {compo.lignes
-          .sort(
-            (a, b) =>
-              ORDRE_ROLES.indexOf(a.role) - ORDRE_ROLES.indexOf(b.role) ||
-              ORDRE_CLASSES.indexOf(a.classe) - ORDRE_CLASSES.indexOf(b.classe),
-          )
-          .map((l) => (
-            <li key={`${l.classe}.${l.role}`}>
-              {l.nombre} × <NomClasse classe={l.classe} /> {libelleRole[l.role]}
-            </li>
-          ))}
-      </ul>
-      {remplacants.length > 0 && (
-        <p>
-          + {remplacants.length} remplaçant{remplacants.length > 1 ? "s" : ""} :{" "}
-          {remplacants.map((i, n) => (
-            <span key={i.id}>
-              {n > 0 && ", "}
-              <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)} ({libelleRole[i.role!]})
-            </span>
-          ))}
-        </p>
-      )}
-
-      {estRl && (
-        <section>
-          <h2>Espace RL</h2>
-          {annonce.vocal === "DISCORD" && <p>Lien Discord : {annonce.vocalDiscordLien}</p>}
-          {annonce.vocal === "TEAMSPEAK" && (
-            <p>
-              TeamSpeak : {annonce.vocalTsAdresse}
-              {annonce.vocalTsMotDePasse && ` — mot de passe : ${annonce.vocalTsMotDePasse}`}
-            </p>
-          )}
-          {annonce.vocal !== "AUCUN" && (
-            <p>
-              <small>
-                Ces identifiants ne sont visibles que par toi. Le bot les enverra en MP aux joueurs confirmés quand
-                tu enverras les invitations.
-              </small>
-            </p>
-          )}
-          {rlPeutAgir(annonce) && (
-            <div>
-              <BoutonInvitations
-                action={envoyerLesInvitations}
-                annonceId={annonce.id}
-                resume={`${nomRaid(annonce.contenu)} — ${afficherDate(annonce.debutUtc, fuseau)}`}
-                nbConfirmes={confirmes.length}
-                vocal={
-                  annonce.vocal === "DISCORD"
-                    ? `Discord (${annonce.vocalDiscordLien})`
-                    : annonce.vocal === "TEAMSPEAK"
-                      ? `TeamSpeak (${annonce.vocalTsAdresse})`
-                      : "aucun"
-                }
-                commandeWhisper={
-                  annonce.organisateurPersonnage ? `/w ${nomEnJeu(annonce.organisateurPersonnage)} inv` : null
-                }
-                dejaEnvoyeesLe={annonce.invitationsEnvoyeesLe && afficherDate(annonce.invitationsEnvoyeesLe, fuseau)}
-              />
-            </div>
-          )}
-          {ouvert && (
-            <BoutonAnnuler
-              action={annuler}
-              annonceId={annonce.id}
-              resume={`${nomRaid(annonce.contenu)} — ${afficherDate(annonce.debutUtc, fuseau)}`}
-              nbInscrits={confirmes.length}
-              estComplet={complet}
-            />
-          )}
-        </section>
-      )}
-
-      {estRl && presences.visible && (
-        <section id="presences">
-          <h2>Feuille de présence</h2>
-          {annonce.presencesValideesLe ? (
-            <p className="encadre">✔ Présences validées le {afficherDate(annonce.presencesValideesLe, fuseau)}.</p>
-          ) : (
-            <p>
-              <small>
-                Signale les absents pendant le raid, puis valide la fin du raid une fois terminé. Tout le monde est
-                présent par défaut.
-              </small>
-            </p>
-          )}
-          {confirmes.length === 0 ? (
-            <p>Aucun joueur confirmé sur ce raid.</p>
-          ) : (
-            <form action={enregistrerPresences}>
-              <input type="hidden" name="annonceId" value={annonce.id} />
-              <table>
-                <thead>
-                  <tr>
-                    <th>Joueur</th>
-                    <th>Présence</th>
-                    <th>S&apos;est distingué</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {confirmes.map((i) => {
-                    const p = participationDe(i.personnageId);
-                    return (
-                      <tr key={i.id}>
-                        <td>
-                          <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> —{" "}
-                          <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)}
-                        </td>
-                        <td>
-                          <select
-                            name={`presence.${i.id}`}
-                            defaultValue={p?.resultat ?? "PRESENT"}
-                            disabled={!presences.modifiable}
-                            aria-label={`Présence de ${nomEnJeu(i.personnage!)}`}
-                          >
-                            <option value="PRESENT">Présent</option>
-                            <option value="ABSENT">Absent</option>
-                            <option value="PARTI_EN_COURS">Parti en cours</option>
-                          </select>
-                        </td>
-                        <td>
-                          <input
-                            type="checkbox"
-                            name={`distinction.${i.id}`}
-                            defaultChecked={p?.distinction ?? false}
-                            disabled={!presences.modifiable}
-                            aria-label={`${nomEnJeu(i.personnage!)} s'est distingué`}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {presences.modifiable && (
+      <div className="grille-raid">
+        <div className="colonne-principale">
+          {estRl && (
+            <section className="carte espace-rl">
+              <p className="surtitre">Espace RL</p>
+              {annonce.vocal === "DISCORD" && (
                 <p>
-                  <BoutonEnvoi enCours="Enregistrement…">Enregistrer</BoutonEnvoi>{" "}
-                  {presences.validable && (
-                    <BoutonEnvoi name="valider" value="1" className="principal" enCours="Validation…">
-                      Valider la fin du raid
-                    </BoutonEnvoi>
+                  Discord : <code>{annonce.vocalDiscordLien}</code>
+                </p>
+              )}
+              {annonce.vocal === "TEAMSPEAK" && (
+                <p>
+                  TeamSpeak : <code>{annonce.vocalTsAdresse}</code>
+                  {annonce.vocalTsMotDePasse && (
+                    <>
+                      {" "}
+                      — mot de passe : <code>{annonce.vocalTsMotDePasse}</code>
+                    </>
                   )}
                 </p>
               )}
-            </form>
+              {annonce.vocal !== "AUCUN" && (
+                <p className="doux">
+                  Visibles par toi seul : le bot les enverra en MP aux joueurs confirmés avec les invitations.
+                </p>
+              )}
+              <div className="actions-rl">
+                {rlPeutAgir(annonce) && (
+                  <BoutonInvitations
+                    action={envoyerLesInvitations}
+                    annonceId={annonce.id}
+                    resume={resumeRaid}
+                    nbConfirmes={confirmes.length}
+                    vocal={
+                      annonce.vocal === "DISCORD"
+                        ? `Discord (${annonce.vocalDiscordLien})`
+                        : annonce.vocal === "TEAMSPEAK"
+                          ? `TeamSpeak (${annonce.vocalTsAdresse})`
+                          : "aucun"
+                    }
+                    commandeWhisper={organisateur ? `/w ${nomEnJeu(organisateur)} inv` : null}
+                    dejaEnvoyeesLe={annonce.invitationsEnvoyeesLe && afficherDate(annonce.invitationsEnvoyeesLe, fuseau)}
+                  />
+                )}
+                {ouvert && (
+                  <BoutonAnnuler
+                    action={annuler}
+                    annonceId={annonce.id}
+                    resume={resumeRaid}
+                    nbInscrits={confirmes.length}
+                    estComplet={complet}
+                  />
+                )}
+              </div>
+            </section>
           )}
-        </section>
-      )}
 
-      <h2>Places</h2>
-      {complet && !estRl && ouvert && !maCandidature && (
-        <p className="encadre">
-          ⚠ Ce raid est complet : si tu candidates, tu seras en liste d&apos;attente avec peu de chances d&apos;être
-          pris. Le RL pourra quand même t&apos;appeler en remplaçant.
-        </p>
-      )}
-      <ol>
-        {annonce.places.map((place) => {
-          const candidats = place.inscriptions.filter((i) => estActive(i.statut));
-          const choix = mesPersonnages.flatMap((p) =>
-            rolesPourPlace(p, place, annonce).map((role) => ({ valeur: `${p.id}:${role}`, perso: p, role })),
-          );
-          return (
-            <li key={place.id}>
+          {estRl && presences.visible && (
+            <section id="presences" className="carte">
+              <p className="surtitre">Feuille de présence</p>
+              {annonce.presencesValideesLe ? (
+                <p className="encadre">✔ Présences validées le {afficherDate(annonce.presencesValideesLe, fuseau)}.</p>
+              ) : (
+                <p className="doux">
+                  Signale les absents pendant le raid, puis valide la fin du raid une fois terminé. Tout le monde est
+                  présent par défaut.
+                </p>
+              )}
+              {confirmes.length === 0 ? (
+                <p>Aucun joueur confirmé sur ce raid.</p>
+              ) : (
+                <form action={enregistrerPresences}>
+                  <input type="hidden" name="annonceId" value={annonce.id} />
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Joueur</th>
+                        <th>Présence</th>
+                        <th>S&apos;est distingué</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {confirmes.map((i) => {
+                        const p = participationDe(i.personnageId);
+                        return (
+                          <tr key={i.id}>
+                            <td>
+                              <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)}{" "}
+                              <small>
+                                (<Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>)
+                              </small>
+                            </td>
+                            <td>
+                              <select
+                                name={`presence.${i.id}`}
+                                defaultValue={p?.resultat ?? "PRESENT"}
+                                disabled={!presences.modifiable}
+                                aria-label={`Présence de ${nomEnJeu(i.personnage!)}`}
+                              >
+                                <option value="PRESENT">Présent</option>
+                                <option value="ABSENT">Absent</option>
+                                <option value="PARTI_EN_COURS">Parti en cours</option>
+                              </select>
+                            </td>
+                            <td>
+                              <input
+                                type="checkbox"
+                                name={`distinction.${i.id}`}
+                                defaultChecked={p?.distinction ?? false}
+                                disabled={!presences.modifiable}
+                                aria-label={`${nomEnJeu(i.personnage!)} s'est distingué`}
+                              />
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  {presences.modifiable && (
+                    <div className="actions-rl">
+                      <BoutonEnvoi enCours="Enregistrement…">Enregistrer</BoutonEnvoi>
+                      {presences.validable && (
+                        <BoutonEnvoi name="valider" value="1" className="principal" enCours="Validation…">
+                          Valider la fin du raid
+                        </BoutonEnvoi>
+                      )}
+                    </div>
+                  )}
+                </form>
+              )}
+            </section>
+          )}
+
+          <section aria-labelledby="titre-places">
+            <p className="surtitre">
+              {complet ? "Raid complet" : `${placesRestantes} place${placesRestantes > 1 ? "s" : ""} à pourvoir`}
+            </p>
+            <h2 id="titre-places">Places</h2>
+            {complet && !estRl && ouvert && !maCandidature && (
+              <p className="encadre">
+                ⚠ Ce raid est complet : si tu candidates, tu seras en liste d&apos;attente avec peu de chances
+                d&apos;être pris. Le RL pourra quand même t&apos;appeler en remplaçant.
+              </p>
+            )}
+            <ul className="liste-places">
+              {annonce.places.map((place) => {
+                const candidats = place.inscriptions.filter((i) => estActive(i.statut));
+                const persosEligibles = mesPersonnages
+                  .map((p) => ({ perso: p, roles: rolesPourPlace(p, place, annonce) }))
+                  .filter((c) => c.roles.length > 0);
+                const toutes = place.classesAcceptees.length === NOMBRE_DE_CLASSES;
+                return (
+                  <li key={place.id} className={`carte place place-${place.statut.toLowerCase()}`}>
+                    <div className="place-entete">
+                      <div className="place-quoi">
+                        {toutes ? (
+                          <span className="place-libre">Toute classe</span>
+                        ) : (
+                          place.classesAcceptees.map((c) => <NomClasse key={c} classe={c} taille={26} />)
+                        )}
+                        <span className="place-role">{place.role ? libelleRole[place.role] : "Tout rôle"}</span>
+                      </div>
+                      <span className={`pastille ${CLASSE_STATUT_PLACE[place.statut]}`}>
+                        {libelleStatutPlace[place.statut]}
+                      </span>
+                    </div>
+
+                    {!estRl && candidats.length > 0 && (
+                      <p className="doux">
+                        {candidats.length} candidat{candidats.length > 1 ? "s" : ""}
+                      </p>
+                    )}
+
+                    {estRl && candidats.length > 0 && (
+                      <ul className="liste-candidats">
+                        {candidats.map((i) => (
+                          <li key={i.id} className="candidat">
+                            <div className="candidat-infos">
+                              <div>
+                                {i.personnage && <ClasseIcone classe={i.personnage.classe} taille={26} />}{" "}
+                                <strong
+                                  className="classe"
+                                  style={
+                                    i.personnage
+                                      ? ({ "--c": `var(--classe-${i.personnage.classe})` } as React.CSSProperties)
+                                      : undefined
+                                  }
+                                >
+                                  {i.personnage && nomEnJeu(i.personnage)}
+                                </strong>{" "}
+                                <span className="doux">
+                                  niv. {i.personnage?.niveau}
+                                  {i.role && ` · ${libelleRole[i.role]}`}
+                                </span>
+                              </div>
+                              <div className="doux">
+                                <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
+                                {fiabCandidats.get(i.utilisateurId) && texteBadge(fiabCandidats.get(i.utilisateurId)!)}
+                              </div>
+                              {i.note && <blockquote className="note">« {i.note} »</blockquote>}
+                            </div>
+                            <div className="candidat-actions">
+                              <span className={`pastille ${CLASSE_STATUT_INSCRIPTION[i.statut] ?? ""}`}>
+                                {libelleStatutInscription[i.statut]}
+                                {remplacants.some((r) => r.id === i.id) && " · remplaçant"}
+                              </span>
+                              {estEnAttente(i.statut) && annonce.statut !== "ANNULEE" && (
+                                <div className="boutons">
+                                  <form action={accepter}>
+                                    <input type="hidden" name="inscriptionId" value={i.id} />
+                                    <BoutonEnvoi className="petit principal" enCours="…">
+                                      {place.statut === "POURVUE" ? "Remplaçant" : "Accepter"}
+                                    </BoutonEnvoi>
+                                  </form>
+                                  <form action={refuser}>
+                                    <input type="hidden" name="inscriptionId" value={i.id} />
+                                    <BoutonEnvoi className="petit" enCours="…">
+                                      Refuser
+                                    </BoutonEnvoi>
+                                  </form>
+                                </div>
+                              )}
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {persosEligibles.length > 0 && place.statut !== "ANNULEE" && (
+                      <FormCandidature
+                        action={candidater}
+                        placeId={place.id}
+                        listeAttente={place.statut === "POURVUE"}
+                        persos={persosEligibles.map(({ perso, roles }) => ({
+                          id: perso.id,
+                          classe: perso.classe,
+                          roles,
+                          libelle: `${nomEnJeu(perso)} — ${libelleClasse[perso.classe]} niv. ${perso.niveau}`,
+                        }))}
+                      />
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {!estRl && !maCandidature && ouvert && mesPersonnages.length === 0 && (
+              <p className="doux">
+                Pour candidater, déclare d&apos;abord <Link href="/personnages">un personnage</Link>.
+              </p>
+            )}
+          </section>
+        </div>
+
+        <aside className="colonne-compo">
+          <section className="carte compo-panneau" aria-labelledby="titre-compo">
+            <p className="surtitre" id="titre-compo">
+              Compo actuelle
+            </p>
+            <div className="compo-chiffres">
+              <div>
+                <span aria-hidden="true">🛡</span>
+                <strong>{roles.tanks}</strong>
+                <small>Tanks</small>
+              </div>
+              <div>
+                <span aria-hidden="true">✚</span>
+                <strong>{roles.soigneurs}</strong>
+                <small>Soigneurs</small>
+              </div>
+              <div>
+                <span aria-hidden="true">⚔</span>
+                <strong>{roles.dps}</strong>
+                <small>DPS</small>
+              </div>
+            </div>
+            <p className="compo-total">
               <strong>
-                <LibellePlace place={place} />
+                {compo.total}/{annonce.taille}
               </strong>{" "}
-              — {libelleStatutPlace[place.statut]}
-              {!estRl && candidats.length > 0 && ` (${candidats.length} candidat${candidats.length > 1 ? "s" : ""})`}
-
-              {estRl && candidats.length > 0 && (
+              <span className="doux">
+                {complet
+                  ? "· complet"
+                  : `· ${placesRestantes} place${placesRestantes > 1 ? "s" : ""} restante${placesRestantes > 1 ? "s" : ""}`}
+              </span>
+            </p>
+            {compoParGroupe.map((g) => (
+              <div key={g.role} className="compo-groupe">
+                <h3>{libelleRole[g.role]}</h3>
                 <ul>
-                  {candidats.map((i) => (
-                    <li key={i.id}>
-                      <strong>
-                        <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>
-                      </strong>{" "}
-                      <small>{fiabCandidats.get(i.utilisateurId) && texteBadge(fiabCandidats.get(i.utilisateurId)!)}</small>{" "}
-                      — {i.personnage && <ClasseIcone classe={i.personnage.classe} />} {i.personnage && nomEnJeu(i.personnage)} (niv.{" "}
-                      {i.personnage?.niveau}
-                      {i.role && `, ${libelleRole[i.role]}`}) — {libelleStatutInscription[i.statut]}
-                      {remplacants.some((r) => r.id === i.id) && " (remplaçant)"}
-                      {i.note && (
-                        <>
-                          <br />« {i.note} »
-                        </>
-                      )}
-                      {estEnAttente(i.statut) && annonce.statut !== "ANNULEE" && (
-                        <>
-                          <br />
-                          <form action={accepter} style={{ display: "inline" }}>
-                            <input type="hidden" name="inscriptionId" value={i.id} />
-                            <BoutonEnvoi enCours="…">
-                              {place.statut === "POURVUE" ? "Appeler en remplaçant" : "Accepter"}
-                            </BoutonEnvoi>
-                          </form>{" "}
-                          <form action={refuser} style={{ display: "inline" }}>
-                            <input type="hidden" name="inscriptionId" value={i.id} />
-                            <BoutonEnvoi enCours="…">Refuser</BoutonEnvoi>
-                          </form>
-                        </>
-                      )}
+                  {g.lignes.map((l) => (
+                    <li key={`${l.classe}.${l.role}`}>
+                      <NomClasse classe={l.classe} />
+                      <span className="compo-nombre">× {l.nombre}</span>
                     </li>
                   ))}
                 </ul>
-              )}
+              </div>
+            ))}
+            {remplacants.length > 0 && (
+              <div className="compo-groupe">
+                <h3>Remplaçants</h3>
+                <ul>
+                  {remplacants.map((i) => (
+                    <li key={i.id}>
+                      <span className="nom-classe">
+                        <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)}
+                      </span>
+                      <span className="compo-nombre">{libelleRole[i.role!]}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
 
-              {choix.length > 0 && place.statut !== "ANNULEE" && (
-                <form action={candidater}>
-                  <input type="hidden" name="placeId" value={place.id} />
-                  <div className="choix-candidature">
-                    <MenuDeroulant
-                      name="choix"
-                      etiquette="Personnage et rôle"
-                      options={choix.map((c) => ({
-                        valeur: c.valeur,
-                        classe: c.perso.classe,
-                        libelle: `${nomEnJeu(c.perso)} (niv. ${c.perso.niveau}) — ${libelleRole[c.role]}`,
-                      }))}
-                    />
-                  </div>{" "}
-                  <input
-                    name="note"
-                    maxLength={80}
-                    placeholder="Note pour le RL (80 caractères max)"
-                    aria-label="Note pour le RL"
-                    size={36}
-                  />{" "}
-                  <BoutonEnvoi enCours="Envoi…">
-                    {place.statut === "POURVUE" ? "Liste d'attente" : "Candidater"}
-                  </BoutonEnvoi>
-                </form>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-      {!estRl && !maCandidature && ouvert && mesPersonnages.length === 0 && (
-        <p>
-          Pour candidater, déclare d&apos;abord <Link href="/personnages">un personnage</Link>.
-        </p>
-      )}
+          <section className="carte organisateur" aria-label="Organisateur">
+            <p className="surtitre">Organisé par</p>
+            {organisateur && (
+              <p className="organisateur-perso">
+                <ClasseIcone classe={organisateur.classe} taille={32} />
+                <strong
+                  className="classe"
+                  style={{ "--c": `var(--classe-${organisateur.classe})` } as React.CSSProperties}
+                >
+                  {nomEnJeu(organisateur)}
+                </strong>
+              </p>
+            )}
+            <p className="doux">
+              {estRl ? "Toi" : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>} ·{" "}
+              {texteBadge(fiabRl.get(annonce.createurId)!)}
+            </p>
+          </section>
+        </aside>
+      </div>
     </main>
   );
 }

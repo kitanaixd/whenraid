@@ -81,7 +81,8 @@ export async function candidater(form: FormData) {
   const { annonce } = place;
   const retour = retourVers(annonce.id);
 
-  const [personnageId, role] = String(form.get("choix") ?? "").split(":");
+  const personnageId = String(form.get("personnageId") ?? "");
+  const role = String(form.get("role") ?? "");
   const personnage = await db.personnage.findFirst({ where: { id: personnageId, utilisateurId: utilisateur.id } });
   const note = String(form.get("note") ?? "").trim();
 

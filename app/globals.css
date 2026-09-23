@@ -7,8 +7,8 @@
 :root {
   --fond: #070d19;
   --nuit: #0b1426;
-  --panneau: rgb(11 20 38 / 0.9);
-  --panneau-plein: #0d1829;
+  --panneau: rgb(0 0 0 / 0.9);
+  --panneau-plein: #050505;
   --filet: rgb(217 181 106 / 0.28);
   --filet-fort: rgb(217 181 106 / 0.6);
 
@@ -471,7 +471,7 @@ th {
 }
 
 .carte {
-  background: linear-gradient(180deg, rgb(20 34 58 / 0.9), rgb(11 20 38 / 0.95));
+  background: var(--panneau);
   border: 1px solid var(--filet);
   padding: 1.1rem 1.2rem;
   box-shadow: var(--ombre);
@@ -706,7 +706,7 @@ dialog.confirmation.invitations {
   align-items: center;
   gap: 1rem 2rem;
   padding: 0.9rem 1.2rem;
-  background: linear-gradient(90deg, rgb(20 34 58 / 0.95), rgb(11 20 38 / 0.9));
+  background: var(--panneau);
   border: 1px solid var(--filet);
   border-left: 2px solid var(--or);
   transition:
@@ -715,7 +715,7 @@ dialog.confirmation.invitations {
 }
 .ligne-raid:hover {
   border-color: var(--or);
-  background: linear-gradient(90deg, rgb(28 46 76 / 0.95), rgb(14 25 46 / 0.92));
+  background: rgb(10 10 10 / 0.92);
 }
 /* Toute la ligne est cliquable ; le lien couvre la ligne sans gêner la lecture. */
 .ligne-raid-lien {
@@ -1054,11 +1054,262 @@ body:has(main[data-fond])::before {
 }
 .ligne-raid[data-fond] {
   background:
-    linear-gradient(90deg, rgb(11 20 38 / 0.97) 35%, rgb(11 20 38 / 0.8) 70%, rgb(11 20 38 / 0.7) 100%),
+    linear-gradient(90deg, rgb(0 0 0 / 0.95) 35%, rgb(0 0 0 / 0.82) 70%, rgb(0 0 0 / 0.72) 100%),
     var(--vignette) right center / cover no-repeat;
 }
 .ligne-raid[data-fond]:hover {
   background:
-    linear-gradient(90deg, rgb(14 25 46 / 0.95) 35%, rgb(14 25 46 / 0.7) 70%, rgb(14 25 46 / 0.55) 100%),
+    linear-gradient(90deg, rgb(10 10 10 / 0.93) 35%, rgb(10 10 10 / 0.7) 70%, rgb(10 10 10 / 0.55) 100%),
     var(--vignette) right center / cover no-repeat;
+}
+
+/* ─── Page d'un raid ──────────────────────────────────────────────────────── */
+
+.retour {
+  display: inline-block;
+  font-family: var(--police-titre), serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+.entete-raid {
+  text-align: center;
+  padding: 1rem 0 1.5rem;
+}
+.entete-raid .surtitre {
+  justify-content: center;
+}
+.entete-raid h1 {
+  margin-bottom: 0.2rem;
+}
+.quand-raid {
+  font-size: 1.3rem;
+  color: var(--or-clair);
+  margin: 0 0 0.8rem;
+}
+.pastilles.centre {
+  justify-content: center;
+}
+.pastille.alerte {
+  border-color: var(--danger);
+  color: #ffaaa2;
+}
+.pastille.succes {
+  border-color: var(--succes);
+  color: var(--succes);
+}
+
+.grille-raid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 20rem;
+  gap: 1.5rem;
+  align-items: start;
+  margin-top: 1rem;
+}
+@media (max-width: 860px) {
+  .grille-raid {
+    grid-template-columns: 1fr;
+  }
+  /* Sur téléphone, la compo passe au-dessus des places. */
+  .colonne-compo {
+    order: -1;
+  }
+}
+.colonne-principale,
+.colonne-compo {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  min-width: 0;
+}
+.colonne-principale > section > h2 {
+  margin-top: 0.3rem;
+}
+.carte > .surtitre:first-child {
+  margin-bottom: 0.6rem;
+}
+
+.espace-rl {
+  border-left: 2px solid var(--or);
+}
+.actions-rl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+  margin-top: 0.6rem;
+}
+
+/* Places */
+.liste-places {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.place {
+  border-left: 2px solid var(--turquoise);
+}
+.place.place-pourvue {
+  border-left-color: var(--or);
+}
+.place-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+.place-quoi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.9rem;
+  font-size: 1.1rem;
+}
+.place-libre {
+  font-family: var(--police-titre), serif;
+  color: var(--or-clair);
+}
+.place-role {
+  font-family: var(--police-titre), serif;
+  font-size: 0.8rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--filet);
+}
+
+/* Candidats (vue du RL) */
+.liste-candidats {
+  list-style: none;
+  padding: 0;
+  margin: 0.8rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.candidat {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.8rem;
+  background: rgb(7 13 25 / 0.55);
+  border: 1px solid var(--filet);
+}
+.candidat-infos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.candidat-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.candidat-actions .boutons {
+  display: flex;
+  gap: 0.4rem;
+}
+.note {
+  margin: 0.3rem 0 0;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--filet-fort);
+  color: var(--or-clair);
+}
+
+/* Candidature : personnage, puis rôle, puis note */
+.form-candidature {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--filet);
+}
+.choix-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.choix-roles button.choisi {
+  color: #1b1307;
+  background: linear-gradient(180deg, #f1d99a 0%, #d6b067 55%, #b8894a 100%);
+  border-color: #f3dfa8;
+}
+
+/* Compo actuelle */
+.compo-chiffres {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  text-align: center;
+  gap: 0.4rem;
+}
+.compo-chiffres > div {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0;
+  border: 1px solid var(--filet);
+  background: rgb(7 13 25 / 0.5);
+}
+.compo-chiffres strong {
+  font-family: var(--police-titre), serif;
+  font-size: 1.7rem;
+  color: var(--or-clair);
+  line-height: 1.1;
+}
+.compo-chiffres small {
+  font-family: var(--police-titre), serif;
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.compo-total {
+  text-align: center;
+  margin: 0.8rem 0 0.4rem;
+}
+.compo-total strong {
+  font-family: var(--police-titre), serif;
+  font-size: 1.35rem;
+  color: var(--or-clair);
+}
+.compo-groupe h3 {
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--or);
+  margin: 1rem 0 0.4rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid var(--filet);
+}
+.compo-groupe ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.compo-groupe li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.15rem 0;
+}
+.compo-nombre {
+  font-family: var(--police-titre), serif;
+  color: var(--or-clair);
+}
+
+.organisateur-perso {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.15rem;
+  margin: 0.2rem 0;
 }
