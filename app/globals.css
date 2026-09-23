@@ -497,7 +497,6 @@ th {
   color: var(--or-clair);
 }
 .carte-raid .quand {
-  font-style: italic;
   color: var(--texte);
 }
 
@@ -731,7 +730,6 @@ dialog.confirmation.invitations {
   min-width: 0;
 }
 .ligne-raid-infos .quand {
-  font-style: italic;
 }
 .pastilles {
   display: flex;
@@ -1030,4 +1028,37 @@ button.menu-choisi[aria-expanded="true"] {
   display: inline-block;
   width: min(100%, 24rem);
   vertical-align: middle;
+}
+
+/* ─── Illustrations par raid ──────────────────────────────────────────────── */
+
+body:has(main[data-fond="mont-hyjal"]) {
+  --image-fond: url("/raids/mont-hyjal.webp");
+}
+body:has(main[data-fond="onyxia"]) {
+  --image-fond: url("/raids/onyxia.webp");
+}
+/* Page d'un raid : illustration du raid sous un voile très sombre. */
+body:has(main[data-fond])::before {
+  background:
+    linear-gradient(180deg, rgb(7 13 25 / 0.78) 0%, rgb(7 13 25 / 0.9) 45%, rgb(7 13 25 / 0.97) 100%),
+    var(--image-fond) center / cover no-repeat;
+}
+
+/* Listing : vignette du raid sur la droite de chaque ligne, très assombrie. */
+.ligne-raid[data-fond="mont-hyjal"] {
+  --vignette: url("/raids/mont-hyjal-petit.webp");
+}
+.ligne-raid[data-fond="onyxia"] {
+  --vignette: url("/raids/onyxia-petit.webp");
+}
+.ligne-raid[data-fond] {
+  background:
+    linear-gradient(90deg, rgb(11 20 38 / 0.97) 35%, rgb(11 20 38 / 0.8) 70%, rgb(11 20 38 / 0.7) 100%),
+    var(--vignette) right center / cover no-repeat;
+}
+.ligne-raid[data-fond]:hover {
+  background:
+    linear-gradient(90deg, rgb(14 25 46 / 0.95) 35%, rgb(14 25 46 / 0.7) 70%, rgb(14 25 46 / 0.55) 100%),
+    var(--vignette) right center / cover no-repeat;
 }

@@ -15,7 +15,7 @@ export function PiedDePage() {
         Entertainment, Inc.
       </p>
       <p>
-        Icônes de classe : recréations par{" "}
+        Illustration du Mont Hyjal : Peter Lee. Icônes de classe : recréations par{" "}
         <a href="https://github.com/brutaliccus/ClassicWoWClassIcons_Circle_HighRes">brutaliccus</a>.
       </p>
     </footer>

@@ -4,7 +4,7 @@ import { signIn } from "@/lib/auth";
 import { utilisateurConnecte } from "@/lib/session";
 import { db } from "@/lib/db";
 import { afficherDate } from "@/lib/dates";
-import { nomRaid } from "@/lib/raids";
+import { nomRaid, raids } from "@/lib/raids";
 import { libelleFaction, libelleRole, libelleRuleset } from "@/lib/libelles";
 import { chargerMesRaids } from "@/lib/mesRaids";
 import { fiabiliteRls, texteBadge } from "@/lib/fiabilite";
@@ -142,7 +142,7 @@ export default async function Accueil() {
               ),
             ] as Classe[];
             return (
-              <li key={a.id} className="ligne-raid">
+              <li key={a.id} className="ligne-raid" data-fond={raids[a.contenu].image}>
                 <Link href={`/annonces/${a.id}`} className="ligne-raid-lien" aria-label={`${nomRaid(a.contenu)}, ${afficherDate(a.debutUtc, fuseau)}`} />
                 <div className="ligne-raid-infos">
                   <h3>{nomRaid(a.contenu)}</h3>

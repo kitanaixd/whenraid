@@ -4,7 +4,7 @@ import type { Classe } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { afficherDate } from "@/lib/dates";
-import { nomRaid } from "@/lib/raids";
+import { nomRaid, raids } from "@/lib/raids";
 import {
   accepteCandidatures,
   compoActuelle,
@@ -106,7 +106,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
       : await db.personnage.findMany({ where: { utilisateurId: utilisateur.id }, orderBy: { nom: "asc" } });
 
   return (
-    <main>
+    <main data-fond={raids[annonce.contenu].image}>
       <p>
         <Link href="/">← Accueil</Link>
       </p>
