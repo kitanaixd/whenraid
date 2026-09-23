@@ -22,5 +22,7 @@ export function texteNotification(
       return `Nouvelle candidature sur ton raid ${raid}.`;
     case "VALIDER_PRESENCES":
       return `✅ Ton raid ${raid} est terminé : valide les présences de tes joueurs.`;
+    case "DESISTEMENT":
+      return `⚠ Un joueur convié s'est désisté de ton raid ${raid} : sa place est de nouveau ouverte.`;
   }
 }

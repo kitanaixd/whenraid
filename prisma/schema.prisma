@@ -111,6 +111,7 @@ enum TypeNotification {
   RAID_ANNULE
   NOUVELLE_CANDIDATURE
   VALIDER_PRESENCES
+  DESISTEMENT // un joueur convié s'est désisté (pour le RL)
 }
 
 enum SourceParticipation {

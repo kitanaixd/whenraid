@@ -24,7 +24,16 @@ import {
   libelleStatutInscription,
   libelleVocal,
 } from "@/lib/libelles";
-import { accepter, annuler, candidater, enregistrerPresences, envoyerLesInvitations, refuser } from "./actions";
+import {
+  accepter,
+  annuler,
+  candidater,
+  enregistrerPresences,
+  envoyerLesInvitations,
+  refuser,
+  seDesinscrire,
+} from "./actions";
+import { BoutonDesinscrire } from "./BoutonDesinscrire";
 import { BoutonInvitations } from "./BoutonInvitations";
 import { nomEnJeu } from "@/lib/invitations";
 import { placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite";
@@ -472,7 +481,16 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                   {maCandidature.statut === "LISTE_ATTENTE" &&
                     " Aucune place compatible n'est libre : peu de chances d'être pris, mais le RL peut encore t'appeler en remplaçant."}
                 </p>
-              ) : !ouvert ? (
+              ) : null}
+              {maCandidature && ouvert && (
+                <BoutonDesinscrire
+                  action={seDesinscrire}
+                  inscriptionId={maCandidature.id}
+                  resume={resumeRaid}
+                  convie={maCandidature.statut === "CONFIRME"}
+                />
+              )}
+              {maCandidature ? null : !ouvert ? (
                 <p className="doux">Ce raid n&apos;accepte plus de candidatures.</p>
               ) : mesPersonnages.length === 0 ? (
                 <p className="doux">

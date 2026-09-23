@@ -110,19 +110,25 @@ export async function candidater(form: FormData) {
     retour("Tu es déjà confirmé dans un autre raid sur ce créneau.");
   }
 
+  // Une seule ligne par personnage et par place : une ancienne candidature retirée est réactivée.
+  const ancienne = await db.inscription.findUnique({
+    where: { placeId_personnageId: { placeId: place.id, personnageId: personnage!.id } },
+  });
+  if (ancienne?.statut === "REFUSE") retour("Le RL a déjà refusé ce personnage sur ce raid.");
+  const candidature = {
+    role: choix!.role,
+    rolesProposes: roles,
+    note: note || null,
+    // Aucune place compatible encore ouverte : directement en liste d'attente.
+    statut: choix!.ouverte ? ("INSCRIT" as const) : ("LISTE_ATTENTE" as const),
+  };
+
   await db.$transaction([
-    db.inscription.create({
-      data: {
-        placeId: place.id,
-        personnageId: personnage!.id,
-        utilisateurId: utilisateur.id,
-        role: choix!.role,
-        rolesProposes: roles,
-        note: note || null,
-        // Aucune place compatible encore ouverte : directement en liste d'attente.
-        statut: choix!.ouverte ? "INSCRIT" : "LISTE_ATTENTE",
-      },
-    }),
+    ancienne
+      ? db.inscription.update({ where: { id: ancienne.id }, data: { ...candidature, inscritLe: new Date() } })
+      : db.inscription.create({
+          data: { ...candidature, placeId: place.id, personnageId: personnage!.id, utilisateurId: utilisateur.id },
+        }),
     db.notification.create({
       data: { utilisateurId: annonce.createurId, type: "NOUVELLE_CANDIDATURE", annonceId: annonce.id },
     }),
@@ -349,6 +355,65 @@ export async function enregistrerPresences(form: FormData) {
       });
     }
   });
+  rafraichir(annonce.id);
+  retour();
+}
+
+/**
+ * Le joueur se désinscrit d'un raid qui n'a pas commencé. S'il était convié, sa
+ * place se rouvre, le RL est prévenu, et les joueurs en liste d'attente qui
+ * peuvent la prendre redeviennent candidats.
+ */
+export async function seDesinscrire(form: FormData) {
+  const utilisateur = await exigerUtilisateur();
+  const inscription = await db.inscription.findFirst({
+    where: { id: String(form.get("inscriptionId") ?? ""), utilisateurId: utilisateur.id },
+    include: { place: { include: { annonce: { include: { createur: true } } } } },
+  });
+  if (!inscription) notFound();
+  const { annonce } = inscription.place;
+  const retour = retourVers(annonce.id);
+
+  if (!estActive(inscription.statut)) retour("Tu n'es plus inscrit à ce raid.");
+  if (!accepteCandidatures(annonce)) retour("Ce raid a commencé ou n'est plus actif : tu ne peux plus te désinscrire.");
+  const etaitConvie = inscription.statut === "CONFIRME";
+
+  await db.$transaction(async (tx) => {
+    await tx.inscription.update({ where: { id: inscription.id }, data: { statut: "RETIRE" } });
+    if (!etaitConvie) return;
+
+    // Un remplaçant sur la même place devient titulaire ; sinon la place se rouvre.
+    const remplacant = await tx.inscription.findFirst({ where: { placeId: inscription.placeId, statut: "CONFIRME" } });
+    if (remplacant) return;
+    await tx.place.update({ where: { id: inscription.placeId }, data: { statut: "OUVERTE" } });
+    await tx.annonce.updateMany({ where: { id: annonce.id, statut: "COMPLETE" }, data: { statut: "PUBLIEE" } });
+    await tx.notification.create({
+      data: { utilisateurId: annonce.createurId, type: "DESISTEMENT", annonceId: annonce.id },
+    });
+
+    // Les joueurs en liste d'attente qui peuvent prendre une place ouverte redeviennent candidats.
+    const places = await tx.place.findMany({ where: { annonceId: annonce.id } });
+    const enAttente = await tx.inscription.findMany({
+      where: { place: { annonceId: annonce.id }, statut: "LISTE_ATTENTE" },
+      include: { personnage: true },
+    });
+    const repris = enAttente
+      .filter((i) => i.personnage && placePourRoles(places, i.personnage, rolesProposes(i), annonce)?.ouverte)
+      .map((i) => i.id);
+    if (repris.length > 0) {
+      await tx.inscription.updateMany({ where: { id: { in: repris } }, data: { statut: "INSCRIT" } });
+    }
+  });
+
+  // Le RL est prévenu en MP Discord, comme sur le site.
+  if (etaitConvie) {
+    after(async () => {
+      const place = await db.place.findUnique({ where: { id: inscription.placeId } });
+      if (place?.statut !== "OUVERTE") return; // un remplaçant a pris la place : rien à signaler
+      const texte = texteNotification("DESISTEMENT", annonce, annonce.createur.fuseauHoraire);
+      await envoyerMp(annonce.createur.discordId, `${texte}\n${URL_SITE}/annonces/${annonce.id}`);
+    });
+  }
   rafraichir(annonce.id);
   retour();
 }
