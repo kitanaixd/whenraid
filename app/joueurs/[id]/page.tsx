@@ -41,7 +41,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
 
       <div className="faces">
         <section className="face">
-          <h2>🛡️ Face RL</h2>
+          <h2>🛡️ Raid Leader</h2>
           <dl>
             <dt>Raids organisés</dt>
             <dd>{rl.organises}</dd>
@@ -51,7 +51,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
         </section>
 
         <section className="face">
-          <h2>⚔️ Face Mercenaire</h2>
+          <h2>⚔️ Mercenaire</h2>
           <dl>
             <dt>Raids participés</dt>
             <dd>{mercenaire.participes}</dd>

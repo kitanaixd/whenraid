@@ -95,6 +95,7 @@ export async function envoyerRappelFin(annonceId: string) {
   await envoyerMp(
     annonce.createur.discordId,
     `✅ Ton raid **${nomRaid(annonce.contenu)}** est terminé !\n` +
-      `Valide les présences (et qui s'est distingué) ici :\n${URL_SITE}/annonces/${annonce.id}#presences`,
+      `Valide les présences (et qui s'est distingué) ici :\n${URL_SITE}/annonces/${annonce.id}#presences\n` +
+      `Sans validation sous 24 h, tous les joueurs confirmés seront comptés présents.`,
   );
 }

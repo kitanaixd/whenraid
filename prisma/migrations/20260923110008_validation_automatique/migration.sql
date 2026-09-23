@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "SourceParticipation" ADD VALUE 'VALIDATION_AUTOMATIQUE';
+

@@ -203,6 +203,12 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
           <small>(fuseau : {utilisateur.fuseauHoraire})</small>
         </p>
         <p>
+          <small>
+            À la fin prévue (début + durée), le bot t&apos;enverra un MP pour valider les présences. Sans validation
+            sous 24 h, tous les joueurs confirmés seront comptés présents.
+          </small>
+        </p>
+        <p>
           <label>
             Durée estimée{" "}
             <select name="dureeHeures" defaultValue="3">

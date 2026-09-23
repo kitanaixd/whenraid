@@ -116,6 +116,7 @@ enum TypeNotification {
 enum SourceParticipation {
   VALIDATION_MANUELLE
   ADDON
+  VALIDATION_AUTOMATIQUE // le RL n'a pas validé sous 24 h : présent par défaut
 }
 
 // ─── Modèles ─────────────────────────────────────────────────────────────────

@@ -5,8 +5,41 @@ import { creneau } from "@/lib/jeu";
 
 // Appelée toutes les 5 minutes par cron-job.org. Envoie au RL :
 // - un MP de rappel pour chaque raid qui commence dans les 15 prochaines minutes ;
-// - un MP pour valider les présences de chaque raid terminé.
+// - un MP pour valider les présences de chaque raid terminé ;
+// - la clôture automatique des raids terminés depuis 24 h sans validation.
 const AVANCE_MINUTES = 15;
+const DELAI_VALIDATION_MS = 24 * 3600_000;
+
+/**
+ * 24 h après la fin sans validation du RL : les confirmés sans présence enregistrée
+ * sont comptés présents (source VALIDATION_AUTOMATIQUE) et le raid est clôturé.
+ * Les absences et départs signalés par le RL pendant le raid sont conservés.
+ */
+async function cloturerAutomatiquement(annonceId: string) {
+  return db.$transaction(async (tx) => {
+    // On « réserve » la clôture : un seul appel du cron peut la faire.
+    const reserve = await tx.annonce.updateMany({
+      where: { id: annonceId, presencesValideesLe: null, statut: { in: ["PUBLIEE", "COMPLETE"] } },
+      data: { presencesValideesLe: new Date(), statut: "CLOTUREE" },
+    });
+    if (reserve.count === 0) return false;
+    const confirmes = await tx.inscription.findMany({
+      where: { statut: "CONFIRME", personnageId: { not: null }, place: { annonceId } },
+      select: { personnageId: true, utilisateurId: true },
+    });
+    await tx.participation.createMany({
+      data: confirmes.map((c) => ({
+        annonceId,
+        personnageId: c.personnageId!,
+        utilisateurId: c.utilisateurId,
+        resultat: "PRESENT" as const,
+        source: "VALIDATION_AUTOMATIQUE" as const,
+      })),
+      skipDuplicates: true,
+    });
+    return true;
+  });
+}
 
 function autorise(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -66,5 +99,17 @@ export async function GET(request: Request) {
       fins++;
     }
   }
-  return Response.json({ rappels: envoyes, fins });
+  // Raids terminés depuis plus de 24 h et jamais validés : clôture automatique.
+  const aCloturer = (
+    await db.annonce.findMany({
+      where: { statut: { in: ["PUBLIEE", "COMPLETE"] }, presencesValideesLe: null, debutUtc: { lte: maintenant } },
+      select: { id: true, debutUtc: true, dureeEstimee: true },
+    })
+  ).filter((r) => creneau(r).fin + DELAI_VALIDATION_MS <= maintenant.getTime());
+  let clotures = 0;
+  for (const raid of aCloturer) {
+    if (await cloturerAutomatiquement(raid.id)) clotures++;
+  }
+
+  return Response.json({ rappels: envoyes, fins, clotures });
 }
