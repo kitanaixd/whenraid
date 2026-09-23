@@ -1,6 +1,7 @@
 import NextAuth, { type DefaultSession } from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { db } from "@/lib/db";
+import { ajouterAuServeur } from "@/lib/discord";
 
 declare module "next-auth" {
   interface Session {
@@ -26,11 +27,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // et on gère nous-mêmes la table Utilisateur.
   session: { strategy: "jwt" },
   providers: [
-    // On ne demande que le pseudo et l'avatar, pas l'email.
-    Discord({ authorization: { params: { scope: "identify" } } }),
+    // Pseudo et avatar (pas l'email), et l'ajout au serveur Discord WhenRaid,
+    // qui permet au bot d'envoyer les convocations en MP.
+    Discord({ authorization: { params: { scope: "identify guilds.join" } } }),
   ],
   callbacks: {
-    async jwt({ token, profile }) {
+    async jwt({ token, profile, account }) {
       // `profile` n'est présent qu'au moment de la connexion.
       if (profile) {
         const discordId = String(profile.id);
@@ -42,6 +44,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           update: { pseudo, avatarUrl },
         });
         token.utilisateurId = utilisateur.id;
+        // Le jeton d'accès Discord sert uniquement ici et n'est pas conservé.
+        if (account?.access_token) await ajouterAuServeur(discordId, account.access_token);
       }
       return token;
     },

@@ -1,12 +1,38 @@
 "use server";
 
 import { notFound, redirect } from "next/navigation";
+import { after } from "next/server";
+import type { TypeNotification } from "@/generated/prisma/enums";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { accepteCandidatures, estActive, estComplet, STATUTS_ACTIFS, STATUTS_EN_ATTENTE } from "@/lib/annonces";
 import { creneau, seChevauchent } from "@/lib/jeu";
 import { rolesPourPlace } from "./eligibilite";
+import { envoyerMp } from "@/lib/discord";
+import { texteNotification } from "@/lib/notifications";
+import { libelleRole } from "@/lib/libelles";
+
+const URL_SITE = process.env.SITE_URL ?? "https://www.whenraid.com";
+
+/** Envoie en MP Discord, après la réponse, la même information que la notification du site. */
+function prevenirEnMp(inscriptionId: string, type: TypeNotification) {
+  after(async () => {
+    const i = await db.inscription.findUnique({
+      where: { id: inscriptionId },
+      include: { utilisateur: true, personnage: true, place: { include: { annonce: true } } },
+    });
+    if (!i) return;
+    const { annonce } = i.place;
+    const avec =
+      type === "CANDIDATURE_ACCEPTEE" && i.personnage
+        ? ` Personnage : ${i.personnage.nom}${i.role ? ` (${libelleRole[i.role]})` : ""}.`
+        : "";
+    const texte = texteNotification(type, annonce, i.utilisateur.fuseauHoraire);
+    await envoyerMp(i.utilisateur.discordId, `${texte}${avec}
+${URL_SITE}/annonces/${annonce.id}`);
+  });
+}
 
 const retourVers =
   (annonceId: string) =>
@@ -170,6 +196,7 @@ export async function accepter(form: FormData) {
       await tx.inscription.updateMany({ where: { id: { in: aRetirer } }, data: { statut: "RETIRE" } });
     }
   });
+  prevenirEnMp(inscription.id, "CANDIDATURE_ACCEPTEE");
 
   rafraichir(annonce.id);
   retour();
@@ -190,6 +217,7 @@ export async function refuser(form: FormData) {
       data: { utilisateurId: inscription.utilisateurId, type: "CANDIDATURE_REFUSEE", annonceId: annonce.id },
     }),
   ]);
+  prevenirEnMp(inscription.id, "CANDIDATURE_REFUSEE");
   rafraichir(annonce.id);
   retour();
 }
