@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
-import { Cinzel, Crimson_Pro } from "next/font/google";
+import { Cinzel, Poppins } from "next/font/google";
 import "./globals.css";
 import { EnTete } from "./EnTete";
 import { PiedDePage } from "./PiedDePage";
 
 // Polices libres (licence OFL), servies par le site lui-même :
-// Cinzel (capitales romaines gravées) pour les titres, Crimson Pro pour le texte.
+// Cinzel (capitales romaines gravées) pour les titres, Poppins (sans serif) pour le texte.
 const cinzel = Cinzel({ subsets: ["latin"], variable: "--police-titre", display: "swap" });
-const crimson = Crimson_Pro({ subsets: ["latin"], variable: "--police-texte", display: "swap" });
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--police-texte",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "WhenRaid",
@@ -16,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="fr" className={`${cinzel.variable} ${crimson.variable}`}>
+    <html lang="fr" className={`${cinzel.variable} ${poppins.variable}`}>
       <body>
         <EnTete />
         {children}

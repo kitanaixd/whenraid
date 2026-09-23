@@ -56,7 +56,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: var(--police-texte), Georgia, serif;
+  font-family: var(--police-texte), system-ui, sans-serif;
   font-size: 18px;
   line-height: 1.6;
   color: var(--texte);
@@ -806,7 +806,7 @@ dialog.confirmation.invitations {
 .champ select,
 .champ textarea {
   width: 100%;
-  font-family: var(--police-texte), serif;
+  font-family: var(--police-texte), sans-serif;
   font-size: 1.05rem;
   font-weight: 400;
   text-transform: none;
@@ -851,7 +851,7 @@ dialog.confirmation.invitations {
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 .champ .fuseau {
-  font-family: var(--police-texte), serif;
+  font-family: var(--police-texte), sans-serif;
   text-transform: none;
   letter-spacing: normal;
   font-weight: 400;
@@ -876,7 +876,7 @@ dialog.confirmation.invitations {
 }
 .compteur-compo small {
   flex-basis: 100%;
-  font-family: var(--police-texte), serif;
+  font-family: var(--police-texte), sans-serif;
   font-size: 0.95rem;
 }
 .tableau-compo th,
@@ -956,7 +956,7 @@ button.menu-choisi {
   align-items: center;
   gap: 0.55rem;
   width: 100%;
-  font-family: var(--police-texte), serif;
+  font-family: var(--police-texte), sans-serif;
   font-size: 1.05rem;
   font-weight: 400;
   text-transform: none;
@@ -1003,7 +1003,7 @@ button.menu-choisi[aria-expanded="true"] {
   gap: 0.55rem;
   padding: 0.4rem 0.7rem;
   cursor: pointer;
-  font-family: var(--police-texte), serif;
+  font-family: var(--police-texte), sans-serif;
   font-size: 1.05rem;
   font-weight: 400;
   text-transform: none;
@@ -1931,4 +1931,11 @@ a.bouton.petit {
 .filtres,
 .choix-perso {
   margin-bottom: var(--espace);
+}
+
+/* Poppins est plus large que Crimson Pro : taille et graisse ajustées. */
+body {
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.65;
 }
