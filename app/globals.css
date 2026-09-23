@@ -1485,10 +1485,6 @@ main[data-fond] .carte {
 .lien-logs {
   font-size: 0.95rem;
 }
-.aide-nom {
-  margin: -0.4rem 0 0.2rem;
-  font-size: 0.95rem;
-}
 
 /* Lien présenté comme un bouton (mêmes styles que <button>). */
 a.bouton {

@@ -49,8 +49,8 @@ async function creerPersonnage(form: FormData) {
       await tx.personnage.create({
         data: {
           utilisateurId: utilisateur.id,
-          nom: nomDePersonnage(form, "nom", "Prénom", { requis: true })!,
-          nomDeFamille: nomDePersonnage(form, "nomDeFamille", "Nom de famille"),
+          nom: nomDePersonnage(form, "nom", "Prénom du personnage", { requis: true })!,
+          nomDeFamille: nomDePersonnage(form, "nomDeFamille", "Nom du personnage"),
           lienLogs: lienWarcraftLogs(form, "lienLogs"),
           classe: choix(form, "classe", Classe),
           rolesJouables,
@@ -262,17 +262,14 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
         </div>
         <div className="rangee">
           <label className="champ">
-            Prénom
+            Prénom du personnage
             <input name="nom" required maxLength={NOM_MAX} pattern="\p{L}+" title={TITRE_NOM} autoComplete="off" />
           </label>
           <label className="champ">
-            Nom de famille
+            Nom du personnage
             <input name="nomDeFamille" maxLength={NOM_MAX} pattern="\p{L}+" title={TITRE_NOM} autoComplete="off" />
           </label>
         </div>
-        <p className="doux aide-nom">
-          Lettres uniquement, {NOM_MAX} maximum. La majuscule est mise automatiquement (ex. « jaina » → « Jaina »).
-        </p>
         <div className="rangee">
           <label className="champ">
             Logs <small className="fuseau">(facultatif, Warcraft Logs uniquement)</small>
