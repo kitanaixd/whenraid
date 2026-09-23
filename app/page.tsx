@@ -4,7 +4,8 @@ import { utilisateurConnecte } from "@/lib/session";
 import { db } from "@/lib/db";
 import { afficherDate } from "@/lib/dates";
 import { nomRaid } from "@/lib/raids";
-import { libelleFaction, libelleRuleset } from "@/lib/libelles";
+import { libelleFaction, libelleRole, libelleRuleset } from "@/lib/libelles";
+import { chargerMesRaids } from "@/lib/mesRaids";
 
 export default async function Accueil() {
   const utilisateur = await utilisateurConnecte();
@@ -36,8 +37,49 @@ export default async function Accueil() {
     },
   });
 
+  const { convocations, candidatures, organises: mesRaids } = await chargerMesRaids(utilisateur.id);
+  const fuseau = utilisateur.fuseauHoraire;
+
   return (
     <main>
+      {(convocations.length > 0 || candidatures.length > 0 || mesRaids.length > 0) && (
+        <section className="encadre" aria-labelledby="titre-mes-raids">
+          <h2 id="titre-mes-raids" style={{ marginTop: 0 }}>
+            Tes raids
+          </h2>
+          {convocations.map((i) => (
+            <p key={i.id}>
+              ✔ <strong>Convié</strong> :{" "}
+              <Link href={`/annonces/${i.place.annonce.id}`}>{nomRaid(i.place.annonce.contenu)}</Link> —{" "}
+              <strong>{afficherDate(i.place.annonce.debutUtc, fuseau)}</strong> avec <strong>{i.personnage?.nom}</strong>
+              {i.role && ` (${libelleRole[i.role]})`}
+            </p>
+          ))}
+          {mesRaids.map((a) => (
+            <p key={a.id}>
+              ★ <strong>Tu organises</strong> :{" "}
+              <Link href={`/annonces/${a.id}`}>{nomRaid(a.contenu)}</Link> — {afficherDate(a.debutUtc, fuseau)}
+              {a.statut === "COMPLETE" && " (complet)"}
+            </p>
+          ))}
+          {candidatures.length > 0 && (
+            <>
+              <p>
+                <small>Candidatures en attente :</small>
+              </p>
+              <ul>
+                {candidatures.map((i) => (
+                  <li key={i.id}>
+                    <Link href={`/annonces/${i.place.annonce.id}`}>{nomRaid(i.place.annonce.contenu)}</Link> —{" "}
+                    {afficherDate(i.place.annonce.debutUtc, fuseau)} avec {i.personnage?.nom}
+                    {i.statut === "LISTE_ATTENTE" && " (liste d'attente)"}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
       <h1>WhenRaid</h1>
       <p>
         {utilisateur.avatarUrl && (
