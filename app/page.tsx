@@ -33,7 +33,7 @@ export default async function Accueil() {
         Connecté en tant que <strong>{utilisateur.pseudo}</strong>
       </p>
       <nav>
-        <Link href="/personnages">Mes personnages</Link>
+        <Link href="/personnages">Mes personnages</Link> · <Link href="/annonces/nouvelle">Créer un raid</Link>
       </nav>
       <form
         action={async () => {

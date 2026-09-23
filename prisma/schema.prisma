@@ -50,6 +50,16 @@ enum Ruleset {
   HARDCORE
 }
 
+enum Contenu {
+  MOLTEN_CORE
+  ONYXIA
+  ZUL_GURUB
+  BLACKWING_LAIR
+  AQ20
+  AQ40
+  NAXXRAMAS
+}
+
 enum Region {
   EU
   US
@@ -175,7 +185,12 @@ model Annonce {
   id            String        @id @default(cuid())
   groupeId      String?
   createurId    String
-  contenu       String // code du raid visé, ex. "MC", "BWL"
+  contenu       Contenu
+  // Sur l'Annonce (et pas seulement le Groupe, facultatif) pour filtrer
+  // les personnages qui peuvent s'inscrire.
+  faction       Faction
+  ruleset       Ruleset
+  region        Region
   taille        Int // 10, 20, 40…
   debutUtc      DateTime      @db.Timestamptz(3)
   dureeEstimee  Int? // en minutes
@@ -230,15 +245,15 @@ model Inscription {
 }
 
 model Alerte {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   utilisateurId String
   classes       Classe[]
   roles         Role[]
-  contenus      String[]
+  contenus      Contenu[]
   joursSemaine  Int[] // 0 = dimanche … 6 = samedi, dans le fuseau de l'utilisateur
   plageHoraire  String? // "HH:MM-HH:MM", dans le fuseau de l'utilisateur
   langue        String?
-  active        Boolean  @default(true)
+  active        Boolean   @default(true)
 
   utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
 

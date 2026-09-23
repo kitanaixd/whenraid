@@ -76,6 +76,6 @@ export const libelleStatutInscription: Record<StatutInscription, string> = {
 };
 
 /** Les clés d'un dictionnaire de libellés, dans l'ordre, pour les <select>. */
-export function options<T extends string>(libelles: Record<T, string>) {
-  return Object.entries(libelles) as [T, string][];
+export function options<T extends string, V>(libelles: Record<T, V>) {
+  return Object.entries(libelles) as [T, V][];
 }
