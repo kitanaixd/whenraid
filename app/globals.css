@@ -2905,3 +2905,35 @@ fieldset {
   max-height: none;
   overflow: visible;
 }
+
+/* ─── Couleur des coins = couleur de la bordure, pour chaque variante de bouton ──
+   Les sélecteurs reprennent :not(.bouton-lien):not(.menu-choisi) pour l'emporter sur
+   la règle générale des boutons, qui fixe un filet doré translucide. */
+button:not(.bouton-lien):not(.menu-choisi).principal,
+button:not(.bouton-lien):not(.menu-choisi).choisi,
+a.bouton.principal {
+  --bord-biseau: #f3dfa8;
+}
+button:not(.bouton-lien):not(.menu-choisi).principal:hover:not(:disabled),
+a.bouton.principal:hover {
+  --bord-biseau: #fff3cf;
+}
+button:not(.bouton-lien):not(.menu-choisi).danger {
+  --bord-biseau: rgb(201 73 63 / 0.8);
+}
+button:not(.bouton-lien):not(.menu-choisi).danger:hover:not(:disabled) {
+  --bord-biseau: var(--danger);
+}
+a.bouton:hover {
+  --bord-biseau: var(--or);
+}
+/* Groupe de cases sans bordure : pas de biseau. */
+fieldset.rapide-roles {
+  clip-path: none;
+}
+fieldset.rapide-roles::before {
+  display: none;
+}
+dialog.confirmation.invitations {
+  --bord-biseau: var(--or);
+}
