@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
+import { IconeCroix } from "@/app/Icones";
 
 /** Désinscription d'un raid, après confirmation dans une fenêtre. */
 export function BoutonDesinscrire({
@@ -22,9 +23,22 @@ export function BoutonDesinscrire({
 
   return (
     <>
-      <button type="button" className="petit danger" onClick={() => dialogue.current?.showModal()}>
-        {convie ? "Me désister" : retourListe !== undefined ? "Annuler" : "Retirer ma candidature"}
-      </button>
+      {retourListe !== undefined ? (
+        /* Sur la liste des raids : bouton-icône (croix). */
+        <button
+          type="button"
+          className="bouton-icone danger"
+          aria-label={convie ? "Me désister" : "Annuler ma candidature"}
+          title={convie ? "Me désister" : "Annuler ma candidature"}
+          onClick={() => dialogue.current?.showModal()}
+        >
+          <IconeCroix />
+        </button>
+      ) : (
+        <button type="button" className="petit danger" onClick={() => dialogue.current?.showModal()}>
+          {convie ? "Me désister" : "Retirer ma candidature"}
+        </button>
+      )}
 
       <dialog ref={dialogue} className="confirmation" aria-labelledby="titre-desinscription">
         <form action={action}>

@@ -39,7 +39,7 @@ export function LigneRaid({
   action?: ReactNode;
 }) {
   const r = resumeLigneRaid(a);
-  const taille = compact ? 22 : 34;
+  const taille = compact ? 18 : 34;
   const compo = (
     <div className="compo-roles" title="Tanks · Soigneurs · DPS">
       <span aria-label={`${r.roles.tanks} tanks`}>

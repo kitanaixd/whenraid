@@ -9,6 +9,7 @@ import { rolesPourRaid } from "@/lib/eligibilite";
 import { chargerMesRaids } from "@/lib/mesRaids";
 import { fiabiliteRls } from "@/lib/fiabilite";
 import { BadgeFiabilite } from "./BadgeFiabilite";
+import { IconePlus } from "./Icones";
 import { includeLigneRaid, resumeLigneRaid } from "@/lib/ligneRaid";
 import { Contenu } from "@/generated/prisma/enums";
 import type { AnnonceWhereInput } from "@/generated/prisma/models";
@@ -332,9 +333,11 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                         form="candidature-rapide"
                         name="annonceId"
                         value={a.id}
-                        className="petit principal"
+                        className="bouton-icone principal"
+                        aria-label={a.statut === "COMPLETE" ? "Me mettre en réserve" : "Candidater"}
+                        title={a.statut === "COMPLETE" ? "Me mettre en réserve" : "Candidater"}
                       >
-                        {a.statut === "COMPLETE" ? "Réserve" : "Candidater"}
+                        <IconePlus />
                       </button>
                     )
                   }
