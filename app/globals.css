@@ -2219,3 +2219,21 @@ body {
     display: none;
   }
 }
+
+/* Fenêtres de confirmation : le filet biseauté dépasse de 2 px, sans barres de défilement. */
+dialog.confirmation {
+  overflow: visible;
+}
+
+/* Candidature rapide : les rôles sur une ligne, la note toujours en dessous. */
+.rapide-champs {
+  flex-direction: column;
+  align-items: stretch;
+}
+.rapide-roles {
+  flex-wrap: wrap;
+}
+.rapide-note {
+  flex: none;
+  width: 100%;
+}
