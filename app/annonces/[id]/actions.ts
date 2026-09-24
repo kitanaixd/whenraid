@@ -2,7 +2,6 @@
 
 import { notFound, redirect } from "next/navigation";
 import { after } from "next/server";
-import type { TypeNotification } from "@/generated/prisma/enums";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
@@ -15,36 +14,15 @@ import {
   STATUTS_ACTIFS,
   STATUTS_EN_ATTENTE,
 } from "@/lib/annonces";
-import { seChevauchent } from "@/lib/jeu";
+import { nomEnJeu, seChevauchent } from "@/lib/jeu";
 import { placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite";
 import { Role } from "@/generated/prisma/enums";
+import { envoyerInvitations, URL_SITE } from "@/lib/invitations";
 import { envoyerMp } from "@/lib/discord";
 import { texteNotification } from "@/lib/notifications";
-import { envoyerInvitation, envoyerInvitations, URL_SITE } from "@/lib/invitations";
-import { nomEnJeu } from "@/lib/jeu";
 import { dico } from "@/lib/i18n";
+import { prevenirEnMp } from "@/lib/prevenir";
 import { dicoCourant } from "@/lib/langue";
-
-/** Envoie en MP Discord, après la réponse, la même information que la notification du site (dans la langue du joueur). */
-function prevenirEnMp(inscriptionId: string, type: TypeNotification) {
-  after(async () => {
-    const i = await db.inscription.findUnique({
-      where: { id: inscriptionId },
-      include: { utilisateur: true, personnage: true, place: { include: { annonce: true } } },
-    });
-    if (!i) return;
-    const { annonce } = i.place;
-    const d = dico(i.utilisateur.langueSite);
-    const avec =
-      type === "CANDIDATURE_ACCEPTEE" && i.personnage
-        ? d.notification.personnage(nomEnJeu(i.personnage), i.role ? d.role[i.role] : "")
-        : "";
-    const texte = texteNotification(type, annonce, i.utilisateur.fuseauHoraire, d);
-    await envoyerMp(i.utilisateur.discordId, `${texte}${avec}\n${URL_SITE}/annonces/${annonce.id}`);
-    // Accepté après l'envoi des invitations (ex. remplaçant) : il reçoit la sienne tout de suite.
-    if (type === "CANDIDATURE_ACCEPTEE" && annonce.invitationsEnvoyeesLe) await envoyerInvitation(i.id);
-  });
-}
 
 const retourVers =
   (annonceId: string) =>
@@ -59,6 +37,9 @@ function retourListe(form: FormData) {
     const v = recue.get(nom);
     if (v && /^[\w-]{1,40}$/.test(v)) params.set(nom, v);
   }
+  // Recherche par titre : lettres, chiffres, espaces et tirets seulement.
+  const q = recue.get("q");
+  if (q && /^[\p{L}\p{N} '’-]{1,40}$/u.test(q)) params.set("q", q);
   return (erreur?: string): never => {
     if (erreur) params.set("erreur", erreur);
     const requete = params.toString();

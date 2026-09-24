@@ -595,3 +595,11 @@ button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compt
 .accueil-filtres form.filtres.carte > p.surtitre:first-child {
   margin: 0;
 }
+
+/* Barre de recherche : l'icône de loupe survit au fond des champs du thème. */
+.recherche-raids input[type="search"][name="q"] {
+  padding-left: 2.4rem;
+  background: var(--fond)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b8b93' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E")
+    no-repeat 0.8rem center / 1.05rem;
+}

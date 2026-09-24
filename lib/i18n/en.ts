@@ -262,6 +262,9 @@ export const en: Dico = {
     retirerFiltre: "Remove this filter",
     leJour: (date) => `On ${date}`,
     toutEffacer: "Clear all",
+    rechercher: "Search raids by title…",
+    rechercheAria: "Search raids",
+    recherche: (q) => `"${q}"`,
     prochainsRaids: "Incoming raids",
     aucunProchain: "No raid planned yet.",
   },
@@ -437,6 +440,17 @@ export const en: Dico = {
     ajouterBesoin: "+ Add a need",
     tropDemandees: (d, r) => `⚠ You're asking for ${d} specific spots, but only ${r} are left.`,
     placesLibres: (n) => `${n} open spot${s(n)} (any class, any role).`,
+  },
+
+  // ─── Raid editing ──────────────────────────────────────────────────────────
+  edition: {
+    bouton: "Edit raid",
+    titre: "Edit raid",
+    aide: "Players already accepted keep their spot. Pending applicants are moved to a spot that still fits them; those who no longer fit any spot are declined and notified.",
+    enregistrer: "Save changes",
+    annuler: "Cancel",
+    doublon: "You already have this raid at that date and time.",
+    retour: "← Back to the raid",
   },
 
   // ─── Characters ────────────────────────────────────────────────────────────

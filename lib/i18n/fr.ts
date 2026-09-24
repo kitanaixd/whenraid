@@ -289,6 +289,9 @@ export const fr = {
     retirerFiltre: "Retirer ce filtre",
     leJour: (date: string) => `Le ${date}`,
     toutEffacer: "Tout effacer",
+    rechercher: "Rechercher un raid par titre…",
+    rechercheAria: "Rechercher un raid",
+    recherche: (q: string) => `« ${q} »`,
     prochainsRaids: "Prochains raids",
     aucunProchain: "Aucun raid prévu pour l'instant.",
   },
@@ -465,6 +468,17 @@ export const fr = {
     ajouterBesoin: "+ Ajouter un besoin",
     tropDemandees: (d: number, r: number) => `⚠ Tu demandes ${d} places précises, mais il n'en reste que ${r}.`,
     placesLibres: (n: number) => `${n} place${s(n)} libre${s(n)} (toute classe, tout rôle).`,
+  },
+
+  // ─── Modification d'un raid ────────────────────────────────────────────────
+  edition: {
+    bouton: "Modifier le raid",
+    titre: "Modifier le raid",
+    aide: "Les joueurs déjà acceptés gardent leur place. Les candidats en attente sont replacés sur une place qui leur correspond encore ; ceux qui ne correspondent plus à aucune place sont refusés et prévenus.",
+    enregistrer: "Enregistrer les modifications",
+    annuler: "Annuler",
+    doublon: "Tu as déjà ce raid à cette date et à cette heure.",
+    retour: "← Retour au raid",
   },
 
   // ─── Personnages ───────────────────────────────────────────────────────────

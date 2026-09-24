@@ -231,6 +231,11 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             )}
             {annonce.vocal !== "AUCUN" && <p className="doux">{d.raid.identifiantsPrives}</p>}
             <div className="actions-rl">
+              {(annonce.statut === "PUBLIEE" || annonce.statut === "COMPLETE") && (
+                <Link href={`/annonces/${annonce.id}/modifier`} className="bouton">
+                  {d.edition.bouton}
+                </Link>
+              )}
               {rlPeutAgir(annonce) && (
                 <BoutonInvitations
                   action={envoyerLesInvitations}

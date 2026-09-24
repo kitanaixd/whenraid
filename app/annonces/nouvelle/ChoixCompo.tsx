@@ -12,20 +12,44 @@ import { useDico } from "@/app/Langue";
 const tousLesRoles: Role[] = ["TANK", "SOIGNEUR", "DPS"];
 const cle = (classe: Classe, role: Role) => `${classe}.${role}`;
 
-/**
- * Haut du formulaire de création : raid, date, heure, durée, puis la compo
- * actuelle (boutons − / +) et les besoins précis (lignes ajoutables).
- * `personnage` est le choix du personnage, rendu par la page serveur.
- */
-export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage: React.ReactNode }) {
-  const d = useDico();
-  const [contenu, setContenu] = useState<Contenu>("MONT_HYJAL_10");
-  const [compo, setCompo] = useState<Record<string, number>>({});
-  const [lignes, setLignes] = useState<number[]>([0]);
-  const [prochaineLigne, setProchaineLigne] = useState(1);
-  const [exigences, setExigences] = useState<Record<number, number>>({});
+/** Un besoin précis : « n places pour telle classe / tel rôle » ('' = toute classe / tout rôle). */
+export type Besoin = { classe: string; role: string; nombre: number };
 
-  const taille = raids[contenu].taille;
+/**
+ * Formulaire de compo : raid, date, heure, durée (à la création), puis la compo
+ * actuelle (boutons − / +) et les besoins précis (lignes ajoutables).
+ * À la modification d'un raid : pas de ligne raid / date (`entete` faux), compo et
+ * besoins pré-remplis, et `dejaPris` places déjà occupées par des joueurs acceptés.
+ */
+export function ChoixCompo({
+  fuseau,
+  personnage,
+  entete = true,
+  contenuInitial = "MONT_HYJAL_10",
+  compoInitiale = {},
+  besoinsInitiaux = [],
+  dejaPris = 0,
+}: {
+  fuseau: string;
+  personnage?: React.ReactNode;
+  entete?: boolean;
+  contenuInitial?: Contenu;
+  compoInitiale?: Record<string, number>;
+  besoinsInitiaux?: Besoin[];
+  dejaPris?: number;
+}) {
+  const d = useDico();
+  const [contenu, setContenu] = useState<Contenu>(contenuInitial);
+  const [compo, setCompo] = useState<Record<string, number>>(compoInitiale);
+  const nbLignes = Math.max(1, besoinsInitiaux.length);
+  const [lignes, setLignes] = useState<number[]>(Array.from({ length: nbLignes }, (_, i) => i));
+  const [prochaineLigne, setProchaineLigne] = useState(nbLignes);
+  const [exigences, setExigences] = useState<Record<number, number>>(
+    Object.fromEntries(besoinsInitiaux.map((b, i) => [i, b.nombre])),
+  );
+
+  // Places que le RL peut répartir : la taille, moins les joueurs acceptés (qui gardent leur place).
+  const taille = raids[contenu].taille - dejaPris;
   const nombre = (classe: Classe, role: Role) => compo[cle(classe, role)] ?? 0;
   const totalRole = (role: Role) =>
     Object.entries(compo)
@@ -48,38 +72,40 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
 
   return (
     <>
-      <div className="rangee rangee-raid">
-        <label className="champ">
-          {d.champ.raid}
-          <select name="contenu" required value={contenu} onChange={(e) => setContenu(e.target.value as Contenu)}>
-            {options(raids).map(([v]) => (
-              <option key={v} value={v}>
-                {nomRaid(v, d)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="champ">
-          {d.creation.date}
-          <input type="date" name="date" required />
-        </label>
-        <label className="champ">
-          <span>
-            {d.creation.heure} <small className="fuseau">({fuseau})</small>
-          </span>
-          <input type="time" name="heure" required defaultValue="21:00" />
-        </label>
-        <label className="champ">
-          {d.champ.duree}
-          <select name="dureeHeures" defaultValue="3">
-            {[1, 2, 3, 4, 5, 6].map((h) => (
-              <option key={h} value={h}>
-                {h} h
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      {entete && (
+        <div className="rangee rangee-raid">
+          <label className="champ">
+            {d.champ.raid}
+            <select name="contenu" required value={contenu} onChange={(e) => setContenu(e.target.value as Contenu)}>
+              {options(raids).map(([v]) => (
+                <option key={v} value={v}>
+                  {nomRaid(v, d)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="champ">
+            {d.creation.date}
+            <input type="date" name="date" required />
+          </label>
+          <label className="champ">
+            <span>
+              {d.creation.heure} <small className="fuseau">({fuseau})</small>
+            </span>
+            <input type="time" name="heure" required defaultValue="21:00" />
+          </label>
+          <label className="champ">
+            {d.champ.duree}
+            <select name="dureeHeures" defaultValue="3">
+              {[1, 2, 3, 4, 5, 6].map((h) => (
+                <option key={h} value={h}>
+                  {h} h
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
 
       {personnage}
 
@@ -97,7 +123,7 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
           <RoleIcone role="DPS" taille={24} /> {totalRole("DPS")}
         </span>
         <strong>
-          {joueurs}/{taille}
+          {joueurs + dejaPris}/{taille + dejaPris}
         </strong>
         <small>{joueurs >= taille ? d.creation.raidPlein : d.creation.placesRestantes(places)}</small>
       </div>
@@ -170,7 +196,7 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
             name={`exigences.${l}.nombre`}
             min={0}
             max={places}
-            defaultValue={0}
+            defaultValue={besoinsInitiaux[l]?.nombre ?? 0}
             aria-label={d.creation.nombrePlaces}
             onChange={(e) => setExigences({ ...exigences, [l]: Number(e.target.value) || 0 })}
           />
@@ -179,6 +205,7 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
             <MenuDeroulant
               name={`exigences.${l}.classe`}
               etiquette={d.champ.classe}
+              valeurInitiale={besoinsInitiaux[l]?.classe ?? ""}
               options={[
                 { valeur: "", libelle: d.commun.touteClasseMin },
                 ...options(d.classe).map(([v, lib]) => ({ valeur: v, libelle: lib, classe: v })),
@@ -189,6 +216,7 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
             <MenuDeroulant
               name={`exigences.${l}.role`}
               etiquette={d.champ.role}
+              valeurInitiale={besoinsInitiaux[l]?.role ?? ""}
               options={[
                 { valeur: "", libelle: d.commun.toutRoleMin },
                 ...options(d.role).map(([v, lib]) => ({ valeur: v, libelle: lib, role: v })),

@@ -22,7 +22,15 @@ import { dicoCourant } from "@/lib/langue";
 
 const DUREES_MAX = [2, 3, 4, 6];
 /** Paramètres de la liste gardés d'un lien à l'autre (personnage, filtres, mois du calendrier). */
-const PARAMETRES = ["perso", "raid", "jour", "mois", "duree"] as const;
+const PARAMETRES = ["perso", "raid", "jour", "mois", "duree", "q"] as const;
+
+/** Texte comparable : minuscules, sans accents (« Hyjal Déjà » ≈ « hyjal deja »). */
+const sansAccents = (texte: string) =>
+  texte
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .trim();
 type Parametres = Partial<Record<(typeof PARAMETRES)[number], string | null>>;
 
 export default async function Accueil({ searchParams }: PageProps<"/">) {
@@ -118,12 +126,18 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
     const j = jourLocal(a.debutUtc, fuseau);
     raidsParJour.set(j, (raidsParJour.get(j) ?? 0) + 1);
   }
-  const annonces = (jour ? ouverts.filter((a) => jourLocal(a.debutUtc, fuseau) === jour) : ouverts).slice(0, 50);
+  // Recherche : dans le titre donné par le RL et dans le nom du raid.
+  const recherche = valeur("q").trim().slice(0, 40);
+  const cherche = sansAccents(recherche);
+  const annonces = ouverts
+    .filter((a) => !jour || jourLocal(a.debutUtc, fuseau) === jour)
+    .filter((a) => !cherche || sansAccents(`${a.titre ?? ""} ${nomRaid(a.contenu, d)}`).includes(cherche))
+    .slice(0, 50);
   const fiabilite = await fiabiliteRls([...new Set(annonces.map((a) => a.createurId))]);
   const rolesPerso = perso ? perso.rolesJouables.filter((r) => rolePossible(perso.classe, r)) : [];
   const requete = lienListe({}).replace(/^\/\??/, "");
   const erreur = valeur("erreur");
-  const filtreActif = Boolean(contenu || jour || dureeMax);
+  const filtreActif = Boolean(contenu || jour || dureeMax || recherche);
 
   /** Bouton « Annuler » (ou « Me désister ») pour un raid où je suis inscrit. */
   const annulation = (annonceId: string) => {
@@ -212,6 +226,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                     filtreRetirable(d.accueil.leJour(jourAffiche(jour)), {
                       jour: null,
                     })}
+                  {recherche && filtreRetirable(d.accueil.recherche(recherche), { q: null })}
                   {contenu && filtreRetirable(nomRaid(contenu, d), { raid: null })}
                   {dureeMax &&
                     filtreRetirable(d.accueil.heuresMax(dureeMax), {
@@ -219,7 +234,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                     })}
                 </div>
                 {filtreActif && (
-                  <Link href={lienListe({ jour: null, raid: null, duree: null })} className="lien-discret">
+                  <Link href={lienListe({ jour: null, raid: null, duree: null, q: null })} className="lien-discret">
                     {d.accueil.toutEffacer}
                   </Link>
                 )}
@@ -268,6 +283,21 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
 
           {/* ─── Au centre : la liste des raids ─── */}
           <section className="accueil-centre" id="titre-raids" aria-label={d.accueil.raidsTitre}>
+            {/* Recherche par titre : garde le personnage et les autres filtres. */}
+            <form className="recherche-raids" method="get" role="search" aria-label={d.accueil.rechercheAria}>
+              {(["perso", "raid", "jour", "mois", "duree"] as const).map(
+                (nom) => valeur(nom) && <input key={nom} type="hidden" name={nom} value={valeur(nom)} />,
+              )}
+              <input
+                type="search"
+                name="q"
+                defaultValue={recherche}
+                placeholder={d.accueil.rechercher}
+                aria-label={d.accueil.rechercheAria}
+                maxLength={40}
+                autoComplete="off"
+              />
+            </form>
             {typeof erreur === "string" && erreur && (
               <p className="avertissement grave" role="alert">
                 ⚠ {erreur}
