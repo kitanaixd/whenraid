@@ -29,7 +29,7 @@ async function chargerRaid(annonceId: string) {
 type Raid = NonNullable<Awaited<ReturnType<typeof chargerRaid>>>;
 
 /** Carte d'invitation, dans la langue (d) du joueur qui la reçoit. */
-function carteInvitation({ annonce, perso }: Raid, d: Dico) {
+export function carteInvitation({ annonce, perso }: Raid, d: Dico) {
   const t = d.discord.invitation;
   const champs = [];
   const boutons = [{ libelle: d.discord.voirRaid, url: lienRaid(annonce.id) }];
@@ -81,6 +81,31 @@ export async function envoyerInvitations(annonceId: string) {
   return confirmes.length;
 }
 
+type RaidCarte = Raid["annonce"];
+
+export function carteRappelRl(annonce: RaidCarte, d: Dico, confirmes: number) {
+  return carteRaid({
+    annonce,
+    d,
+    titre: d.discord.rappelRl.titre,
+    couleur: COULEUR_OR,
+    description: d.discord.rappelRl.description(nomCarte(annonce, d)),
+    champs: [{ name: d.discord.champ.confirmes, value: String(confirmes), inline: true }],
+    boutons: [{ libelle: d.discord.envoyerInvitations, url: lienRaid(annonce.id) }],
+  });
+}
+
+export function carteRappelFin(annonce: RaidCarte, d: Dico) {
+  return carteRaid({
+    annonce,
+    d,
+    titre: d.discord.rappelFin.titre,
+    couleur: COULEUR_OR,
+    description: d.discord.rappelFin.description(nomCarte(annonce, d)),
+    boutons: [{ libelle: d.discord.validerPresences, url: lienRaid(annonce.id, "#presences") }],
+  });
+}
+
 /** Rappel au RL, 15 minutes avant le raid, avec le lien vers la page du raid (dans sa langue). */
 export async function envoyerRappelRl(annonceId: string) {
   const raid = await chargerRaid(annonceId);
@@ -88,18 +113,7 @@ export async function envoyerRappelRl(annonceId: string) {
   const { annonce } = raid;
   const d = dico(annonce.createur.langueSite);
   const confirmes = await db.inscription.count({ where: { statut: "CONFIRME", place: { annonceId } } });
-  await envoyerMp(
-    annonce.createur.discordId,
-    carteRaid({
-      annonce,
-      d,
-      titre: d.discord.rappelRl.titre,
-      couleur: COULEUR_OR,
-      description: d.discord.rappelRl.description(nomCarte(annonce, d)),
-      champs: [{ name: d.discord.champ.confirmes, value: String(confirmes), inline: true }],
-      boutons: [{ libelle: d.discord.envoyerInvitations, url: lienRaid(annonce.id) }],
-    }),
-  );
+  await envoyerMp(annonce.createur.discordId, carteRappelRl(annonce, d, confirmes));
 }
 
 /** Fin du raid : on demande au RL de valider les présences (MP dans sa langue + notification sur le site). */
@@ -111,15 +125,5 @@ export async function envoyerRappelFin(annonceId: string) {
   await db.notification.create({
     data: { utilisateurId: annonce.createurId, type: "VALIDER_PRESENCES", annonceId: annonce.id },
   });
-  await envoyerMp(
-    annonce.createur.discordId,
-    carteRaid({
-      annonce,
-      d,
-      titre: d.discord.rappelFin.titre,
-      couleur: COULEUR_OR,
-      description: d.discord.rappelFin.description(nomCarte(annonce, d)),
-      boutons: [{ libelle: d.discord.validerPresences, url: lienRaid(annonce.id, "#presences") }],
-    }),
-  );
+  await envoyerMp(annonce.createur.discordId, carteRappelFin(annonce, d));
 }
