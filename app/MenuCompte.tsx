@@ -4,9 +4,17 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 /**
  * Menu du compte, tout à droite de l'en-tête : avatar + pseudo, qui ouvre la liste
- * (profil, personnages, déconnexion). Se ferme au clic ailleurs, avec Échap ou en choisissant.
+ * (profil, personnages, langue, déconnexion). Se ferme au clic ailleurs, avec Échap ou en choisissant.
  */
-export function MenuCompte({ pseudo, avatarUrl, children }: { pseudo: string; avatarUrl: string | null; children: ReactNode }) {
+export function MenuCompte({
+  pseudo,
+  avatarUrl,
+  children,
+}: {
+  pseudo: string;
+  avatarUrl: string | null;
+  children: ReactNode;
+}) {
   const [ouvert, setOuvert] = useState(false);
   const conteneur = useRef<HTMLDivElement>(null);
   const id = useId();
@@ -49,8 +57,16 @@ export function MenuCompte({ pseudo, avatarUrl, children }: { pseudo: string; av
         </span>
       </button>
       {ouvert && (
-        // Un clic sur un lien ferme le menu (la navigation reste gérée par le lien).
-        <div className="menu-compte-liste" id={id} role="menu" onClick={() => setOuvert(false)}>
+        // Un clic sur un lien ferme le menu (la navigation reste gérée par le lien),
+        // sauf dans une zone marquée data-garder-ouvert (son formulaire doit rester monté pour partir).
+        <div
+          className="menu-compte-liste"
+          id={id}
+          role="menu"
+          onClick={(e) => {
+            if (!(e.target as Element).closest("[data-garder-ouvert]")) setOuvert(false);
+          }}
+        >
           {children}
         </div>
       )}

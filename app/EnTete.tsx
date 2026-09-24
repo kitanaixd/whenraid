@@ -12,8 +12,8 @@ import { Bannieres } from "./Bannieres";
 import { LigneNotification } from "./notifications/LigneNotification";
 
 /**
- * En-tête commun : logo et navigation à gauche ; à droite, le choix de la langue,
- * le bouton « Créer un raid », la cloche des notifications et le menu du compte.
+ * En-tête commun : logo à gauche (retour à l'accueil) ; à droite, « Créer un raid »,
+ * la cloche des notifications et le menu du compte (qui contient le choix de la langue). Déconnecté : le choix de la langue seul.
  */
 export async function EnTete() {
   const [utilisateur, langue, d] = await Promise.all([utilisateurConnecte(), langueCourante(), dicoCourant()]);
@@ -58,11 +58,7 @@ export async function EnTete() {
 
         {utilisateur ? (
           <>
-            <nav className="navigation" aria-label={d.entete.navigation}>
-              <Link href="/">{d.entete.raids}</Link>
-            </nav>
             <div className="compte">
-              {choixLangue}
               <Link href="/annonces/nouvelle" className="bouton principal petit">
                 {d.entete.creerRaid}
               </Link>
@@ -99,6 +95,11 @@ export async function EnTete() {
                 <Link href="/personnages" role="menuitem">
                   {d.entete.mesPersonnages}
                 </Link>
+                {/* Le menu reste ouvert au changement de langue : la page se recharge dans la nouvelle. */}
+                <div className="menu-langue" data-garder-ouvert>
+                  <span>{d.commun.langue}</span>
+                  {choixLangue}
+                </div>
                 <form
                   action={async () => {
                     "use server";
