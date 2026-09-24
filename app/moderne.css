@@ -1463,3 +1463,27 @@ a:focus-visible * {
   border-radius: 50%;
   object-fit: contain;
 }
+
+/* « Je cherche un raid pour » : les personnages restent dans la carte, un nom long se raccourcit (…). */
+.accueil-perso .choix-perso ul {
+  flex-direction: column;
+}
+.accueil-perso .choix-perso li {
+  min-width: 0;
+  width: 100%;
+}
+.accueil-perso a.perso-choix {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+.accueil-perso .perso-choix .classe {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.accueil-perso .perso-choix > img,
+.accueil-perso .perso-choix .ruleset-perso {
+  flex: none;
+}
