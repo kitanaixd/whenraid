@@ -160,6 +160,7 @@ export const fr = {
       "Ce personnage n'est pas de la même faction, du même ruleset ou de la même région que les autres membres du groupe.",
     dejaMembre: "Tu fais déjà partie de ce groupe.",
     candidatureDeGroupe: "C'est une candidature de groupe : accepte ou refuse tout le groupe.",
+    messageVide: "Écris un message avant de l'envoyer.",
     obligatoire: (champ: string) => `Le champ « ${champ} » est obligatoire.`,
     tropLong: (champ: string) => `Le champ « ${champ} » est trop long.`,
     nombreEntre: (champ: string, min: number, max: number) =>
@@ -647,6 +648,14 @@ export const fr = {
     garder: "Le garder",
     confirmer: "Retirer du raid",
     message: (pseudo: string) => `Écrire à ${pseudo} sur Discord`,
+    messageTitre: (pseudo: string) => `Message à ${pseudo}`,
+    messageAide: "Le bot WhenRaid lui enverra ton message en MP Discord, avec le lien du raid (500 caractères max).",
+    messagePlaceholder: "Ex. : on se retrouve à l'entrée du raid à 20 h 50 !",
+    envoyer: "Envoyer",
+    annuler: "Annuler",
+    envoye: "✔ Message envoyé en MP Discord.",
+    echec: "Le message n'a pas pu partir : ce joueur n'accepte peut-être pas les MP de serveur.",
+    carteTitre: (rl: string) => `✉️ Message de ${rl}, ton RL`,
   },
 };
 

@@ -21,7 +21,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import type { Dico } from "@/lib/i18n";
 import { Role, type Faction, type Region, type Ruleset } from "@/generated/prisma/enums";
 import { envoyerInvitations } from "@/lib/invitations";
-import { carteNotification } from "@/lib/carteDiscord";
+import { carteNotification, carteRaid, COULEUR_OR } from "@/lib/carteDiscord";
 import { envoyerMp } from "@/lib/discord";
 import { dico } from "@/lib/i18n";
 import { prevenirEnMp } from "@/lib/prevenir";
@@ -729,4 +729,33 @@ export async function retirerJoueur(form: FormData) {
   prevenirEnMp(inscription.id, "RETIRE_PAR_RL");
   rafraichir(annonce.id);
   retour();
+}
+
+/** Le RL écrit à un joueur de son raid (candidat ou convié) : le bot le lui envoie en MP Discord. */
+export async function envoyerMessage(form: FormData) {
+  const inscription = await candidaturePourRl(form);
+  const d = await dicoCourant();
+  const { annonce } = inscription.place;
+  const retour = retourVers(annonce.id);
+  if (!estActive(inscription.statut)) retour(d.erreur.plusInscrit);
+  const texte = String(form.get("texte") ?? "")
+    .trim()
+    .slice(0, 500);
+  if (!texte) retour(d.erreur.messageVide);
+
+  const [rl, joueur] = await Promise.all([
+    db.utilisateur.findUniqueOrThrow({ where: { id: annonce.createurId }, select: { pseudo: true } }),
+    db.utilisateur.findUniqueOrThrow({
+      where: { id: inscription.utilisateurId },
+      select: { discordId: true, langueSite: true },
+    }),
+  ]);
+  // Dans la langue du joueur ; le texte du RL est envoyé tel quel (sans mention possible).
+  const dj = dico(joueur.langueSite);
+  const envoye = await envoyerMp(
+    joueur.discordId,
+    carteRaid({ annonce, d: dj, titre: dj.retrait.carteTitre(rl.pseudo), couleur: COULEUR_OR, description: texte }),
+  );
+  if (!envoye) retour(d.retrait.echec);
+  redirect(`/annonces/${annonce.id}?info=message`);
 }

@@ -25,11 +25,12 @@ import {
   refuser,
   refuserGroupe,
   retirerJoueur,
+  envoyerMessage,
   seDesinscrire,
 } from "./actions";
 import { BoutonDesinscrire } from "./BoutonDesinscrire";
 import { BoutonRetirerJoueur } from "./BoutonRetirerJoueur";
-import { IconeMessage } from "@/app/Icones";
+import { BoutonMessage } from "./BoutonMessage";
 import { commenceBientot } from "@/lib/profil";
 import { BoutonInvitations } from "./BoutonInvitations";
 import { nomEnJeu } from "@/lib/invitations";
@@ -59,7 +60,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   const utilisateur = await exigerUtilisateur();
   const d = await dicoCourant();
   const { id } = await params;
-  const { erreur, perso: persoChoisi } = await searchParams;
+  const { erreur, info, perso: persoChoisi } = await searchParams;
 
   const annonce = await db.annonce.findUnique({
     where: { id },
@@ -75,7 +76,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             orderBy: { inscritLe: "asc" },
             include: {
               personnage: true,
-              utilisateur: { select: { pseudo: true, discordId: true } },
+              utilisateur: { select: { pseudo: true } },
               escouade: { select: { nom: true } },
             },
           },
@@ -180,18 +181,9 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   const persosCandidats = mesPersonnages
     .map((p) => ({ perso: p, roles: rolesPourRaid(p, annonce.places, annonce) }))
     .filter((c) => c.roles.length > 0);
-  /** Bouton pour écrire au joueur sur Discord (visible du seul RL). */
-  const ecrireSurDiscord = (u: { discordId: string; pseudo: string }) => (
-    <a
-      href={`https://discord.com/users/${u.discordId}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="bouton-icone lien-discord"
-      aria-label={d.retrait.message(u.pseudo)}
-      title={d.retrait.message(u.pseudo)}
-    >
-      <IconeMessage />
-    </a>
+  /** Écrire au joueur : le bot WhenRaid lui envoie le message en MP Discord (visible du seul RL). */
+  const ecrireSurDiscord = (i: { id: string; utilisateur: { pseudo: string } }) => (
+    <BoutonMessage action={envoyerMessage} inscriptionId={i.id} pseudo={i.utilisateur.pseudo} />
   );
   // Retirer un joueur à moins de 2 h du début pèse sur la fiabilité du RL.
   const retraitPenalise = commenceBientot(annonce.debutUtc);
@@ -236,6 +228,11 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         <p className="avertissement grave" role="status">
           {d.raid.annule}
           {annonce.annuleeLe && d.raid.annuleLe(date(annonce.annuleeLe))}.
+        </p>
+      )}
+      {info === "message" && (
+        <p className="avertissement succes" role="status">
+          {d.retrait.envoye}
         </p>
       )}
       {typeof erreur === "string" && (
@@ -445,7 +442,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                                 </strong>
                               </span>
                               <span className="doux">
-                                {ecrireSurDiscord(i.utilisateur)}{" "}
+                                {ecrireSurDiscord(i)}{" "}
                                 <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
                                 <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} />
                                 {i.personnage?.lienLogs && (
@@ -511,8 +508,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         </div>
                         <div className="doux">
                           <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
-                          <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} />{" "}
-                          {ecrireSurDiscord(i.utilisateur)}
+                          <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} /> {ecrireSurDiscord(i)}
                         </div>
                         {i.personnage?.lienLogs && (
                           <a href={i.personnage.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
@@ -644,7 +640,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                     </span>
                     {estRl && (
                       <span className="actions-joueur">
-                        {ecrireSurDiscord(i.utilisateur)}
+                        {ecrireSurDiscord(i)}
                         {rlPeutAgir(annonce) && (
                           <BoutonRetirerJoueur
                             action={retirerJoueur}

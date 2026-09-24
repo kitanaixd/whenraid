@@ -37,8 +37,7 @@ export function FormCandidature({
   const rolesValides = coches.filter((r) => perso?.roles.includes(r));
   const roles = rolesValides.length > 0 ? rolesValides : (perso?.roles.slice(0, 1) ?? []);
 
-  const basculer = (r: Role) =>
-    setCoches(roles.includes(r) ? roles.filter((x) => x !== r) : [...roles, r]);
+  const basculer = (r: Role) => setCoches(roles.includes(r) ? roles.filter((x) => x !== r) : [...roles, r]);
 
   return (
     <form action={action} className="form-candidature">

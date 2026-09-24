@@ -1131,3 +1131,16 @@ a.lien-discord:hover {
 .choix-perso .rapide-note {
   margin: 0 0 1rem;
 }
+
+/* Message envoyé (retour positif en haut de la page du raid). */
+.avertissement.succes {
+  color: #4ade80;
+  border-color: rgb(108 192 139 / 0.45);
+  background: rgb(74 222 128 / 0.08);
+}
+/* Fenêtre « Message à … » : zone de texte sur toute la largeur. */
+dialog.confirmation textarea {
+  width: 100%;
+  min-height: 6rem;
+  resize: vertical;
+}
