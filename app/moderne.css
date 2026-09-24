@@ -1203,3 +1203,51 @@ dialog.confirmation textarea {
   margin: 0;
   color: var(--texte-doux);
 }
+
+/* ─── Hauteur unique : 36 px pour tous les boutons, menus déroulants, champs et chips ── */
+:root {
+  --hauteur-champ: 36px;
+  --hauteur-controle: 36px;
+}
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+select,
+button.menu-choisi {
+  height: var(--hauteur-controle) !important;
+  min-height: var(--hauteur-controle);
+}
+/* Boutons avec texte (et liens en forme de bouton) : texte centré, sans marge verticale. */
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton):not(.bouton-langue):not(.pas),
+a.bouton {
+  box-sizing: border-box;
+  height: var(--hauteur-controle) !important;
+  min-height: var(--hauteur-controle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  line-height: 1;
+}
+/* Boutons-icônes et liens-icônes : carrés de 36 px. */
+button.bouton-icone,
+a.bouton-icone {
+  width: var(--hauteur-controle) !important;
+  height: var(--hauteur-controle) !important;
+  padding: 0 !important;
+}
+/* Chips à cocher (rôles, raids) : même hauteur. */
+.case-role {
+  box-sizing: border-box;
+  height: var(--hauteur-controle) !important;
+  display: inline-flex;
+  align-items: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+/* Boutons − / + de la compo : carrés de 36 px. */
+button.pas {
+  box-sizing: border-box;
+  width: var(--hauteur-controle) !important;
+  height: var(--hauteur-controle) !important;
+  padding: 0 !important;
+}
