@@ -13,7 +13,15 @@ import { BadgeFiabilite } from "./BadgeFiabilite";
 import { IconeCroix, IconePlus } from "./Icones";
 import { includeLigneRaid, resumeLigneRaid } from "@/lib/ligneRaid";
 import { Contenu } from "@/generated/prisma/enums";
-import { ClasseIcone, FactionIcone, NomClasse, NomRole, PastilleFaction, PastilleRuleset } from "./ClasseIcone";
+import {
+  ClasseIcone,
+  FactionIcone,
+  NomClasse,
+  NomRole,
+  PastilleFaction,
+  PastilleRuleset,
+  RoleIcone,
+} from "./ClasseIcone";
 import { LigneRaid, type Marque } from "./LigneRaid";
 import { Calendrier } from "./Calendrier";
 import { candidater, seDesinscrire } from "./annonces/[id]/actions";
@@ -454,7 +462,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                           </span>
                           <span className="roles-proposes">
                             {m.roles.map((r) => (
-                              <NomRole key={r} role={r} taille={16} />
+                              <RoleIcone key={r} role={r} taille={18} />
                             ))}
                           </span>
                         </li>

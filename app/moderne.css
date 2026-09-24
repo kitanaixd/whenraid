@@ -938,3 +938,37 @@ span.profil-avatar {
     grid-template-columns: 1fr;
   }
 }
+
+/* Colonne de droite étroite : icônes des membres qui se chevauchent, noms sur une ligne. */
+.groupe-choix {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+}
+.groupe-choix .groupe-icones {
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+.groupe-choix .groupe-icones > * + * {
+  margin-left: -7px;
+}
+.groupe-choix .groupe-icones img {
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.groupe-choix > span:last-child,
+.membres-rapide .classe {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.membres-rapide li > img {
+  flex: none;
+}
+.membres-rapide .roles-proposes {
+  flex: none;
+  gap: 0.2rem;
+}
