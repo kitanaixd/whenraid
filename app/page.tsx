@@ -28,6 +28,7 @@ import { MemoriserChoix } from "./MemoriserChoix";
 import { COOKIE_CHOIX } from "@/lib/choixListe";
 import { cookies } from "next/headers";
 import { FormulaireAuto } from "./FormulaireAuto";
+import { CurseurDuree } from "./CurseurDuree";
 import { candidater, seDesinscrire } from "./annonces/[id]/actions";
 import { BoutonDesinscrire } from "./annonces/[id]/BoutonDesinscrire";
 import { nomEnJeu, rolePossible } from "@/lib/jeu";
@@ -278,21 +279,16 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               lien={(j, m) => lienListe({ jour: j, mois: m })}
               d={d}
             >
-              {/* Durée : appliquée dès qu'on la change. */}
-              <FormulaireAuto className="duree-calendrier" label={d.accueil.duree}>
+              {/* Durée : un curseur, appliqué au relâchement. */}
+              <CurseurDuree
+                valeurs={DUREES_MAX}
+                choisie={dureeMax}
+                etiquettes={[...DUREES_MAX.map((h) => d.accueil.heuresMax(h)), d.accueil.toutes]}
+                courtes={[...DUREES_MAX.map((h) => `${h} h`), "∞"]}
+                label={d.accueil.duree}
+              >
                 {champsCaches("duree")}
-                <label className="champ">
-                  {d.accueil.duree}
-                  <select name="duree" defaultValue={dureeMax ?? ""}>
-                    <option value="">{d.accueil.toutes}</option>
-                    {DUREES_MAX.map((h) => (
-                      <option key={h} value={h}>
-                        {d.accueil.heuresMax(h)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </FormulaireAuto>
+              </CurseurDuree>
             </Calendrier>
             <section className="carte prochains" aria-labelledby="titre-prochains">
               <p className="surtitre" id="titre-prochains">
@@ -376,7 +372,9 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               /* Aucun raid : un encart avec un vrai bouton pour en créer un. */
               <div className="carte liste-vide">
                 <p>
-                  {filtreActif ? d.accueil.aucunFiltre : d.accueil.aucunRaid(perso ? nomEnJeu(perso) : d.accueil.ceperso)}
+                  {filtreActif
+                    ? d.accueil.aucunFiltre
+                    : d.accueil.aucunRaid(perso ? nomEnJeu(perso) : d.accueil.ceperso)}
                 </p>
                 <Link href="/annonces/nouvelle" className="bouton principal">
                   {d.entete.creerRaid}

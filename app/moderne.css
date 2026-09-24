@@ -1312,3 +1312,75 @@ button.pas {
   font-weight: 600;
   color: var(--texte);
 }
+
+/* ─── Curseur de durée (sous le calendrier) ───────────────────────────────── */
+.curseur-duree-tete {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--texte-doux);
+}
+.curseur-duree-tete strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+input[type="range"].curseur-duree {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 18px !important;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.curseur-duree::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--accent) var(--remplissage), var(--surface-3) var(--remplissage));
+}
+.curseur-duree::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--accent) var(--remplissage), var(--surface-3) var(--remplissage));
+}
+.curseur-duree::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.curseur-duree::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 3px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.curseur-duree:focus-visible {
+  outline: none;
+}
+.curseur-duree:focus-visible::-webkit-slider-thumb {
+  box-shadow: var(--anneau);
+}
+.curseur-duree-crans {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--texte-doux);
+}
+.curseur-duree-crans .actif {
+  color: var(--accent);
+  font-weight: 600;
+}
