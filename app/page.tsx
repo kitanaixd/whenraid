@@ -5,7 +5,8 @@ import { utilisateurConnecte } from "@/lib/session";
 import { db } from "@/lib/db";
 import { afficherDate, afficherDateCourte, jourAffiche, jourLocal } from "@/lib/dates";
 import { nomRaid, raids } from "@/lib/raids";
-import { rolesPourRaid } from "@/lib/eligibilite";
+import { affecterGroupe, rolesPourRaid } from "@/lib/eligibilite";
+import { groupeHomogene, mesGroupes } from "@/lib/groupes";
 import { chargerMesRaids } from "@/lib/mesRaids";
 import { fiabiliteRls } from "@/lib/fiabilite";
 import { BadgeFiabilite } from "./BadgeFiabilite";
@@ -22,7 +23,7 @@ import { dicoCourant } from "@/lib/langue";
 
 const DUREES_MAX = [2, 3, 4, 6];
 /** Paramètres de la liste gardés d'un lien à l'autre (personnage, filtres, mois du calendrier). */
-const PARAMETRES = ["perso", "raid", "jour", "mois", "duree", "q"] as const;
+const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q"] as const;
 
 /** Texte comparable : minuscules, sans accents (« Hyjal Déjà » ≈ « hyjal deja »). */
 const sansAccents = (texte: string) =>
@@ -83,12 +84,21 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
     return requete ? `/?${requete}` : "/";
   };
 
-  const personnages = await db.personnage.findMany({
-    where: { utilisateurId: utilisateur.id, supprimeLe: null },
-    orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }],
-  });
-  // Le joueur choisit le personnage pour lequel il cherche un raid (par défaut : son principal).
-  const perso = personnages.find((p) => p.id === valeur("perso")) ?? personnages[0];
+  const [personnages, groupes] = await Promise.all([
+    db.personnage.findMany({
+      where: { utilisateurId: utilisateur.id, supprimeLe: null },
+      orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }],
+    }),
+    mesGroupes(utilisateur.id),
+  ]);
+  // Le joueur cherche un raid pour un de ses groupes, ou pour un personnage (par défaut : son principal).
+  const groupe = groupes.find((g) => g.id === valeur("groupe"));
+  const persoChoisi = personnages.find((p) => p.id === valeur("perso")) ?? personnages[0];
+  // Avec un groupe, la liste suit la faction, le ruleset et la région de mon personnage dans ce groupe.
+  const perso = groupe ? groupe.membres.find((m) => m.utilisateurId === utilisateur.id)?.personnage : persoChoisi;
+  // Un groupe ne peut candidater que si tous ses personnages existent encore et vont ensemble.
+  const groupeValide =
+    groupe && groupe.membres.every((m) => !m.personnage.supprimeLe) && groupeHomogene(groupe.membres);
 
   const [annoncesBrutes, mesRaids] = await Promise.all([
     perso
@@ -117,7 +127,17 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
   // ou s'il y a déjà candidaté.
   const ouverts = perso
     ? annoncesBrutes.filter(
-        (a) => monInscription.get(a.id)?.personnageId === perso.id || rolesPourRaid(perso, a.places, a).length > 0,
+        (a) =>
+          monInscription.get(a.id)?.personnageId === perso.id ||
+          (groupe
+            ? groupeValide &&
+              affecterGroupe(
+                a.places,
+                groupe.membres.map((m) => ({ perso: m.personnage, roles: m.roles })),
+                a,
+                ["OUVERTE", "POURVUE"],
+              ) !== null
+            : rolesPourRaid(perso, a.places, a).length > 0),
       )
     : [];
   // Le calendrier compte les raids de chaque jour ; la liste ne garde que le jour choisi.
@@ -217,9 +237,13 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               <section className="carte filtres-actifs" aria-label={d.accueil.vueFiltree}>
                 <p className="surtitre">{d.accueil.vueFiltree}</p>
                 <div className="pastilles">
-                  <span className="pastille">
-                    <NomClasse classe={perso.classe} taille={16} /> {d.commun.niv(perso.niveau)}
-                  </span>
+                  {groupe ? (
+                    <span className="pastille">👥 {groupe.nom}</span>
+                  ) : (
+                    <span className="pastille">
+                      <NomClasse classe={perso.classe} taille={16} /> {d.commun.niv(perso.niveau)}
+                    </span>
+                  )}
                   <PastilleFaction faction={perso.faction} />
                   <PastilleRuleset ruleset={perso.ruleset} region={perso.region} />
                   {jour &&
@@ -242,7 +266,11 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
             )}
             <form className="carte filtres" method="get" role="search" aria-label={d.accueil.filtrerAria}>
               <p className="surtitre">{d.calendrier.choixRaid}</p>
-              {perso && <input type="hidden" name="perso" value={perso.id} />}
+              {groupe ? (
+                <input type="hidden" name="groupe" value={groupe.id} />
+              ) : (
+                perso && <input type="hidden" name="perso" value={perso.id} />
+              )}
               {jour && <input type="hidden" name="jour" value={jour} />}
               <input type="hidden" name="mois" value={mois} />
               <label className="champ">
@@ -285,7 +313,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
           <section className="accueil-centre" id="titre-raids" aria-label={d.accueil.raidsTitre}>
             {/* Recherche par titre : garde le personnage et les autres filtres. */}
             <form className="recherche-raids" method="get" role="search" aria-label={d.accueil.rechercheAria}>
-              {(["perso", "raid", "jour", "mois", "duree"] as const).map(
+              {(["perso", "groupe", "raid", "jour", "mois", "duree"] as const).map(
                 (nom) => valeur(nom) && <input key={nom} type="hidden" name={nom} value={valeur(nom)} />,
               )}
               <input
@@ -359,9 +387,9 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 {personnages.map((p) => (
                   <li key={p.id}>
                     <Link
-                      href={lienListe({ perso: p.id, jour: null })}
-                      className={`perso-choix ${p.id === perso?.id ? "choisi" : ""}`}
-                      aria-current={p.id === perso?.id ? "true" : undefined}
+                      href={lienListe({ perso: p.id, groupe: null, jour: null })}
+                      className={`perso-choix ${!groupe && p.id === perso?.id ? "choisi" : ""}`}
+                      aria-current={!groupe && p.id === perso?.id ? "true" : undefined}
                     >
                       <ClasseIcone classe={p.classe} taille={24} />
                       <span
@@ -379,24 +407,82 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   </li>
                 ))}
               </ul>
+              <p className="surtitre sous-titre-groupes">{d.groupes.rubrique}</p>
+              {groupes.length > 0 && (
+                <ul>
+                  {groupes.map((g) => (
+                    <li key={g.id}>
+                      <Link
+                        href={lienListe({ groupe: g.id, perso: null, jour: null })}
+                        className={`perso-choix groupe-choix ${g.id === groupe?.id ? "choisi" : ""}`}
+                        aria-current={g.id === groupe?.id ? "true" : undefined}
+                      >
+                        <span className="groupe-icones">
+                          {g.membres.map((m) => (
+                            <ClasseIcone key={m.id} classe={m.personnage.classe} taille={20} />
+                          ))}
+                        </span>
+                        <span>{g.nom}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <Link href="/groupes" className="lien-discret">
+                {groupes.length > 0 ? d.groupes.gerer : `＋ ${d.groupes.creer}`}
+              </Link>
             </nav>
             {perso && (
               /* Candidature rapide : rôle(s) et note choisis une fois, puis « + » sur chaque raid.
                  Les boutons des lignes envoient ce formulaire avec l'identifiant de leur raid. */
               <form id="candidature-rapide" action={candidater} className="carte candidature-rapide">
-                <input type="hidden" name="personnageId" value={perso.id} />
                 <input type="hidden" name="depuis" value="liste" />
                 <input type="hidden" name="retour" value={requete} />
-                <p className="surtitre">{d.accueil.rapide(nomEnJeu(perso))}</p>
-                <fieldset className="rapide-roles">
-                  <legend className="sr-only">{d.accueil.rolesProposes}</legend>
-                  {rolesPerso.map((r, n) => (
-                    <label key={r} className="case-role">
-                      <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
-                      <NomRole role={r} taille={18} />
-                    </label>
-                  ))}
-                </fieldset>
+                {groupe ? (
+                  <>
+                    <input type="hidden" name="escouadeId" value={groupe.id} />
+                    <p className="surtitre">{d.groupes.candidatureDe(groupe.nom)}</p>
+                    <ul className="membres-rapide">
+                      {groupe.membres.map((m) => (
+                        <li key={m.id}>
+                          <ClasseIcone classe={m.personnage.classe} taille={20} />
+                          <span
+                            className="classe"
+                            style={{ "--c": `var(--classe-${m.personnage.classe})` } as React.CSSProperties}
+                          >
+                            {nomEnJeu(m.personnage)}
+                          </span>
+                          <span className="roles-proposes">
+                            {m.roles.map((r) => (
+                              <NomRole key={r} role={r} taille={16} />
+                            ))}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    {groupe.membres.length < 2 ? (
+                      <p className="doux">{d.groupes.seul}</p>
+                    ) : !groupeValide ? (
+                      <p className="avertissement">{d.groupes.factionsMelangees}</p>
+                    ) : (
+                      <p className="doux">{d.groupes.toutOuRien}</p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <input type="hidden" name="personnageId" value={perso.id} />
+                    <p className="surtitre">{d.accueil.rapide(nomEnJeu(perso))}</p>
+                    <fieldset className="rapide-roles">
+                      <legend className="sr-only">{d.accueil.rolesProposes}</legend>
+                      {rolesPerso.map((r, n) => (
+                        <label key={r} className="case-role">
+                          <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
+                          <NomRole role={r} taille={18} />
+                        </label>
+                      ))}
+                    </fieldset>
+                  </>
+                )}
                 <label className="champ rapide-note">
                   {d.accueil.noteRl} <small className="fuseau">{d.accueil.noteRlAide}</small>
                   <input name="note" maxLength={80} placeholder={d.accueil.notePlaceholder} />

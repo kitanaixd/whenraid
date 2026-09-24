@@ -16,12 +16,14 @@ import {
 } from "@/lib/annonces";
 import {
   accepter,
+  accepterGroupe,
   annuler,
   candidater,
   enregistrerLogsRaid,
   enregistrerPresences,
   envoyerLesInvitations,
   refuser,
+  refuserGroupe,
   seDesinscrire,
 } from "./actions";
 import { BoutonDesinscrire } from "./BoutonDesinscrire";
@@ -67,7 +69,11 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         include: {
           inscriptions: {
             orderBy: { inscritLe: "asc" },
-            include: { personnage: true, utilisateur: { select: { pseudo: true } } },
+            include: {
+              personnage: true,
+              utilisateur: { select: { pseudo: true } },
+              escouade: { select: { nom: true } },
+            },
           },
         },
       },
@@ -160,6 +166,13 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         ouverte: Boolean(i.personnage && placePourRoles(annonce.places, i.personnage, [role], annonce)?.ouverte),
       })),
     }));
+  const candidatsSeuls = candidatsEnAttente.filter((i) => !i.escouadeId);
+  const groupesEnAttente = [...new Set(candidatsEnAttente.map((i) => i.escouadeId).filter((e) => e !== null))].map(
+    (escouadeId) => {
+      const membres = candidatsEnAttente.filter((i) => i.escouadeId === escouadeId);
+      return { escouadeId, nom: membres[0].escouade?.nom ?? "", membres };
+    },
+  );
   const persosCandidats = mesPersonnages
     .map((p) => ({ perso: p, roles: rolesPourRaid(p, annonce.places, annonce) }))
     .filter((c) => c.roles.length > 0);
@@ -384,7 +397,77 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                 <p className="doux">{d.raid.aucuneCandidature}</p>
               ) : (
                 <ul className="liste-candidats">
-                  {candidatsEnAttente.map((i) => (
+                  {groupesEnAttente.map((g) => (
+                    <li key={g.escouadeId} className="candidat candidat-groupe">
+                      <form action={accepterGroupe} className="groupe-candidat">
+                        <input type="hidden" name="annonceId" value={annonce.id} />
+                        <input type="hidden" name="escouadeId" value={g.escouadeId} />
+                        <div className="groupe-candidat-tete">
+                          <strong>{d.groupes.enTete(g.nom, g.membres.length)}</strong>
+                          <span className={`pastille ${CLASSE_STATUT_INSCRIPTION[g.membres[0].statut] ?? ""}`}>
+                            {d.statutInscription[g.membres[0].statut]}
+                          </span>
+                        </div>
+                        <p className="doux">{d.groupes.toutOuRien}</p>
+                        <ul className="membres-candidats">
+                          {g.membres.map((i) => (
+                            <li key={i.id}>
+                              <span className="nom-classe">
+                                {i.personnage && <ClasseIcone classe={i.personnage.classe} taille={24} />}
+                                <strong
+                                  className="classe"
+                                  style={
+                                    i.personnage
+                                      ? ({ "--c": `var(--classe-${i.personnage.classe})` } as React.CSSProperties)
+                                      : undefined
+                                  }
+                                >
+                                  {i.personnage && nomEnJeu(i.personnage)}
+                                </strong>
+                              </span>
+                              <span className="doux">
+                                <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
+                                <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} />
+                                {i.personnage?.lienLogs && (
+                                  <>
+                                    {" · "}
+                                    <a href={i.personnage.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
+                                      {d.commun.logs}
+                                    </a>
+                                  </>
+                                )}
+                              </span>
+                              {/* Le RL choisit le rôle de chacun parmi ceux proposés. */}
+                              <select
+                                name={`role.${i.id}`}
+                                aria-label={d.groupes.roleDe(i.personnage ? nomEnJeu(i.personnage) : "")}
+                                defaultValue={i.role ?? undefined}
+                                disabled={!rlPeutAgir(annonce)}
+                              >
+                                {rolesProposes(i).map((r) => (
+                                  <option key={r} value={r}>
+                                    {d.role[r]}
+                                  </option>
+                                ))}
+                              </select>
+                            </li>
+                          ))}
+                        </ul>
+                        {g.membres[0].note && <blockquote className="note">« {g.membres[0].note} »</blockquote>}
+                        {rlPeutAgir(annonce) && (
+                          <div className="boutons">
+                            <BoutonEnvoi className="petit principal" enCours={d.commun.enCours}>
+                              {d.groupes.accepterGroupe}
+                            </BoutonEnvoi>
+                            <BoutonEnvoi className="petit" enCours={d.commun.enCours} formAction={refuserGroupe}>
+                              {d.groupes.refuserGroupe}
+                            </BoutonEnvoi>
+                          </div>
+                        )}
+                      </form>
+                    </li>
+                  ))}
+                  {candidatsSeuls.map((i) => (
                     <li key={i.id} className="candidat">
                       <div className="candidat-infos">
                         <div>
@@ -468,7 +551,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                       </span>
                     ),
                   )}{" "}
-                  — {d.statutInscription[maCandidature.statut]}.
+                  {maCandidature.escouade && <> {d.groupes.avecGroupe(maCandidature.escouade.nom)}</>}—{" "}
+                  {d.statutInscription[maCandidature.statut]}.
                   {maCandidature.statut === "LISTE_ATTENTE" && d.raid.listeAttenteAide}
                 </p>
               ) : null}

@@ -12,6 +12,7 @@ const STYLE: Record<TypeNotification, { symbole: string; ton: string }> = {
   NOUVELLE_CANDIDATURE: { symbole: "+", ton: "info" },
   VALIDER_PRESENCES: { symbole: "☰", ton: "or" },
   DESISTEMENT: { symbole: "!", ton: "attention" },
+  CANDIDATURE_GROUPE: { symbole: "👥", ton: "info" },
 };
 
 type NotificationAffichee = {

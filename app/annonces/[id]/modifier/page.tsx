@@ -99,6 +99,13 @@ async function remplacerCompo(tx: Prisma.TransactionClient, annonceId: string, f
       data: { placeId: choix.place.id, role: choix.role, statut: choix.ouverte ? "INSCRIT" : "LISTE_ATTENTE" },
     });
   }
+  // Candidatures de groupe, tout ou rien : un membre refusé fait refuser tout son groupe.
+  const groupesRefuses = new Set(
+    enAttente.filter((i) => i.escouadeId && refusees.includes(i.id)).map((i) => i.escouadeId),
+  );
+  for (const i of enAttente) {
+    if (i.escouadeId && groupesRefuses.has(i.escouadeId) && !refusees.includes(i.id)) refusees.push(i.id);
+  }
   if (refusees.length > 0) {
     await tx.inscription.updateMany({ where: { id: { in: refusees } }, data: { statut: "REFUSE" } });
     await tx.notification.createMany({

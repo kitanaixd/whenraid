@@ -75,6 +75,7 @@ export const fr = {
 
   // ─── Notifications (site et MP Discord) ────────────────────────────────────
   notification: {
+    CANDIDATURE_GROUPE: (raid: string) => `👥 Ton groupe a candidaté au raid ${raid}.`,
     unRaid: "un raid",
     raidDu: (raid: string, date: string) => `${raid} du ${date}`,
     CANDIDATURE_ACCEPTEE: (raid: string) => `✔ Tu es convié au raid ${raid}.`,
@@ -89,6 +90,7 @@ export const fr = {
     personnage: (nom: string, role: string) => ` Personnage : ${nom}${role ? ` (${role})` : ""}.`,
   },
   banniere: {
+    CANDIDATURE_GROUPE: "Candidature de groupe",
     CANDIDATURE_ACCEPTEE: "Convocation",
     CANDIDATURE_REFUSEE: "Candidature refusée",
     NOUVELLE_CANDIDATURE: "Nouvelle candidature",
@@ -99,6 +101,7 @@ export const fr = {
   },
   discord: {
     titre: {
+      CANDIDATURE_GROUPE: "👥 Candidature de groupe",
       CANDIDATURE_ACCEPTEE: "✅ Tu es convié !",
       CANDIDATURE_REFUSEE: "Candidature non retenue",
       RAID_COMPLET: "Raid complet",
@@ -139,6 +142,18 @@ export const fr = {
 
   // ─── Erreurs de formulaire et d'action ─────────────────────────────────────
   erreur: {
+    groupeIntrouvable: "Ce groupe n'existe pas ou tu n'en fais pas partie.",
+    groupeTropPetit: "Il faut au moins 2 membres dans le groupe pour candidater ensemble.",
+    groupeRl: "Le RL de ce raid fait partie de ton groupe.",
+    groupePersoManquant: (pseudo: string) => `${pseudo} doit choisir un personnage pour le groupe.`,
+    groupeDejaCandidat: (pseudo: string) => `${pseudo} a déjà une candidature sur ce raid.`,
+    groupeDejaConfirme: (pseudo: string) => `${pseudo} est déjà convié à un autre raid à cette heure-là.`,
+    groupeDejaRefuse: "Un membre du groupe a déjà été refusé sur ce raid.",
+    groupeAucunePlace: "Il n'y a pas assez de places compatibles pour tout le groupe.",
+    groupePasAssezOuvertes: "Il ne reste pas assez de places ouvertes pour accepter tout le groupe.",
+    groupePlein: "Ce groupe est déjà complet (5 membres).",
+    dejaMembre: "Tu fais déjà partie de ce groupe.",
+    candidatureDeGroupe: "C'est une candidature de groupe : accepte ou refuse tout le groupe.",
     obligatoire: (champ: string) => `Le champ « ${champ} » est obligatoire.`,
     tropLong: (champ: string) => `Le champ « ${champ} » est trop long.`,
     nombreEntre: (champ: string, min: number, max: number) =>
@@ -192,6 +207,7 @@ export const fr = {
       "Ce personnage est engagé dans un raid à venir : sa faction, son ruleset, sa région et sa classe ne peuvent pas changer pour l'instant.",
   },
   champ: {
+    nomGroupe: "Nom du groupe",
     titre: "Titre du raid",
     prenom: "Prénom du personnage",
     nom: "Nom du personnage",
@@ -236,6 +252,7 @@ export const fr = {
 
   // ─── En-tête, pied de page, menu du compte ─────────────────────────────────
   entete: {
+    mesGroupes: "Mes groupes",
     raids: "Raids",
     creerRaid: "Créer un raid",
     notifications: "Notifications",
@@ -567,6 +584,48 @@ export const fr = {
     toutMarquer: "Tout marquer comme lu",
     aucune: "Aucune notification pour l'instant.",
     nonLue: "(non lue)",
+  },
+  // ─── Groupes d'amis ────────────────────────────────────────────────────────
+  groupes: {
+    titre: "Mes groupes",
+    intro:
+      "Un groupe réunit jusqu'à 5 amis qui candidatent ensemble : le RL accepte ou refuse tout le groupe d'un coup.",
+    aucun: "Tu n'as encore aucun groupe.",
+    creer: "Créer un groupe",
+    creerTitre: "Nouveau groupe",
+    nomPlaceholder: "Ex. : Les copains du jeudi",
+    tonPerso: "Ton personnage dans ce groupe",
+    tesRoles: "Tes rôles dans ce groupe",
+    membres: (n: number) => `${n} membre${s(n)}`,
+    gerer: "Gérer",
+    chef: "Chef",
+    inviter: "Lien d'invitation",
+    inviterAide:
+      "Envoie ce lien à tes amis : ils choisiront leur personnage et rejoindront le groupe (5 membres maximum).",
+    copier: "Copier le lien",
+    copie: "Lien copié !",
+    retirer: "Retirer",
+    retirerAria: (pseudo: string) => `Retirer ${pseudo} du groupe`,
+    quitter: "Quitter le groupe",
+    supprimer: "Supprimer le groupe",
+    monPerso: "Mon personnage et mes rôles",
+    enregistrer: "Enregistrer",
+    rejoindreTitre: (nom: string) => `Rejoindre le groupe « ${nom} »`,
+    rejoindre: "Rejoindre le groupe",
+    invitePar: (pseudo: string) => `Invitation de ${pseudo}`,
+    lienInvalide: "Ce lien d'invitation n'est plus valide.",
+    retour: "← Mes groupes",
+    rubrique: "Groupes",
+    candidatureDe: (nom: string) => `Candidature du groupe ${nom}`,
+    factionsMelangees:
+      "Les personnages du groupe ne sont pas tous de la même faction, du même ruleset et de la même région : aucun raid ne peut les accueillir ensemble.",
+    seul: "Tu es seul dans ce groupe : invite tes amis pour candidater ensemble.",
+    toutOuRien: "Le RL acceptera ou refusera tout le groupe d'un coup.",
+    enTete: (nom: string, n: number) => `👥 Groupe « ${nom} » · ${n} joueurs`,
+    accepterGroupe: "Accepter le groupe",
+    refuserGroupe: "Refuser le groupe",
+    roleDe: (nom: string) => `Rôle de ${nom}`,
+    avecGroupe: (nom: string) => `avec le groupe « ${nom} »`,
   },
 };
 

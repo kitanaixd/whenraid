@@ -118,6 +118,7 @@ enum TypeNotification {
   NOUVELLE_CANDIDATURE
   VALIDER_PRESENCES
   DESISTEMENT // un joueur convié s'est désisté (pour le RL)
+  CANDIDATURE_GROUPE // un membre de mon groupe a candidaté pour tout le groupe
 }
 
 enum SourceParticipation {
@@ -140,13 +141,15 @@ model Utilisateur {
   region Region?
   creeLe DateTime @default(now()) @db.Timestamptz(3)
 
-  personnages    Personnage[]
-  groupes        Groupe[]
-  annonces       Annonce[]
-  inscriptions   Inscription[]
-  alertes        Alerte[]
-  participations Participation[]
-  notifications  Notification[]
+  personnages       Personnage[]
+  groupes           Groupe[]
+  escouadesDirigees Escouade[]       @relation("ChefEscouade")
+  membresEscouade   MembreEscouade[]
+  annonces          Annonce[]
+  inscriptions      Inscription[]
+  alertes           Alerte[]
+  participations    Participation[]
+  notifications     Notification[]
 }
 
 model Personnage {
@@ -169,10 +172,11 @@ model Personnage {
 
   // Restrict : on ne perd pas l'historique en effaçant un compte par accident.
   // La suppression de compte passera par une anonymisation (à concevoir).
-  utilisateur    Utilisateur     @relation(fields: [utilisateurId], references: [id], onDelete: Restrict)
-  inscriptions   Inscription[]
-  participations Participation[]
-  raidsOrganises Annonce[]       @relation("PersonnageOrganisateur")
+  utilisateur     Utilisateur      @relation(fields: [utilisateurId], references: [id], onDelete: Restrict)
+  inscriptions    Inscription[]
+  participations  Participation[]
+  raidsOrganises  Annonce[]        @relation("PersonnageOrganisateur")
+  membresEscouade MembreEscouade[]
 
   @@index([utilisateurId])
 }
@@ -301,7 +305,10 @@ model Inscription {
   inscritLe           DateTime          @default(now()) @db.Timestamptz(3)
   // Invitation (vocal + /w) envoyée à ce joueur : on ne la lui renvoie pas.
   invitationEnvoyeeLe DateTime?         @db.Timestamptz(3)
+  // Candidature faite avec un groupe d'amis : le RL accepte ou refuse tout le groupe d'un coup.
+  escouadeId          String?
 
+  escouade    Escouade?   @relation(fields: [escouadeId], references: [id], onDelete: SetNull)
   place       Place       @relation(fields: [placeId], references: [id], onDelete: Cascade)
   personnage  Personnage? @relation(fields: [personnageId], references: [id], onDelete: Cascade)
   groupe      Groupe?     @relation(fields: [groupeId], references: [id], onDelete: Cascade)
@@ -309,6 +316,39 @@ model Inscription {
 
   @@unique([placeId, personnageId])
   @@unique([placeId, groupeId])
+  @@index([utilisateurId])
+  @@index([escouadeId])
+}
+
+/// Groupe d'amis permanent (« Mes groupes ») : ses membres candidatent ensemble, tout ou rien.
+model Escouade {
+  id     String   @id @default(cuid())
+  nom    String // 24 caractères max (CHECK en SQL)
+  chefId String
+  code   String   @unique // code du lien d'invitation
+  creeLe DateTime @default(now()) @db.Timestamptz(3)
+
+  chef         Utilisateur      @relation("ChefEscouade", fields: [chefId], references: [id], onDelete: Cascade)
+  membres      MembreEscouade[]
+  inscriptions Inscription[]
+
+  @@index([chefId])
+}
+
+/// Un membre d'un groupe, avec le personnage et les rôles qu'il y joue.
+model MembreEscouade {
+  id            String   @id @default(cuid())
+  escouadeId    String
+  utilisateurId String
+  personnageId  String
+  roles         Role[]
+  rejointLe     DateTime @default(now()) @db.Timestamptz(3)
+
+  escouade    Escouade    @relation(fields: [escouadeId], references: [id], onDelete: Cascade)
+  utilisateur Utilisateur @relation(fields: [utilisateurId], references: [id], onDelete: Cascade)
+  personnage  Personnage  @relation(fields: [personnageId], references: [id], onDelete: Cascade)
+
+  @@unique([escouadeId, utilisateurId])
   @@index([utilisateurId])
 }
 

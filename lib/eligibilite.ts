@@ -21,9 +21,7 @@ export function rolesPourPlace(perso: Perso, place: PlacePourEligibilite, annonc
     perso.niveau >= (annonce.niveauMin ?? 1) &&
     place.classesAcceptees.includes(perso.classe);
   if (!compatible) return [];
-  return perso.rolesJouables.filter(
-    (r) => rolePossible(perso.classe, r) && (place.role === null || place.role === r),
-  );
+  return perso.rolesJouables.filter((r) => rolePossible(perso.classe, r) && (place.role === null || place.role === r));
 }
 
 type PlaceAvecStatut = PlacePourEligibilite & { id: string; statut: "OUVERTE" | "POURVUE" | "ANNULEE" };
@@ -77,4 +75,43 @@ export function placePourRoles<P extends PlaceAvecStatut>(
 /** Les rôles proposés par une candidature (les anciennes n'en portaient qu'un). */
 export function rolesProposes(i: { rolesProposes: Role[]; role: Role | null }): Role[] {
   return i.rolesProposes.length > 0 ? i.rolesProposes : i.role ? [i.role] : [];
+}
+
+/**
+ * Place chaque membre d'un groupe sur une place distincte, avec l'un de ses rôles
+ * (tout ou rien) : renvoie l'affectation, ou null s'il n'y en a aucune. Seules les places
+ * `statuts` comptent (par défaut les places ouvertes). La place `preferee` de chacun est essayée d'abord.
+ */
+export function affecterGroupe<P extends PlaceAvecStatut>(
+  places: P[],
+  membres: { perso: Perso; roles: Role[]; preferee?: string }[],
+  annonce: AnnoncePourEligibilite,
+  statuts: PlaceAvecStatut["statut"][] = ["OUVERTE"],
+): { place: P; role: Role }[] | null {
+  const utilisables = places.filter((p) => statuts.includes(p.statut));
+  // Pour chaque membre, ses options (place, rôle), sa place préférée en tête.
+  const options = membres.map((m) =>
+    utilisables
+      .flatMap((p) =>
+        rolesPourPlace(m.perso, p, annonce)
+          .filter((r) => m.roles.includes(r))
+          .map((role) => ({ place: p, role })),
+      )
+      .sort((a, b) => Number(b.place.id === m.preferee) - Number(a.place.id === m.preferee)),
+  );
+  const prises = new Set<string>();
+  const resultat: { place: P; role: Role }[] = [];
+  // Recherche en profondeur : au plus 5 membres, donc rapide.
+  const placer = (n: number): boolean => {
+    if (n === membres.length) return true;
+    for (const o of options[n]) {
+      if (prises.has(o.place.id)) continue;
+      prises.add(o.place.id);
+      resultat[n] = o;
+      if (placer(n + 1)) return true;
+      prises.delete(o.place.id);
+    }
+    return false;
+  };
+  return placer(0) ? resultat : null;
 }

@@ -13,6 +13,7 @@ export function BoutonEnvoi({
   disabled,
   name,
   value,
+  formAction,
 }: {
   children: React.ReactNode;
   enCours?: string;
@@ -20,6 +21,8 @@ export function BoutonEnvoi({
   disabled?: boolean;
   name?: string;
   value?: string;
+  /** Autre action que celle du formulaire (ex. « Refuser » à côté de « Accepter »). */
+  formAction?: (form: FormData) => void | Promise<void>;
 }) {
   const { pending } = useFormStatus();
   return (
@@ -27,6 +30,7 @@ export function BoutonEnvoi({
       type="submit"
       name={name}
       value={value}
+      formAction={formAction}
       className={className}
       disabled={pending || disabled}
       aria-busy={pending}

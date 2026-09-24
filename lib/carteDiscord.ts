@@ -25,6 +25,7 @@ export const COULEUR_NOTIFICATION: Record<TypeNotification, number> = {
   NOUVELLE_CANDIDATURE: OR,
   VALIDER_PRESENCES: OR,
   DESISTEMENT: ORANGE,
+  CANDIDATURE_GROUPE: OR,
 };
 
 type RaidCarte = { id: string; contenu: Contenu; titre: string | null; debutUtc: Date };

@@ -95,6 +95,9 @@ export async function EnTete() {
                 <Link href="/personnages" role="menuitem">
                   {d.entete.mesPersonnages}
                 </Link>
+                <Link href="/groupes" role="menuitem">
+                  {d.entete.mesGroupes}
+                </Link>
                 {/* Le menu reste ouvert au changement de langue : la page se recharge dans la nouvelle. */}
                 <div className="menu-langue" data-garder-ouvert>
                   <span>{d.commun.langue}</span>

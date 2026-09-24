@@ -15,14 +15,17 @@ import {
   STATUTS_EN_ATTENTE,
 } from "@/lib/annonces";
 import { nomEnJeu, seChevauchent } from "@/lib/jeu";
-import { placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite";
-import { Role } from "@/generated/prisma/enums";
+import { affecterGroupe, placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite";
+import { monGroupe } from "@/lib/groupes";
+import type { Prisma } from "@/generated/prisma/client";
+import type { Dico } from "@/lib/i18n";
+import { Role, type Faction, type Region, type Ruleset } from "@/generated/prisma/enums";
 import { envoyerInvitations } from "@/lib/invitations";
 import { carteNotification } from "@/lib/carteDiscord";
 import { envoyerMp } from "@/lib/discord";
 import { dico } from "@/lib/i18n";
 import { prevenirEnMp } from "@/lib/prevenir";
-import { lienWarcraftLogs, messageErreur } from "@/lib/formulaire";
+import { ErreurFormulaire, lienWarcraftLogs, messageErreur } from "@/lib/formulaire";
 import { dicoCourant } from "@/lib/langue";
 
 const retourVers =
@@ -34,7 +37,7 @@ const retourVers =
 function retourListe(form: FormData) {
   const recue = new URLSearchParams(String(form.get("retour") ?? ""));
   const params = new URLSearchParams();
-  for (const nom of ["perso", "raid", "jour", "mois", "duree"]) {
+  for (const nom of ["perso", "groupe", "raid", "jour", "mois", "duree"]) {
     const v = recue.get(nom);
     if (v && /^[\w-]{1,40}$/.test(v)) params.set(nom, v);
   }
@@ -79,6 +82,12 @@ export async function candidater(form: FormData) {
   if (!annonce) notFound();
   // Candidature rapide depuis la liste : on y revient (mêmes filtres), sinon sur la page du raid.
   const retour = form.get("depuis") === "liste" ? retourListe(form) : retourVers(annonce.id);
+  const escouadeId = String(form.get("escouadeId") ?? "");
+  if (escouadeId) {
+    await candidaterEnGroupe(utilisateur.id, annonce, escouadeId, String(form.get("note") ?? "").trim(), retour, d);
+    rafraichir(annonce.id);
+    retour();
+  }
 
   const personnageId = String(form.get("personnageId") ?? "");
   const personnage = await db.personnage.findFirst({
@@ -146,6 +155,93 @@ async function candidaturePourRl(form: FormData) {
   return inscription;
 }
 
+type Transaction = Parameters<Parameters<typeof db.$transaction>[0]>[0];
+
+/**
+ * Après une ou plusieurs acceptations : les candidats sans place ouverte passent en liste
+ * d'attente, le raid devient complet s'il est plein, et les joueurs pris quittent leurs
+ * autres candidatures sur le même créneau.
+ */
+async function apresConfirmation(
+  tx: Transaction,
+  annonce: {
+    id: string;
+    faction: Faction;
+    ruleset: Ruleset;
+    region: Region;
+    niveauMin: number | null;
+    debutUtc: Date;
+    dureeEstimee: number | null;
+  },
+  utilisateurIds: string[],
+) {
+  // Les autres candidats passent en liste d'attente seulement s'il ne reste
+  // plus aucune place ouverte compatible avec leur personnage et l'un de leurs rôles.
+  const placesApres = await tx.place.findMany({ where: { annonceId: annonce.id } });
+  const enAttente = await tx.inscription.findMany({
+    where: { place: { annonceId: annonce.id }, statut: "INSCRIT" },
+    include: { personnage: true },
+  });
+  const sansPlace = enAttente
+    .filter((i) => !i.personnage || !placePourRoles(placesApres, i.personnage, rolesProposes(i), annonce)?.ouverte)
+    .map((i) => i.id);
+  if (sansPlace.length > 0) {
+    await tx.inscription.updateMany({ where: { id: { in: sansPlace } }, data: { statut: "LISTE_ATTENTE" } });
+  }
+
+  // Raid plein : il passe « complet » et tous les candidats restants en liste d'attente.
+  if (estComplet(placesApres)) {
+    const devientComplet = await tx.annonce.updateMany({
+      where: { id: annonce.id, statut: "PUBLIEE" },
+      data: { statut: "COMPLETE" },
+    });
+    await tx.inscription.updateMany({
+      where: { place: { annonceId: annonce.id }, statut: "INSCRIT" },
+      data: { statut: "LISTE_ATTENTE" },
+    });
+    // Une seule fois, au moment où le raid devient complet : on prévient ceux qui attendent.
+    if (devientComplet.count === 1) {
+      const enAttente = await tx.inscription.findMany({
+        where: { place: { annonceId: annonce.id }, statut: "LISTE_ATTENTE" },
+        select: { utilisateurId: true },
+      });
+      const destinataires = [...new Set(enAttente.map((i) => i.utilisateurId))];
+      await tx.notification.createMany({
+        data: destinataires.map((utilisateurId) => ({
+          utilisateurId,
+          type: "RAID_COMPLET" as const,
+          annonceId: annonce.id,
+        })),
+      });
+    }
+  }
+
+  // Les joueurs pris : leurs candidatures sur le même créneau sont retirées.
+  const autres = await tx.inscription.findMany({
+    where: {
+      utilisateurId: { in: utilisateurIds },
+      statut: { in: [...STATUTS_EN_ATTENTE] },
+      place: { annonceId: { not: annonce.id } },
+    },
+    include: { place: { include: { annonce: true } } },
+  });
+  const retirees = autres.filter((a) => seChevauchent(a.place.annonce, annonce));
+  if (retirees.length > 0) {
+    await tx.inscription.updateMany({ where: { id: { in: retirees.map((a) => a.id) } }, data: { statut: "RETIRE" } });
+  }
+  // Une candidature de groupe est tout ou rien : le reste du groupe se retire aussi de ces raids.
+  for (const a of retirees.filter((a) => a.escouadeId)) {
+    await tx.inscription.updateMany({
+      where: {
+        escouadeId: a.escouadeId,
+        statut: { in: [...STATUTS_EN_ATTENTE] },
+        place: { annonceId: a.place.annonceId },
+      },
+      data: { statut: "RETIRE" },
+    });
+  }
+}
+
 export async function accepter(form: FormData) {
   const inscription = await candidaturePourRl(form);
   const d = await dicoCourant();
@@ -154,6 +250,7 @@ export async function accepter(form: FormData) {
 
   if (!rlPeutAgir(annonce)) retour(d.erreur.plusModifiable);
   if (!(STATUTS_EN_ATTENTE as readonly string[]).includes(inscription.statut)) retour(d.erreur.plusEnAttente);
+  if (inscription.escouadeId) retour(d.erreur.candidatureDeGroupe);
   if (await dejaConfirmeAilleurs(inscription.utilisateurId, annonce)) retour(d.erreur.joueurDejaConfirme);
   const role = String(form.get("role") ?? "") as Role;
   if (!rolesProposes(inscription).includes(role)) retour(d.erreur.rolePasPropose);
@@ -175,60 +272,7 @@ export async function accepter(form: FormData) {
       data: { utilisateurId: inscription.utilisateurId, type: "CANDIDATURE_ACCEPTEE", annonceId: annonce.id },
     });
 
-    // Les autres candidats passent en liste d'attente seulement s'il ne reste
-    // plus aucune place ouverte compatible avec leur personnage et l'un de leurs rôles.
-    const placesApres = await tx.place.findMany({ where: { annonceId: annonce.id } });
-    const enAttente = await tx.inscription.findMany({
-      where: { place: { annonceId: annonce.id }, statut: "INSCRIT" },
-      include: { personnage: true },
-    });
-    const sansPlace = enAttente
-      .filter((i) => !i.personnage || !placePourRoles(placesApres, i.personnage, rolesProposes(i), annonce)?.ouverte)
-      .map((i) => i.id);
-    if (sansPlace.length > 0) {
-      await tx.inscription.updateMany({ where: { id: { in: sansPlace } }, data: { statut: "LISTE_ATTENTE" } });
-    }
-
-    // Raid plein : il passe « complet » et tous les candidats restants en liste d'attente.
-    if (estComplet(placesApres)) {
-      const devientComplet = await tx.annonce.updateMany({
-        where: { id: annonce.id, statut: "PUBLIEE" },
-        data: { statut: "COMPLETE" },
-      });
-      await tx.inscription.updateMany({
-        where: { place: { annonceId: annonce.id }, statut: "INSCRIT" },
-        data: { statut: "LISTE_ATTENTE" },
-      });
-      // Une seule fois, au moment où le raid devient complet : on prévient ceux qui attendent.
-      if (devientComplet.count === 1) {
-        const enAttente = await tx.inscription.findMany({
-          where: { place: { annonceId: annonce.id }, statut: "LISTE_ATTENTE" },
-          select: { utilisateurId: true },
-        });
-        const destinataires = [...new Set(enAttente.map((i) => i.utilisateurId))];
-        await tx.notification.createMany({
-          data: destinataires.map((utilisateurId) => ({
-            utilisateurId,
-            type: "RAID_COMPLET" as const,
-            annonceId: annonce.id,
-          })),
-        });
-      }
-    }
-
-    // Le joueur est pris : ses candidatures sur le même créneau sont retirées.
-    const autres = await tx.inscription.findMany({
-      where: {
-        utilisateurId: inscription.utilisateurId,
-        statut: { in: [...STATUTS_EN_ATTENTE] },
-        place: { annonceId: { not: annonce.id } },
-      },
-      include: { place: { include: { annonce: true } } },
-    });
-    const aRetirer = autres.filter((a) => seChevauchent(a.place.annonce, annonce)).map((a) => a.id);
-    if (aRetirer.length > 0) {
-      await tx.inscription.updateMany({ where: { id: { in: aRetirer } }, data: { statut: "RETIRE" } });
-    }
+    await apresConfirmation(tx, annonce, [inscription.utilisateurId]);
   });
   prevenirEnMp(inscription.id, "CANDIDATURE_ACCEPTEE");
 
@@ -244,6 +288,7 @@ export async function refuser(form: FormData) {
 
   if (!rlPeutAgir(annonce)) retour(d.erreur.plusModifiable);
   if (!estActive(inscription.statut) || inscription.statut === "CONFIRME") retour(d.erreur.plusEnAttente);
+  if (inscription.escouadeId) retour(d.erreur.candidatureDeGroupe);
   await db.$transaction([
     db.inscription.update({ where: { id: inscription.id }, data: { statut: "REFUSE" } }),
     db.notification.create({
@@ -391,6 +436,17 @@ export async function seDesinscrire(form: FormData) {
 
   await db.$transaction(async (tx) => {
     await tx.inscription.update({ where: { id: inscription.id }, data: { statut: "RETIRE" } });
+    if (!etaitConvie && inscription.escouadeId) {
+      // Candidature de groupe (tout ou rien) : si un membre se retire, le groupe entier se retire.
+      await tx.inscription.updateMany({
+        where: {
+          escouadeId: inscription.escouadeId,
+          statut: { in: [...STATUTS_EN_ATTENTE] },
+          place: { annonceId: annonce.id },
+        },
+        data: { statut: "RETIRE" },
+      });
+    }
     if (!etaitConvie) return;
 
     // Un remplaçant sur la même place devient titulaire ; sinon la place se rouvre.
@@ -447,5 +503,189 @@ export async function enregistrerLogsRaid(form: FormData) {
   }
   await db.annonce.update({ where: { id: annonce.id }, data: { lienLogs } });
   revalidatePath(`/annonces/${annonce.id}`);
+  retour();
+}
+
+type AnnonceAvecPlaces = Prisma.AnnonceGetPayload<{ include: { places: true } }>;
+
+/**
+ * Candidature d'un groupe d'amis, tout ou rien : chaque membre avec son personnage et ses
+ * rôles du groupe. S'il y a assez de places ouvertes pour tous en même temps, le groupe est
+ * candidat ; sinon il passe entier en liste d'attente. Refusée si un seul membre ne convient pas.
+ */
+async function candidaterEnGroupe(
+  utilisateurId: string,
+  annonce: AnnonceAvecPlaces,
+  escouadeId: string,
+  note: string,
+  retour: (erreur?: string) => never,
+  d: Dico,
+) {
+  const groupe = await monGroupe(escouadeId, utilisateurId);
+  if (!groupe) return retour(d.erreur.groupeIntrouvable);
+  const { membres } = groupe;
+  if (membres.length < 2) retour(d.erreur.groupeTropPetit);
+  if (membres.some((m) => m.utilisateurId === annonce.createurId)) retour(d.erreur.groupeRl);
+  if (!accepteCandidatures(annonce)) retour(d.erreur.plusDeCandidatures);
+  if (note.length > 80) retour(d.erreur.noteTropLongue);
+
+  // Pour chacun : les rôles du groupe que son personnage peut tenir dans ce raid.
+  const candidats = membres.map((m) => {
+    if (m.personnage.supprimeLe) retour(d.erreur.groupePersoManquant(m.utilisateur.pseudo));
+    const roles = rolesPourRaid(m.personnage, annonce.places, annonce).filter((r) => m.roles.includes(r));
+    if (roles.length === 0) retour(d.erreur.pasCesRoles(nomEnJeu(m.personnage)));
+    return { membre: m, perso: m.personnage, roles };
+  });
+
+  const dejaActif = await db.inscription.findFirst({
+    where: {
+      utilisateurId: { in: membres.map((m) => m.utilisateurId) },
+      statut: { in: [...STATUTS_ACTIFS] },
+      place: { annonceId: annonce.id },
+    },
+    select: { utilisateurId: true },
+  });
+  if (dejaActif) {
+    const pseudo = membres.find((m) => m.utilisateurId === dejaActif.utilisateurId)!.utilisateur.pseudo;
+    retour(d.erreur.groupeDejaCandidat(pseudo));
+  }
+  for (const m of membres) {
+    if (await dejaConfirmeAilleurs(m.utilisateurId, annonce)) retour(d.erreur.groupeDejaConfirme(m.utilisateur.pseudo));
+  }
+  const dejaRefuse = await db.inscription.findFirst({
+    where: {
+      personnageId: { in: membres.map((m) => m.personnageId) },
+      statut: "REFUSE",
+      place: { annonceId: annonce.id },
+    },
+  });
+  if (dejaRefuse) retour(d.erreur.groupeDejaRefuse);
+
+  // Assez de places ouvertes pour tout le groupe ? Sinon, tout le groupe en liste d'attente.
+  const ouvertes = affecterGroupe(annonce.places, candidats, annonce);
+  const placements = ouvertes
+    ? ouvertes.map((o) => ({ ...o, statut: "INSCRIT" as const }))
+    : candidats.map((c) => {
+        const choix = placePourRoles(annonce.places, c.perso, c.roles, annonce);
+        if (!choix) return retour(d.erreur.groupeAucunePlace);
+        return { place: choix.place, role: choix.role, statut: "LISTE_ATTENTE" as const };
+      });
+
+  await db.$transaction(async (tx) => {
+    for (const [n, c] of candidats.entries()) {
+      const { place, role, statut } = placements[n];
+      const candidature = {
+        role,
+        rolesProposes: c.roles,
+        note: note || null,
+        statut,
+        escouadeId,
+        inscritLe: new Date(),
+      };
+      // Une seule ligne par personnage et par place : une ancienne candidature retirée est réactivée.
+      await tx.inscription.upsert({
+        where: { placeId_personnageId: { placeId: place.id, personnageId: c.perso.id } },
+        update: candidature,
+        create: { ...candidature, placeId: place.id, personnageId: c.perso.id, utilisateurId: c.membre.utilisateurId },
+      });
+    }
+    await tx.notification.createMany({
+      data: [
+        { utilisateurId: annonce.createurId, type: "NOUVELLE_CANDIDATURE" as const, annonceId: annonce.id },
+        ...membres
+          .filter((m) => m.utilisateurId !== utilisateurId)
+          .map((m) => ({ utilisateurId: m.utilisateurId, type: "CANDIDATURE_GROUPE" as const, annonceId: annonce.id })),
+      ],
+    });
+  });
+}
+
+/** Les candidatures en attente d'un groupe sur un raid du RL connecté. */
+async function candidatureDeGroupePourRl(form: FormData) {
+  const utilisateur = await exigerUtilisateur();
+  const annonce = await db.annonce.findFirst({
+    where: { id: String(form.get("annonceId") ?? ""), createurId: utilisateur.id },
+  });
+  if (!annonce) notFound();
+  const inscriptions = await db.inscription.findMany({
+    where: {
+      escouadeId: String(form.get("escouadeId") ?? ""),
+      statut: { in: [...STATUTS_EN_ATTENTE] },
+      place: { annonceId: annonce.id },
+    },
+    include: { personnage: true },
+  });
+  return { annonce, inscriptions };
+}
+
+/** Le RL accepte tout le groupe, chacun avec le rôle choisi, sur des places ouvertes distinctes. */
+export async function accepterGroupe(form: FormData) {
+  const { annonce, inscriptions } = await candidatureDeGroupePourRl(form);
+  const d = await dicoCourant();
+  const retour = retourVers(annonce.id);
+  if (!rlPeutAgir(annonce)) retour(d.erreur.plusModifiable);
+  if (inscriptions.length === 0 || inscriptions.some((i) => !i.personnage)) retour(d.erreur.plusEnAttente);
+  const choix = inscriptions.map((i) => ({ i, role: String(form.get(`role.${i.id}`) ?? "") as Role }));
+  if (choix.some((c) => !rolesProposes(c.i).includes(c.role))) retour(d.erreur.rolePasPropose);
+  for (const { i } of choix) {
+    if (await dejaConfirmeAilleurs(i.utilisateurId, annonce)) retour(d.erreur.joueurDejaConfirme);
+  }
+
+  let erreur: string | null = null;
+  try {
+    await db.$transaction(async (tx) => {
+      const places = await tx.place.findMany({ where: { annonceId: annonce.id } });
+      const affectation = affecterGroupe(
+        places,
+        choix.map((c) => ({ perso: c.i.personnage!, roles: [c.role], preferee: c.i.placeId })),
+        annonce,
+      );
+      if (!affectation) throw new ErreurFormulaire((d) => d.erreur.groupePasAssezOuvertes);
+      for (const [n, { i, role }] of choix.entries()) {
+        const place = affectation[n].place;
+        await tx.inscription.update({ where: { id: i.id }, data: { statut: "CONFIRME", placeId: place.id, role } });
+        await tx.place.update({ where: { id: place.id }, data: { statut: "POURVUE" } });
+      }
+      await tx.notification.createMany({
+        data: inscriptions.map((i) => ({
+          utilisateurId: i.utilisateurId,
+          type: "CANDIDATURE_ACCEPTEE" as const,
+          annonceId: annonce.id,
+        })),
+      });
+      await apresConfirmation(
+        tx,
+        annonce,
+        inscriptions.map((i) => i.utilisateurId),
+      );
+    });
+  } catch (e) {
+    erreur = messageErreur(e, d);
+  }
+  if (erreur) retour(erreur);
+  for (const i of inscriptions) prevenirEnMp(i.id, "CANDIDATURE_ACCEPTEE");
+  rafraichir(annonce.id);
+  retour();
+}
+
+/** Le RL refuse tout le groupe. */
+export async function refuserGroupe(form: FormData) {
+  const { annonce, inscriptions } = await candidatureDeGroupePourRl(form);
+  const d = await dicoCourant();
+  const retour = retourVers(annonce.id);
+  if (!rlPeutAgir(annonce)) retour(d.erreur.plusModifiable);
+  if (inscriptions.length === 0) retour(d.erreur.plusEnAttente);
+  await db.$transaction([
+    db.inscription.updateMany({ where: { id: { in: inscriptions.map((i) => i.id) } }, data: { statut: "REFUSE" } }),
+    db.notification.createMany({
+      data: inscriptions.map((i) => ({
+        utilisateurId: i.utilisateurId,
+        type: "CANDIDATURE_REFUSEE" as const,
+        annonceId: annonce.id,
+      })),
+    }),
+  ]);
+  for (const i of inscriptions) prevenirEnMp(i.id, "CANDIDATURE_REFUSEE");
+  rafraichir(annonce.id);
   retour();
 }

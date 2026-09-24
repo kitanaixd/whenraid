@@ -54,6 +54,7 @@ export const en: Dico = {
 
   // ─── Notifications (site and Discord DMs) ──────────────────────────────────
   notification: {
+    CANDIDATURE_GROUPE: (raid) => `👥 Your group applied to the raid ${raid}.`,
     unRaid: "a raid",
     raidDu: (raid, date) => `${raid} on ${date}`,
     CANDIDATURE_ACCEPTEE: (raid) => `✔ You're invited to the raid ${raid}.`,
@@ -67,6 +68,7 @@ export const en: Dico = {
     personnage: (nom, role) => ` Character: ${nom}${role ? ` (${role})` : ""}.`,
   },
   banniere: {
+    CANDIDATURE_GROUPE: "Group application",
     CANDIDATURE_ACCEPTEE: "Invitation",
     CANDIDATURE_REFUSEE: "Application declined",
     NOUVELLE_CANDIDATURE: "New application",
@@ -77,6 +79,7 @@ export const en: Dico = {
   },
   discord: {
     titre: {
+      CANDIDATURE_GROUPE: "👥 Group application",
       CANDIDATURE_ACCEPTEE: "✅ You're in!",
       CANDIDATURE_REFUSEE: "Application declined",
       RAID_COMPLET: "Raid full",
@@ -116,6 +119,18 @@ export const en: Dico = {
 
   // ─── Form and action errors ────────────────────────────────────────────────
   erreur: {
+    groupeIntrouvable: "This group doesn't exist or you're not in it.",
+    groupeTropPetit: "A group needs at least 2 members to apply together.",
+    groupeRl: "This raid's RL is in your group.",
+    groupePersoManquant: (pseudo) => `${pseudo} must pick a character for the group.`,
+    groupeDejaCandidat: (pseudo) => `${pseudo} already applied to this raid.`,
+    groupeDejaConfirme: (pseudo) => `${pseudo} is already invited to another raid at that time.`,
+    groupeDejaRefuse: "A group member was already declined for this raid.",
+    groupeAucunePlace: "There aren't enough matching spots for the whole group.",
+    groupePasAssezOuvertes: "There aren't enough open spots left to accept the whole group.",
+    groupePlein: "This group is already full (5 members).",
+    dejaMembre: "You're already in this group.",
+    candidatureDeGroupe: "This is a group application: accept or decline the whole group.",
     obligatoire: (champ) => `The field "${champ}" is required.`,
     tropLong: (champ) => `The field "${champ}" is too long.`,
     nombreEntre: (champ, min, max) => `The field "${champ}" must be a number between ${min} and ${max}.`,
@@ -164,6 +179,7 @@ export const en: Dico = {
       "This character is committed to an upcoming raid: its faction, ruleset, region and class can't change for now.",
   },
   champ: {
+    nomGroupe: "Group name",
     titre: "Raid title",
     prenom: "Character first name",
     nom: "Character last name",
@@ -208,6 +224,7 @@ export const en: Dico = {
 
   // ─── Header, footer, account menu ──────────────────────────────────────────
   entete: {
+    mesGroupes: "My groups",
     raids: "Raids",
     creerRaid: "Create a raid",
     notifications: "Notifications",
@@ -539,5 +556,46 @@ export const en: Dico = {
     toutMarquer: "Mark all as read",
     aucune: "No notifications yet.",
     nonLue: "(unread)",
+  },
+  // ─── Friend groups ─────────────────────────────────────────────────────────
+  groupes: {
+    titre: "My groups",
+    intro:
+      "A group brings together up to 5 friends who apply together: the RL accepts or declines the whole group at once.",
+    aucun: "You don't have any group yet.",
+    creer: "Create a group",
+    creerTitre: "New group",
+    nomPlaceholder: "E.g. Thursday crew",
+    tonPerso: "Your character in this group",
+    tesRoles: "Your roles in this group",
+    membres: (n) => `${n} member${s(n)}`,
+    gerer: "Manage",
+    chef: "Leader",
+    inviter: "Invite link",
+    inviterAide: "Send this link to your friends: they'll pick their character and join the group (5 members max).",
+    copier: "Copy link",
+    copie: "Link copied!",
+    retirer: "Remove",
+    retirerAria: (pseudo) => `Remove ${pseudo} from the group`,
+    quitter: "Leave group",
+    supprimer: "Delete group",
+    monPerso: "My character and roles",
+    enregistrer: "Save",
+    rejoindreTitre: (nom) => `Join the group “${nom}”`,
+    rejoindre: "Join group",
+    invitePar: (pseudo) => `Invited by ${pseudo}`,
+    lienInvalide: "This invite link is no longer valid.",
+    retour: "← My groups",
+    rubrique: "Groups",
+    candidatureDe: (nom) => `Group application: ${nom}`,
+    factionsMelangees:
+      "The group's characters don't all share the same faction, ruleset and region: no raid can take them together.",
+    seul: "You're alone in this group: invite your friends to apply together.",
+    toutOuRien: "The RL will accept or decline the whole group at once.",
+    enTete: (nom, n) => `👥 Group “${nom}” · ${n} players`,
+    accepterGroupe: "Accept group",
+    refuserGroupe: "Decline group",
+    roleDe: (nom) => `${nom}'s role`,
+    avecGroupe: (nom) => `with the group “${nom}”`,
   },
 };
