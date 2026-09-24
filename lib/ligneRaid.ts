@@ -17,7 +17,7 @@ export const includeLigneRaid = {
       inscriptions: {
         where: { statut: { in: [...STATUTS_ACTIFS] } },
         orderBy: { inscritLe: "asc" },
-        select: { statut: true, role: true, personnage: { select: { classe: true } } },
+        select: { statut: true, role: true, escouadeId: true, personnage: { select: { classe: true } } },
       },
     },
   },

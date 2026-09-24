@@ -14,7 +14,11 @@ export async function chargerMesRaids(utilisateurId: string) {
   const inscriptions = (
     await db.inscription.findMany({
       where: { utilisateurId, statut: { in: [...STATUTS_ACTIFS] }, place: { annonce: actif } },
-      include: { personnage: true, place: { include: { annonce: { include: includeLigneRaid } } } },
+      include: {
+        personnage: true,
+        escouade: { select: { nom: true } },
+        place: { include: { annonce: { include: includeLigneRaid } } },
+      },
       orderBy: { place: { annonce: { debutUtc: "asc" } } },
     })
   ).filter((i) => pasTermine(i.place.annonce));

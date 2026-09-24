@@ -1010,3 +1010,23 @@ span.profil-avatar {
 .duree-calendrier + .calendrier-tout {
   margin-top: 0.8rem;
 }
+
+/* Candidature de groupe sur une carte de raid : icônes des membres superposées, puis le nom du groupe. */
+.groupe-inscrit .groupe-icones {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0;
+}
+.groupe-inscrit .groupe-icones > * + * {
+  margin-left: -6px;
+}
+.groupe-inscrit .groupe-icones img {
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.groupe-inscrit > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

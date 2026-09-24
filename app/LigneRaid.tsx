@@ -9,14 +9,30 @@ import { ClasseIcone, RoleIcone } from "./ClasseIcone";
 
 /**
  * Comment la ligne se distingue : raid que j'organise, où je suis convié, candidat ou en attente.
- * `texte` : étiquette courte ; `perso` : le personnage inscrit ; `detail` : complément (ex. candidatures reçues).
+ * `texte` : étiquette courte ; `perso` : le personnage inscrit ; `groupe` : le groupe avec lequel
+ * il a candidaté (à la place du personnage) ; `detail` : complément (ex. candidatures reçues).
  */
 export type Marque = {
   type: "organise" | "convie" | "candidat" | "attente";
   texte: string;
   perso?: { classe: Classe; nom: string };
+  groupe?: { nom: string; classes: Classe[] };
   detail?: string;
 };
+
+/** Le groupe inscrit : les icônes de classe des membres, superposées, puis son nom. */
+export function GroupeInscrit({ groupe }: { groupe: { nom: string; classes: Classe[] } }) {
+  return (
+    <span className="perso-inscrit groupe-inscrit">
+      <span className="groupe-icones">
+        {groupe.classes.map((c, n) => (
+          <ClasseIcone key={n} classe={c} taille={20} />
+        ))}
+      </span>
+      <span>{groupe.nom}</span>
+    </span>
+  );
+}
 
 /**
  * Une ligne de raid. Version complète pour la liste des raids, version compacte
@@ -68,13 +84,17 @@ export function LigneRaid({
   const badge = marque && (
     <span className="marque-raid">
       <span className={`badge-raid badge-raid-${marque.type}`}>{marque.texte}</span>
-      {marque.perso && (
-        <span className="perso-inscrit">
-          <ClasseIcone classe={marque.perso.classe} taille={20} />
-          <span className="classe" style={{ "--c": `var(--classe-${marque.perso.classe})` } as React.CSSProperties}>
-            {marque.perso.nom}
+      {marque.groupe ? (
+        <GroupeInscrit groupe={marque.groupe} />
+      ) : (
+        marque.perso && (
+          <span className="perso-inscrit">
+            <ClasseIcone classe={marque.perso.classe} taille={20} />
+            <span className="classe" style={{ "--c": `var(--classe-${marque.perso.classe})` } as React.CSSProperties}>
+              {marque.perso.nom}
+            </span>
           </span>
-        </span>
+        )
       )}
       {marque.detail && <span className="doux">{marque.detail}</span>}
     </span>

@@ -22,7 +22,7 @@ import {
   PastilleRuleset,
   RoleIcone,
 } from "./ClasseIcone";
-import { LigneRaid, type Marque } from "./LigneRaid";
+import { GroupeInscrit, LigneRaid, type Marque } from "./LigneRaid";
 import { Calendrier } from "./Calendrier";
 import { FormulaireAuto } from "./FormulaireAuto";
 import { candidater, seDesinscrire } from "./annonces/[id]/actions";
@@ -199,9 +199,20 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
     const i = monInscription.get(annonceId);
     if (!i) return undefined;
     const perso = i.personnage ? { classe: i.personnage.classe, nom: nomEnJeu(i.personnage) } : undefined;
-    if (i.statut === "CONFIRME") return { type: "convie", texte: d.accueil.convie, perso };
-    if (i.statut === "LISTE_ATTENTE") return { type: "attente", texte: d.accueil.reserve, perso };
-    return { type: "candidat", texte: d.accueil.listeAttente, perso };
+    // Candidature de groupe : le nom du groupe et les classes des membres inscrits sur ce raid.
+    const groupe =
+      i.escouadeId && i.escouade
+        ? {
+            nom: i.escouade.nom,
+            classes: i.place.annonce.places
+              .flatMap((p) => p.inscriptions)
+              .filter((x) => x.escouadeId === i.escouadeId && x.personnage)
+              .map((x) => x.personnage!.classe),
+          }
+        : undefined;
+    if (i.statut === "CONFIRME") return { type: "convie", texte: d.accueil.convie, perso, groupe };
+    if (i.statut === "LISTE_ATTENTE") return { type: "attente", texte: d.accueil.reserve, perso, groupe };
+    return { type: "candidat", texte: d.accueil.listeAttente, perso, groupe };
   };
 
   // Prochains raids : organisés, convocations et candidatures, du plus proche au plus lointain.
@@ -531,7 +542,11 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                         </Link>
                         <div className="prochain-bas">
                           {marque && <span className={`badge-raid badge-raid-${marque.type}`}>{marque.texte}</span>}
-                          {marque?.perso && <ClasseIcone classe={marque.perso.classe} taille={18} />}
+                          {marque?.groupe ? (
+                            <GroupeInscrit groupe={marque.groupe} />
+                          ) : (
+                            marque?.perso && <ClasseIcone classe={marque.perso.classe} taille={18} />
+                          )}
                           {marque?.detail && <span className="doux">{marque.detail}</span>}
                           {action && <span className="prochain-action">{action}</span>}
                         </div>
