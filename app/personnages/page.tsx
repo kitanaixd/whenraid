@@ -10,8 +10,8 @@ import { lirePersonnage } from "./lecture";
 import { STATUTS_EN_ATTENTE } from "@/lib/annonces";
 import { nomEnJeu } from "@/lib/jeu";
 import { exigerUtilisateur } from "@/lib/session";
-import { ErreurFormulaire } from "@/lib/formulaire";
-import { libelleClasse, libelleFaction } from "@/lib/libelles";
+import { messageErreur } from "@/lib/formulaire";
+import { dicoCourant } from "@/lib/langue";
 
 async function creerPersonnage(form: FormData) {
   "use server";
@@ -33,8 +33,7 @@ async function creerPersonnage(form: FormData) {
       await tx.personnage.create({ data: { ...donnees, utilisateurId: utilisateur.id, estPrincipal } });
     });
   } catch (e) {
-    if (!(e instanceof ErreurFormulaire)) throw e;
-    erreur = e.message;
+    erreur = messageErreur(e, await dicoCourant());
   }
 
   if (erreur) redirect(`/personnages?erreur=${encodeURIComponent(erreur)}`);
@@ -84,15 +83,16 @@ async function monPersonnage(form: FormData) {
 async function supprimerPersonnage(form: FormData) {
   "use server";
   const personnage = await monPersonnage(form);
+  const d = await dicoCourant();
   const maintenant = new Date();
   const aVenir = { statut: { in: ["PUBLIEE" as const, "COMPLETE" as const] }, debutUtc: { gt: maintenant } };
 
   const convie = await db.inscription.findFirst({
     where: { personnageId: personnage.id, statut: "CONFIRME", place: { annonce: aVenir } },
   });
-  if (convie) retourErreur("Ce personnage est convié à un raid à venir : il ne peut pas être supprimé avant.");
+  if (convie) retourErreur(d.erreur.persoConvie);
   const organise = await db.annonce.findFirst({ where: { organisateurPersonnageId: personnage.id, ...aVenir } });
-  if (organise) retourErreur("Tu organises un raid à venir avec ce personnage : annule-le d'abord.");
+  if (organise) retourErreur(d.erreur.persoOrganise);
 
   await db.$transaction([
     db.inscription.updateMany({
@@ -107,6 +107,7 @@ async function supprimerPersonnage(form: FormData) {
 
 export default async function PagePersonnages({ searchParams }: PageProps<"/personnages">) {
   const utilisateur = await exigerUtilisateur();
+  const d = await dicoCourant();
   const { erreur } = await searchParams;
   const personnages = await db.personnage.findMany({
     where: { utilisateurId: utilisateur.id, supprimeLe: null },
@@ -116,9 +117,9 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
   return (
     <main>
       <p>
-        <Link href="/">← Accueil</Link>
+        <Link href="/">{d.commun.accueil}</Link>
       </p>
-      <h1>Mes personnages</h1>
+      <h1>{d.personnages.titre}</h1>
       {typeof erreur === "string" && (
         <p className="avertissement grave" role="alert">
           ⚠ {erreur}
@@ -126,7 +127,7 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
       )}
 
       {personnages.length === 0 ? (
-        <p>Tu n&apos;as encore déclaré aucun personnage.</p>
+        <p>{d.personnages.aucun}</p>
       ) : (
         <ul className="liste-persos">
           {personnages.map((p) => (
@@ -136,7 +137,7 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 <button
                   type="submit"
                   className="petit"
-                  title={p.estPrincipal ? "Retirer le statut principal" : "Définir comme principal"}
+                  title={p.estPrincipal ? d.personnages.retirerPrincipal : d.personnages.definirPrincipal}
                   aria-pressed={p.estPrincipal}
                 >
                   {p.estPrincipal ? "★" : "☆"}
@@ -149,22 +150,21 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 </strong>
                 <br />
                 <small>
-                  {libelleClasse[p.classe]} niveau {p.niveau} · <FactionIcone faction={p.faction} taille={16} />{" "}
-                  {libelleFaction[p.faction]} ·{" "}
-                  <RulesetRegion ruleset={p.ruleset} region={p.region} taille={16} /> ·{" "}
+                  {d.classe[p.classe]} {d.commun.niveau(p.niveau)} · <FactionIcone faction={p.faction} taille={16} />{" "}
+                  {d.faction[p.faction]} · <RulesetRegion ruleset={p.ruleset} region={p.region} taille={16} /> ·{" "}
                   {p.rolesJouables.map((r) => (
                     <NomRole key={r} role={r} taille={16} />
                   ))}
                 </small>
                 {p.lienLogs && (
                   <a href={p.lienLogs} target="_blank" rel="noopener noreferrer nofollow" className="lien-logs">
-                    Voir ses logs ↗
+                    {d.commun.voirLogs}
                   </a>
                 )}
               </div>
               <div className="perso-actions">
                 <Link href={`/personnages/${p.id}`} className="bouton petit">
-                  Modifier
+                  {d.personnages.modifier}
                 </Link>
                 <BoutonSupprimer action={supprimerPersonnage} personnageId={p.id} nom={nomEnJeu(p)} />
               </div>
@@ -173,16 +173,16 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
         </ul>
       )}
 
-      <h2>Déclarer un personnage</h2>
+      <h2>{d.personnages.declarer}</h2>
       <form action={creerPersonnage} className="formulaire">
-        <ChampsPersonnage />
+        <ChampsPersonnage d={d} />
         <label>
-          <input type="checkbox" name="estPrincipal" defaultChecked={personnages.length === 0} /> Personnage
-          principal
+          <input type="checkbox" name="estPrincipal" defaultChecked={personnages.length === 0} />{" "}
+          {d.personnages.principal}
         </label>
         <div>
-          <BoutonEnvoi className="principal" enCours="Ajout…">
-            Ajouter ce personnage
+          <BoutonEnvoi className="principal" enCours={d.personnages.ajout}>
+            {d.personnages.ajouter}
           </BoutonEnvoi>
         </div>
       </form>

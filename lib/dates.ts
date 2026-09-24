@@ -1,3 +1,5 @@
+import type { Dico } from "@/lib/i18n";
+
 // Règle 3 : on stocke en UTC, on convertit seulement à la saisie et à l'affichage.
 
 /** Décalage (en ms) entre l'heure locale du fuseau et l'UTC, à un instant donné. */
@@ -56,10 +58,10 @@ function jourEtHeure(instant: Date, fuseau: string) {
   return { jour, heure };
 }
 
-/** Affiche un instant UTC dans le fuseau de la personne qui regarde : « 24/09/2026 à 21:00 ». */
-export function afficherDate(instant: Date, fuseau: string) {
+/** Affiche un instant UTC dans le fuseau de la personne qui regarde : « 24/09/2026 à 21:00 » / « … at 21:00 ». */
+export function afficherDate(instant: Date, fuseau: string, d: Dico) {
   const { jour, heure } = jourEtHeure(instant, fuseau);
-  return `${jour} à ${heure}`;
+  return `${jour} ${d.date.a} ${heure}`;
 }
 
 /** Date pour les lignes compactes : « 24/09/2026 · 21:00 ». */

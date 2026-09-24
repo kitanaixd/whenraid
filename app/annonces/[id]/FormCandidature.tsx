@@ -5,6 +5,7 @@ import type { Classe, Role } from "@/generated/prisma/enums";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { NomRole } from "@/app/ClasseIcone";
+import { useDico } from "@/app/Langue";
 
 export type PersoCandidat = { id: string; libelle: string; classe: Classe; roles: Role[] };
 
@@ -26,6 +27,7 @@ export function FormCandidature({
   /** Personnage choisi sur la liste des raids, présélectionné s'il est éligible. */
   persoInitial?: string;
 }) {
+  const t = useDico().formCandidature;
   const [persoId, setPersoId] = useState(
     persos.some((p) => p.id === persoInitial) ? persoInitial! : (persos[0]?.id ?? ""),
   );
@@ -45,18 +47,19 @@ export function FormCandidature({
         <input key={r} type="hidden" name="roles" value={r} />
       ))}
       <div className="champ">
-        1. Personnage
+        {t.personnage}
         <MenuDeroulant
           name="personnageId"
-          etiquette="Personnage"
+          etiquette={t.personnage}
           valeurInitiale={persoId}
           options={persos.map((p) => ({ valeur: p.id, libelle: p.libelle, classe: p.classe }))}
           surChangement={setPersoId}
         />
       </div>
       <div className="champ">
-        2. Rôle{perso && perso.roles.length > 1 && <small className="fuseau"> (un ou plusieurs : le RL choisira)</small>}
-        <div className="choix-roles" role="group" aria-label="Rôles proposés">
+        {t.role}
+        {perso && perso.roles.length > 1 && <small className="fuseau">{t.plusieursRoles}</small>}
+        <div className="choix-roles" role="group" aria-label={t.rolesProposes}>
           {perso?.roles.map((r) => (
             <button
               key={r}
@@ -71,12 +74,12 @@ export function FormCandidature({
         </div>
       </div>
       <label className="champ">
-        3. Note pour le RL <small className="fuseau">(facultatif, 80 caractères)</small>
-        <input name="note" maxLength={80} placeholder="Ex. : stuff T2, dispo jusqu'à minuit" />
+        {t.note} <small className="fuseau">{t.noteAide}</small>
+        <input name="note" maxLength={80} placeholder={t.notePlaceholder} />
       </label>
       <div>
-        <BoutonEnvoi className="principal" enCours="Envoi…">
-          {listeAttente ? "Rejoindre la liste d'attente" : "Candidater"}
+        <BoutonEnvoi className="principal" enCours={t.envoi}>
+          {listeAttente ? t.rejoindreAttente : t.candidater}
         </BoutonEnvoi>
       </div>
     </form>

@@ -10,41 +10,28 @@ import { nomEnJeu, rolePossible, rolesParClasse } from "@/lib/jeu";
 import { ChoixCompo } from "./ChoixCompo";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
-import { choix, entier, ErreurFormulaire, texte } from "@/lib/formulaire";
-import {
-  libelleClasse,
-  libelleFaction,
-  libelleReglesLoot,
-  libelleRole,
-  libelleRuleset,
-  libelleVocal,
-  options,
-} from "@/lib/libelles";
+import { choix, entier, ErreurFormulaire, messageErreur, texte } from "@/lib/formulaire";
+import { options } from "@/lib/libelles";
+import { dicoCourant, langueCourante } from "@/lib/langue";
 
-const LANGUES = { fr: "Français", en: "Anglais" } as const;
+const LANGUES = ["fr", "en"] as const;
 
 // Ces valeurs partent telles quelles en MP Discord aux joueurs : format strict, sans espace.
 const LIEN_DISCORD = /^https:\/\/(discord\.gg|discord\.com\/invite)\/[A-Za-z0-9-]+$/;
 const ADRESSE_TS = /^[A-Za-z0-9.-]+(:\d{1,5})?$/;
 
 function lireVocal(form: FormData) {
-  const vocal = choix(form, "vocal", Vocal);
+  const vocal = choix(form, "vocal", Vocal, "vocal");
   if (vocal === "DISCORD") {
-    const lien = texte(form, "vocalDiscordLien", { requis: true, max: 200 })!;
-    if (!LIEN_DISCORD.test(lien)) {
-      throw new ErreurFormulaire("Le lien Discord doit ressembler à https://discord.gg/abc123.");
-    }
+    const lien = texte(form, "vocalDiscordLien", { requis: true, max: 200, champ: "lienDiscord" })!;
+    if (!LIEN_DISCORD.test(lien)) throw new ErreurFormulaire((d) => d.erreur.lienDiscord);
     return { vocal, vocalDiscordLien: lien, vocalTsAdresse: null, vocalTsMotDePasse: null };
   }
   if (vocal === "TEAMSPEAK") {
-    const adresse = texte(form, "vocalTsAdresse", { requis: true, max: 100 })!;
-    if (!ADRESSE_TS.test(adresse)) {
-      throw new ErreurFormulaire("L'adresse TeamSpeak doit ressembler à ts.mon-serveur.fr ou ts.mon-serveur.fr:9987.");
-    }
-    const motDePasse = texte(form, "vocalTsMotDePasse", { max: 100 });
-    if (motDePasse && /\s/.test(motDePasse)) {
-      throw new ErreurFormulaire("Le mot de passe TeamSpeak ne doit pas contenir d'espace.");
-    }
+    const adresse = texte(form, "vocalTsAdresse", { requis: true, max: 100, champ: "adresseTs" })!;
+    if (!ADRESSE_TS.test(adresse)) throw new ErreurFormulaire((d) => d.erreur.adresseTs);
+    const motDePasse = texte(form, "vocalTsMotDePasse", { max: 100, champ: "motDePasseTs" });
+    if (motDePasse && /\s/.test(motDePasse)) throw new ErreurFormulaire((d) => d.erreur.motDePasseTs);
     return { vocal, vocalDiscordLien: null, vocalTsAdresse: adresse, vocalTsMotDePasse: motDePasse };
   }
   return { vocal, vocalDiscordLien: null, vocalTsAdresse: null, vocalTsMotDePasse: null };
@@ -61,9 +48,9 @@ async function creerAnnonce(form: FormData) {
     const personnage = await db.personnage.findFirst({
       where: { id: String(form.get("personnageId") ?? ""), utilisateurId: utilisateur.id, supprimeLe: null },
     });
-    if (!personnage) throw new ErreurFormulaire("Choisis un de tes personnages.");
+    if (!personnage) throw new ErreurFormulaire((d) => d.erreur.choisisPerso);
 
-    const contenu = choix(form, "contenu", Contenu);
+    const contenu = choix(form, "contenu", Contenu, "raid");
     const taille = raids[contenu].taille;
 
     const debutUtc = localVersUtc(
@@ -71,20 +58,20 @@ async function creerAnnonce(form: FormData) {
       String(form.get("heure") ?? ""),
       utilisateur.fuseauHoraire,
     );
-    if (!debutUtc) throw new ErreurFormulaire("Date ou heure invalide.");
-    if (debutUtc.getTime() <= Date.now()) throw new ErreurFormulaire("La date du raid doit être dans le futur.");
+    if (!debutUtc) throw new ErreurFormulaire((d) => d.erreur.dateInvalide);
+    if (debutUtc.getTime() <= Date.now()) throw new ErreurFormulaire((d) => d.erreur.datePassee);
 
     // La compo que le RL a déjà : uniquement les combinaisons possibles en jeu.
     const composition: { classe: Classe; role: Role; nombre: number }[] = [];
     for (const classe of Object.keys(rolesParClasse) as Classe[]) {
       for (const role of rolesParClasse[classe]) {
-        const nombre = entier(form, `compo.${classe}.${role}`, { min: 0, max: taille }) ?? 0;
+        const nombre = entier(form, `compo.${classe}.${role}`, { min: 0, max: taille, champ: "compo" }) ?? 0;
         if (nombre > 0) composition.push({ classe, role, nombre });
       }
     }
     const joueurs = composition.reduce((t, c) => t + c.nombre, 0);
-    if (joueurs === 0) throw new ErreurFormulaire("Indique ta compo actuelle (compte-toi dedans).");
-    if (joueurs >= taille) throw new ErreurFormulaire(`Ton raid a déjà ${joueurs} joueurs sur ${taille} : il ne reste aucune place.`);
+    if (joueurs === 0) throw new ErreurFormulaire((d) => d.erreur.compoVide);
+    if (joueurs >= taille) throw new ErreurFormulaire((d) => d.erreur.raidPlein(joueurs, taille));
     const nbPlaces = taille - joueurs;
 
     // Les besoins précis ; les places restantes sont libres.
@@ -95,23 +82,24 @@ async function creerAnnonce(form: FormData) {
       .filter((n): n is string => n !== undefined)
       .slice(0, 20);
     for (const i of numerosDeLignes) {
-      const nombre = entier(form, `exigences.${i}.nombre`, { min: 0, max: nbPlaces }) ?? 0;
+      const nombre = entier(form, `exigences.${i}.nombre`, { min: 0, max: nbPlaces, champ: "nombre" }) ?? 0;
       if (nombre === 0) continue;
-      const classe = form.get(`exigences.${i}.classe`) ? choix(form, `exigences.${i}.classe`, Classe) : null;
-      const role = form.get(`exigences.${i}.role`) ? choix(form, `exigences.${i}.role`, Role) : null;
+      const classe = form.get(`exigences.${i}.classe`) ? choix(form, `exigences.${i}.classe`, Classe, "classe") : null;
+      const role = form.get(`exigences.${i}.role`) ? choix(form, `exigences.${i}.role`, Role, "role") : null;
       if (classe && role && !rolePossible(classe, role)) {
-        throw new ErreurFormulaire(`Un ${libelleClasse[classe]} ne peut pas jouer ${libelleRole[role]}.`);
+        throw new ErreurFormulaire((d) => d.erreur.rolImpossible(d.classe[classe], d.role[role]));
       }
       for (let n = 0; n < nombre; n++) places.push({ role, classesAcceptees: classe ? [classe] : toutes });
     }
     if (places.length > nbPlaces) {
-      throw new ErreurFormulaire(`Tu demandes ${places.length} places précises, mais il n'en reste que ${nbPlaces}.`);
+      const demandees = places.length;
+      throw new ErreurFormulaire((d) => d.erreur.tropDePlaces(demandees, nbPlaces));
     }
     while (places.length < nbPlaces) places.push({ role: null, classesAcceptees: toutes });
 
     const vocal = lireVocal(form);
     const langue = String(form.get("langueRequise") ?? "");
-    const dureeHeures = entier(form, "dureeHeures", { min: 1, max: 8 });
+    const dureeHeures = entier(form, "dureeHeures", { min: 1, max: 8, champ: "duree" });
 
     const donnees = {
       createurId: utilisateur.id,
@@ -123,10 +111,10 @@ async function creerAnnonce(form: FormData) {
       taille,
       debutUtc,
       dureeEstimee: dureeHeures ? dureeHeures * 60 : null,
-      reglesLoot: choix(form, "reglesLoot", ReglesLoot),
-      langueRequise: langue in LANGUES ? langue : null,
+      reglesLoot: choix(form, "reglesLoot", ReglesLoot, "loot"),
+      langueRequise: (LANGUES as readonly string[]).includes(langue) ? langue : null,
       ...vocal,
-      niveauMin: entier(form, "niveauMin", { min: 1, max: 60 }),
+      niveauMin: entier(form, "niveauMin", { min: 1, max: 60, champ: "niveauMin" }),
       statut: "PUBLIEE",
       publieeLe: new Date(),
       composition: { create: composition },
@@ -144,8 +132,7 @@ async function creerAnnonce(form: FormData) {
       annonceId = existant.id;
     }
   } catch (e) {
-    if (!(e instanceof ErreurFormulaire)) throw e;
-    erreur = e.message;
+    erreur = messageErreur(e, await dicoCourant());
   }
 
   if (erreur) redirect(`/annonces/nouvelle?erreur=${encodeURIComponent(erreur)}`);
@@ -154,6 +141,7 @@ async function creerAnnonce(form: FormData) {
 
 export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/annonces/nouvelle">) {
   const utilisateur = await exigerUtilisateur();
+  const [d, langue] = await Promise.all([dicoCourant(), langueCourante()]);
   const { erreur } = await searchParams;
   const personnages = await db.personnage.findMany({
     where: { utilisateurId: utilisateur.id, supprimeLe: null },
@@ -164,12 +152,11 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
     return (
       <main>
         <p>
-          <Link href="/">← Accueil</Link>
+          <Link href="/">{d.commun.accueil}</Link>
         </p>
-        <h1>Créer un raid</h1>
+        <h1>{d.creation.titre}</h1>
         <p>
-          Déclare d&apos;abord <Link href="/personnages">un personnage</Link> : le raid prendra sa faction, son ruleset
-          et sa région.
+          {d.creation.sansPerso1} <Link href="/personnages">{d.raid.unPersonnage}</Link> {d.creation.sansPerso2}
         </p>
       </main>
     );
@@ -178,35 +165,35 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
   return (
     <main>
       <p>
-        <Link href="/">← Accueil</Link>
+        <Link href="/">{d.commun.accueil}</Link>
       </p>
-      <h1>Créer un raid</h1>
+      <h1>{d.creation.titre}</h1>
       {typeof erreur === "string" && <p role="alert">⚠ {erreur}</p>}
       <form action={creerAnnonce} className="formulaire">
         <ChoixCompo
           fuseau={utilisateur.fuseauHoraire}
           personnage={
             <div className="champ">
-              Avec quel personnage ?
+              {d.creation.avecQuelPerso}
               <MenuDeroulant
                 name="personnageId"
-                etiquette="Avec quel personnage ?"
+                etiquette={d.creation.avecQuelPerso}
                 options={personnages.map((p) => ({
                   valeur: p.id,
                   classe: p.classe,
-                  libelle: `${nomEnJeu(p)} — ${libelleClasse[p.classe]}, ${libelleFaction[p.faction]}, ${libelleRuleset[p.ruleset]} ${p.region}`,
+                  libelle: `${nomEnJeu(p)} — ${d.classe[p.classe]}, ${d.faction[p.faction]}, ${d.ruleset[p.ruleset]} ${p.region}`,
                 }))}
               />
             </div>
           }
         />
 
-        <h2>Organisation</h2>
+        <h2>{d.creation.organisation}</h2>
         <div className="rangee">
           <label className="champ">
-            Loot
+            {d.champ.loot}
             <select name="reglesLoot" required>
-              {options(libelleReglesLoot).map(([v, l]) => (
+              {options(d.reglesLoot).map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}
                 </option>
@@ -214,25 +201,25 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
             </select>
           </label>
           <label className="champ">
-            Niveau minimum
+            {d.champ.niveauMin}
             <input type="number" name="niveauMin" min={1} max={60} defaultValue={60} />
           </label>
           <label className="champ">
-            Langue
-            <select name="langueRequise" defaultValue="fr">
-              {options(LANGUES).map(([v, l]) => (
+            {d.commun.langue}
+            <select name="langueRequise" defaultValue={langue}>
+              {LANGUES.map((v) => (
                 <option key={v} value={v}>
-                  {l}
+                  {d.langueParlee[v]}
                 </option>
               ))}
-              <option value="">Peu importe</option>
+              <option value="">{d.creation.peuImporte}</option>
             </select>
           </label>
         </div>
         <fieldset className="vocal">
-          <legend>Vocal</legend>
+          <legend>{d.champ.vocal}</legend>
           <div className="cases">
-            {options(libelleVocal).map(([v, l]) => (
+            {options(d.vocal).map(([v, l]) => (
               <label key={v}>
                 <input type="radio" name="vocal" value={v} defaultChecked={v === "AUCUN"} /> {l}
               </label>
@@ -240,32 +227,26 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
           </div>
           <div className="si-discord">
             <label className="champ">
-              Lien d&apos;invitation Discord
+              {d.creation.lienDiscord}
               <input name="vocalDiscordLien" type="url" maxLength={200} placeholder="https://discord.gg/abc123" />
             </label>
           </div>
           <div className="si-teamspeak rangee">
             <label className="champ">
-              Adresse du serveur TeamSpeak
-              <input name="vocalTsAdresse" maxLength={100} placeholder="ts.mon-serveur.fr" />
+              {d.creation.adresseTs}
+              <input name="vocalTsAdresse" maxLength={100} placeholder="ts.my-server.com" />
             </label>
             <label className="champ">
-              Mot de passe (facultatif)
+              {d.creation.motDePasseTs}
               <input name="vocalTsMotDePasse" maxLength={100} />
             </label>
           </div>
-          <p className="doux">
-            Les joueurs ne verront jamais ces identifiants sur le site : le bot WhenRaid les enverra en MP aux joueurs
-            confirmés quand tu enverras les invitations.
-          </p>
+          <p className="doux">{d.creation.vocalPrive}</p>
         </fieldset>
-        <p className="doux">
-          À la fin prévue (début + durée), le bot t&apos;enverra un MP pour valider les présences. Sans validation sous
-          24 h, tous les joueurs confirmés seront comptés présents.
-        </p>
+        <p className="doux">{d.creation.finPrevue}</p>
         <div>
-          <BoutonEnvoi className="principal" enCours="Publication…">
-            Publier le raid
+          <BoutonEnvoi className="principal" enCours={d.commun.publier}>
+            {d.creation.publier}
           </BoutonEnvoi>
         </div>
       </form>

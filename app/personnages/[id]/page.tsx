@@ -9,7 +9,8 @@ import { lirePersonnage } from "../lecture";
 import { STATUTS_ACTIFS } from "@/lib/annonces";
 import { nomEnJeu } from "@/lib/jeu";
 import { exigerUtilisateur } from "@/lib/session";
-import { ErreurFormulaire } from "@/lib/formulaire";
+import { ErreurFormulaire, messageErreur } from "@/lib/formulaire";
+import { dicoCourant } from "@/lib/langue";
 
 /**
  * Le personnage est-il engagé dans un raid à venir (candidature, convocation ou
@@ -44,14 +45,11 @@ async function modifierPersonnage(form: FormData) {
       donnees.region !== personnage.region ||
       donnees.classe !== personnage.classe;
     if (identiteChange && (await estEngage(personnage.id))) {
-      throw new ErreurFormulaire(
-        "Ce personnage est engagé dans un raid à venir : sa faction, son ruleset, sa région et sa classe ne peuvent pas changer pour l'instant.",
-      );
+      throw new ErreurFormulaire((d) => d.erreur.persoEngage);
     }
     await db.personnage.update({ where: { id: personnage.id }, data: donnees });
   } catch (e) {
-    if (!(e instanceof ErreurFormulaire)) throw e;
-    erreur = e.message;
+    erreur = messageErreur(e, await dicoCourant());
   }
 
   if (erreur) redirect(`/personnages/${personnage.id}?erreur=${encodeURIComponent(erreur)}`);
@@ -67,14 +65,15 @@ export default async function PageModifierPersonnage({ params, searchParams }: P
   const perso = await db.personnage.findFirst({ where: { id, utilisateurId: utilisateur.id, supprimeLe: null } });
   if (!perso) notFound();
   const engage = await estEngage(perso.id);
+  const d = await dicoCourant();
 
   return (
     <main>
       <p>
-        <Link href="/personnages">← Mes personnages</Link>
+        <Link href="/personnages">{d.personnages.retour}</Link>
       </p>
       <h1 className="titre-perso">
-        <ClasseIcone classe={perso.classe} taille={40} /> Modifier {nomEnJeu(perso)}
+        <ClasseIcone classe={perso.classe} taille={40} /> {d.personnages.titreModifier(nomEnJeu(perso))}
       </h1>
       {typeof erreur === "string" && (
         <p className="avertissement grave" role="alert">
@@ -82,20 +81,17 @@ export default async function PageModifierPersonnage({ params, searchParams }: P
         </p>
       )}
       {engage && (
-        <p className="encadre">
-          Ce personnage est engagé dans un raid à venir : tu peux changer son nom, son niveau, ses rôles et ses
-          logs, mais pas sa faction, son ruleset, sa région ni sa classe.
-        </p>
+        <p className="encadre">{d.personnages.engage}</p>
       )}
       <form action={modifierPersonnage} className="formulaire">
         <input type="hidden" name="personnageId" value={perso.id} />
-        <ChampsPersonnage perso={perso} />
+        <ChampsPersonnage perso={perso} d={d} />
         <div className="actions-rl">
-          <BoutonEnvoi className="principal" enCours="Enregistrement…">
-            Enregistrer
+          <BoutonEnvoi className="principal" enCours={d.commun.enregistrement}>
+            {d.raid.enregistrer}
           </BoutonEnvoi>
           <Link href="/personnages" className="bouton">
-            Annuler
+            {d.personnages.annuler}
           </Link>
         </div>
       </form>

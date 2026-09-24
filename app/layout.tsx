@@ -6,23 +6,29 @@ import "./globals.css";
 import "./moderne.css";
 import { EnTete } from "./EnTete";
 import { PiedDePage } from "./PiedDePage";
+import { FournisseurLangue } from "./Langue";
+import { dicoCourant, langueCourante } from "@/lib/langue";
 
 // Police libre (licence OFL), servie par le site lui-même : Geist pour les titres et le texte.
 const titre = Geist({ subsets: ["latin"], variable: "--police-titre", display: "swap" });
 const texte = Geist({ subsets: ["latin"], variable: "--police-texte", display: "swap" });
 
-export const metadata: Metadata = {
-  title: "WhenRaid",
-  description: "Trouve un raid qui cherche ta classe sur World of Warcraft Forever.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const d = await dicoCourant();
+  return { title: "WhenRaid", description: d.meta.description };
+}
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Anglais par défaut, français pour les visiteurs situés en France ou qui l'ont choisi.
+  const langue = await langueCourante();
   return (
-    <html lang="fr" className={`${titre.variable} ${texte.variable}`}>
+    <html lang={langue} className={`${titre.variable} ${texte.variable}`}>
       <body>
-        <EnTete />
-        {children}
-        <PiedDePage />
+        <FournisseurLangue langue={langue}>
+          <EnTete />
+          {children}
+          <PiedDePage />
+        </FournisseurLangue>
       </body>
     </html>
   );

@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
+import { useDico } from "@/app/Langue";
 
 export function BoutonAnnuler({
   action,
@@ -17,43 +18,44 @@ export function BoutonAnnuler({
   estComplet: boolean;
 }) {
   const dialogue = useRef<HTMLDialogElement>(null);
+  const t = useDico().annulation;
 
   return (
     <>
       <button type="button" className="danger" onClick={() => dialogue.current?.showModal()}>
-        Annuler le raid
+        {t.bouton}
       </button>
 
       <dialog ref={dialogue} className="confirmation" aria-labelledby="titre-annulation">
         <form action={action}>
           <input type="hidden" name="annonceId" value={annonceId} />
-          <h2 id="titre-annulation">⚠ Annuler ce raid ?</h2>
+          <h2 id="titre-annulation">{t.titre}</h2>
           <p>
             <strong>{resume}</strong>
           </p>
           <p className="avertissement">
-            Cette action est <strong>définitive</strong> : le raid ne pourra pas être rétabli.
-            {nbInscrits > 0 &&
-              ` ${nbInscrits} joueur${nbInscrits > 1 ? "s ont réservé leur" : " a réservé sa"} soirée pour ce raid.`}
+            {t.definitif} <strong>{t.definitive}</strong>
+            {t.nonRetablissable}
+            {nbInscrits > 0 && t.reserve(nbInscrits)}
           </p>
           {estComplet && (
             <p className="avertissement grave">
-              Ce raid est <strong>complet</strong>. L&apos;annuler maintenant sera enregistré et{" "}
-              <strong>comptera contre ta réputation de RL</strong>.
+              {t.complet1} <strong>{t.complet2}</strong>
+              {t.complet3} <strong>{t.penalite}</strong>.
             </p>
           )}
           <p>
             <label>
-              <input type="checkbox" name="confirmation" required /> Je confirme vouloir annuler ce raid
-              {estComplet && " et j'accepte la pénalité de réputation"}
+              <input type="checkbox" name="confirmation" required /> {t.confirmer}
+              {estComplet && t.accepterPenalite}
             </label>
           </p>
           <p className="actions">
             <button type="button" onClick={() => dialogue.current?.close()} autoFocus>
-              Garder le raid
+              {t.garder}
             </button>{" "}
-            <BoutonEnvoi className="danger" enCours="Annulation…">
-              Annuler définitivement
+            <BoutonEnvoi className="danger" enCours={t.enCours}>
+              {t.annulerDefinitivement}
             </BoutonEnvoi>
           </p>
         </form>

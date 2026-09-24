@@ -544,3 +544,32 @@ button.menu-compte-bouton::before {
 .avertissement.grave {
   border-radius: var(--rayon-2);
 }
+
+/* ─── Choix de la langue (EN / FR) dans l'en-tête ─────────────────────────── */
+.choix-langue {
+  display: inline-flex;
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-3);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).bouton-langue {
+  height: 2.2rem;
+  padding: 0 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--texte-doux);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).bouton-langue:hover:not(:disabled) {
+  color: var(--texte);
+  background: var(--surface-3);
+  box-shadow: none;
+}
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).bouton-langue.active {
+  color: var(--accent-texte);
+  background: var(--accent);
+}

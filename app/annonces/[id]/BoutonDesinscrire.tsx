@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { IconeCroix } from "@/app/Icones";
+import { useDico } from "@/app/Langue";
 
 /** Désinscription d'un raid, après confirmation dans une fenêtre. */
 export function BoutonDesinscrire({
@@ -20,6 +21,9 @@ export function BoutonDesinscrire({
   retourListe?: string;
 }) {
   const dialogue = useRef<HTMLDialogElement>(null);
+  const d = useDico();
+  const t = d.desinscription;
+  const libelleIcone = convie ? t.seDesister : t.annulerCandidature;
 
   return (
     <>
@@ -28,19 +32,19 @@ export function BoutonDesinscrire({
         <button
           type="button"
           className="bouton-icone danger"
-          aria-label={convie ? "Me désister" : "Annuler ma candidature"}
-          title={convie ? "Me désister" : "Annuler ma candidature"}
+          aria-label={libelleIcone}
+          title={libelleIcone}
           onClick={() => dialogue.current?.showModal()}
         >
           <IconeCroix />
         </button>
       ) : (
         <button type="button" className="petit danger" onClick={() => dialogue.current?.showModal()}>
-          {convie ? "Me désister" : "Retirer ma candidature"}
+          {convie ? t.seDesister : t.retirerCandidature}
         </button>
       )}
 
-      <dialog ref={dialogue} className="confirmation" aria-labelledby="titre-desinscription">
+      <dialog ref={dialogue} className="confirmation" aria-labelledby={`titre-desinscription-${inscriptionId}`}>
         <form action={action}>
           <input type="hidden" name="inscriptionId" value={inscriptionId} />
           {retourListe !== undefined && (
@@ -49,24 +53,17 @@ export function BoutonDesinscrire({
               <input type="hidden" name="retour" value={retourListe} />
             </>
           )}
-          <h2 id="titre-desinscription">{convie ? "Te désister de ce raid ?" : "Retirer ta candidature ?"}</h2>
+          <h2 id={`titre-desinscription-${inscriptionId}`}>{convie ? t.titreDesister : t.titreRetirer}</h2>
           <p>
             <strong>{resume}</strong>
           </p>
-          {convie ? (
-            <p className="avertissement">
-              Le RL compte sur toi : il sera prévenu tout de suite et ta place sera rouverte. Tu pourras recandidater
-              tant que le raid n&apos;a pas commencé.
-            </p>
-          ) : (
-            <p>Tu pourras recandidater tant que le raid n&apos;a pas commencé.</p>
-          )}
+          {convie ? <p className="avertissement">{t.avertissementConvie}</p> : <p>{t.recandidater}</p>}
           <p className="actions">
             <button type="button" onClick={() => dialogue.current?.close()} autoFocus>
-              Rester inscrit
+              {t.rester}
             </button>{" "}
-            <BoutonEnvoi className="danger" enCours="…">
-              {convie ? "Me désister" : "Retirer"}
+            <BoutonEnvoi className="danger" enCours={d.commun.enCours}>
+              {convie ? t.seDesister : t.retirer}
             </BoutonEnvoi>
           </p>
         </form>

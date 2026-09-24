@@ -8,7 +8,7 @@ import { useFormStatus } from "react-dom";
  */
 export function BoutonEnvoi({
   children,
-  enCours = "Envoi…",
+  enCours = "…",
   className,
   disabled,
   name,

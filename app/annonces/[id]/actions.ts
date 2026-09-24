@@ -20,11 +20,12 @@ import { placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite"
 import { Role } from "@/generated/prisma/enums";
 import { envoyerMp } from "@/lib/discord";
 import { texteNotification } from "@/lib/notifications";
-import { libelleRole } from "@/lib/libelles";
 import { envoyerInvitation, envoyerInvitations, URL_SITE } from "@/lib/invitations";
 import { nomEnJeu } from "@/lib/jeu";
+import { dico } from "@/lib/i18n";
+import { dicoCourant } from "@/lib/langue";
 
-/** Envoie en MP Discord, après la réponse, la même information que la notification du site. */
+/** Envoie en MP Discord, après la réponse, la même information que la notification du site (dans la langue du joueur). */
 function prevenirEnMp(inscriptionId: string, type: TypeNotification) {
   after(async () => {
     const i = await db.inscription.findUnique({
@@ -33,13 +34,13 @@ function prevenirEnMp(inscriptionId: string, type: TypeNotification) {
     });
     if (!i) return;
     const { annonce } = i.place;
+    const d = dico(i.utilisateur.langueSite);
     const avec =
       type === "CANDIDATURE_ACCEPTEE" && i.personnage
-        ? ` Personnage : ${nomEnJeu(i.personnage)}${i.role ? ` (${libelleRole[i.role]})` : ""}.`
+        ? d.notification.personnage(nomEnJeu(i.personnage), i.role ? d.role[i.role] : "")
         : "";
-    const texte = texteNotification(type, annonce, i.utilisateur.fuseauHoraire);
-    await envoyerMp(i.utilisateur.discordId, `${texte}${avec}
-${URL_SITE}/annonces/${annonce.id}`);
+    const texte = texteNotification(type, annonce, i.utilisateur.fuseauHoraire, d);
+    await envoyerMp(i.utilisateur.discordId, `${texte}${avec}\n${URL_SITE}/annonces/${annonce.id}`);
     // Accepté après l'envoi des invitations (ex. remplaçant) : il reçoit la sienne tout de suite.
     if (type === "CANDIDATURE_ACCEPTEE" && annonce.invitationsEnvoyeesLe) await envoyerInvitation(i.id);
   });
@@ -70,7 +71,6 @@ function rafraichir(annonceId: string) {
   revalidatePath("/");
 }
 
-
 /** Le joueur est-il déjà confirmé dans un autre raid sur ce créneau ? */
 async function dejaConfirmeAilleurs(
   utilisateurId: string,
@@ -89,6 +89,7 @@ async function dejaConfirmeAilleurs(
 
 export async function candidater(form: FormData) {
   const utilisateur = await exigerUtilisateur();
+  const d = await dicoCourant();
   const annonce = await db.annonce.findUnique({
     where: { id: String(form.get("annonceId") ?? "") },
     include: { places: true },
@@ -104,34 +105,32 @@ export async function candidater(form: FormData) {
   const coches = new Set(form.getAll("roles").map(String));
   const note = String(form.get("note") ?? "").trim();
 
-  if (annonce.createurId === utilisateur.id) retour("Tu organises ce raid, tu ne peux pas y candidater.");
-  if (!accepteCandidatures(annonce)) retour("Ce raid n'accepte plus de candidatures.");
-  if (!personnage) retour("Choisis un de tes personnages.");
-  if (coches.size === 0) retour("Coche au moins un rôle.");
+  if (annonce.createurId === utilisateur.id) retour(d.erreur.organisateur);
+  if (!accepteCandidatures(annonce)) retour(d.erreur.plusDeCandidatures);
+  if (!personnage) retour(d.erreur.choisisPerso);
+  if (coches.size === 0) retour(d.erreur.unRole);
   // Rôles cochés que ce personnage peut tenir dans ce raid, dans l'ordre Tank, Soigneur, DPS.
   // Le RL choisira à l'acceptation.
   const possibles = rolesPourRaid(personnage!, annonce.places, annonce);
   const roles = possibles.filter((r) => coches.has(r));
-  if (roles.length === 0) retour(`Ce raid ne cherche pas ${nomEnJeu(personnage!)} dans les rôles choisis.`);
+  if (roles.length === 0) retour(d.erreur.pasCesRoles(nomEnJeu(personnage!)));
   // Le site choisit la place : une place ouverte compatible, sinon la liste d'attente.
   const choix = placePourRoles(annonce.places, personnage!, roles, annonce);
-  if (!choix) retour("Ce personnage ne correspond à aucune place de ce raid.");
+  if (!choix) retour(d.erreur.aucunePlace);
   const place = choix!.place;
-  if (note.length > 80) retour("Ta note doit faire 80 caractères maximum.");
+  if (note.length > 80) retour(d.erreur.noteTropLongue);
 
   const dejaCandidat = await db.inscription.findFirst({
     where: { utilisateurId: utilisateur.id, statut: { in: [...STATUTS_ACTIFS] }, place: { annonceId: annonce.id } },
   });
-  if (dejaCandidat) retour("Tu as déjà une candidature sur ce raid.");
-  if (await dejaConfirmeAilleurs(utilisateur.id, annonce)) {
-    retour("Tu es déjà confirmé dans un autre raid sur ce créneau.");
-  }
+  if (dejaCandidat) retour(d.erreur.dejaCandidat);
+  if (await dejaConfirmeAilleurs(utilisateur.id, annonce)) retour(d.erreur.dejaConfirme);
 
   // Une seule ligne par personnage et par place : une ancienne candidature retirée est réactivée.
   const ancienne = await db.inscription.findUnique({
     where: { placeId_personnageId: { placeId: place.id, personnageId: personnage!.id } },
   });
-  if (ancienne?.statut === "REFUSE") retour("Le RL a déjà refusé ce personnage sur ce raid.");
+  if (ancienne?.statut === "REFUSE") retour(d.erreur.dejaRefuse);
   const candidature = {
     role: choix!.role,
     rolesProposes: roles,
@@ -167,18 +166,15 @@ async function candidaturePourRl(form: FormData) {
 
 export async function accepter(form: FormData) {
   const inscription = await candidaturePourRl(form);
+  const d = await dicoCourant();
   const { annonce } = inscription.place;
   const retour = retourVers(annonce.id);
 
-  if (!rlPeutAgir(annonce)) retour("Ce raid n'est plus modifiable.");
-  if (!(STATUTS_EN_ATTENTE as readonly string[]).includes(inscription.statut)) {
-    retour("Cette candidature n'est plus en attente.");
-  }
-  if (await dejaConfirmeAilleurs(inscription.utilisateurId, annonce)) {
-    retour("Ce joueur a déjà été confirmé dans un autre raid sur ce créneau.");
-  }
+  if (!rlPeutAgir(annonce)) retour(d.erreur.plusModifiable);
+  if (!(STATUTS_EN_ATTENTE as readonly string[]).includes(inscription.statut)) retour(d.erreur.plusEnAttente);
+  if (await dejaConfirmeAilleurs(inscription.utilisateurId, annonce)) retour(d.erreur.joueurDejaConfirme);
   const role = String(form.get("role") ?? "") as Role;
-  if (!rolesProposes(inscription).includes(role)) retour("Ce joueur n'a pas proposé ce rôle.");
+  if (!rolesProposes(inscription).includes(role)) retour(d.erreur.rolePasPropose);
 
   await db.$transaction(async (tx) => {
     // Le joueur prend n'importe quelle place ouverte compatible (la sienne en priorité).
@@ -256,13 +252,12 @@ export async function accepter(form: FormData) {
 
 export async function refuser(form: FormData) {
   const inscription = await candidaturePourRl(form);
+  const d = await dicoCourant();
   const { annonce } = inscription.place;
   const retour = retourVers(annonce.id);
 
-  if (!rlPeutAgir(annonce)) retour("Ce raid n'est plus modifiable.");
-  if (!estActive(inscription.statut) || inscription.statut === "CONFIRME") {
-    retour("Cette candidature n'est plus en attente.");
-  }
+  if (!rlPeutAgir(annonce)) retour(d.erreur.plusModifiable);
+  if (!estActive(inscription.statut) || inscription.statut === "CONFIRME") retour(d.erreur.plusEnAttente);
   await db.$transaction([
     db.inscription.update({ where: { id: inscription.id }, data: { statut: "REFUSE" } }),
     db.notification.create({
@@ -276,17 +271,18 @@ export async function refuser(form: FormData) {
 
 export async function annuler(form: FormData) {
   const utilisateur = await exigerUtilisateur();
+  const d = await dicoCourant();
   const annonceId = String(form.get("annonceId") ?? "");
   const retour = retourVers(annonceId);
 
-  if (form.get("confirmation") !== "on") retour("Coche la case de confirmation pour annuler le raid.");
+  if (form.get("confirmation") !== "on") retour(d.erreur.confirmerAnnulation);
 
   const annonce = await db.annonce.findFirst({
     where: { id: annonceId, createurId: utilisateur.id },
     include: { places: { select: { statut: true } } },
   });
   if (!annonce) notFound();
-  if (!accepteCandidatures(annonce)) retour("Ce raid ne peut plus être annulé.");
+  if (!accepteCandidatures(annonce)) retour(d.erreur.plusAnnulable);
 
   // On enregistre les faits ; la réputation se calculera à la lecture (règle 3).
   // Le filtre sur le statut évite une double annulation simultanée.
@@ -314,17 +310,18 @@ export async function annuler(form: FormData) {
 
 export async function envoyerLesInvitations(form: FormData) {
   const utilisateur = await exigerUtilisateur();
+  const d = await dicoCourant();
   const annonceId = String(form.get("annonceId") ?? "");
   const retour = retourVers(annonceId);
 
-  if (form.get("confirmation") !== "on") retour("Coche la case de confirmation pour envoyer les invitations.");
+  if (form.get("confirmation") !== "on") retour(d.erreur.confirmerInvitations);
   const annonce = await db.annonce.findFirst({ where: { id: annonceId, createurId: utilisateur.id } });
   if (!annonce) notFound();
-  if (!rlPeutAgir(annonce)) retour("Ce raid n'est plus modifiable.");
+  if (!rlPeutAgir(annonce)) retour(d.erreur.plusModifiable);
   const aInviter = await db.inscription.count({
     where: { statut: "CONFIRME", invitationEnvoyeeLe: null, place: { annonceId: annonce.id } },
   });
-  if (aInviter === 0) retour("Tous les joueurs confirmés ont déjà reçu l'invitation.");
+  if (aInviter === 0) retour(d.erreur.tousInvites);
 
   // Date du premier envoi ; ensuite, seuls les joueurs pas encore invités reçoivent un MP.
   if (!annonce.invitationsEnvoyeesLe) {
@@ -339,6 +336,7 @@ const RESULTATS = ["PRESENT", "ABSENT", "PARTI_EN_COURS"] as const;
 
 export async function enregistrerPresences(form: FormData) {
   const utilisateur = await exigerUtilisateur();
+  const d = await dicoCourant();
   const annonceId = String(form.get("annonceId") ?? "");
   const retour = retourVers(annonceId);
   const valider = form.get("valider") === "1";
@@ -349,8 +347,8 @@ export async function enregistrerPresences(form: FormData) {
   });
   if (!annonce) notFound();
   const etat = etatPresences(annonce);
-  if (!etat.modifiable) retour("La feuille de présence n'est pas modifiable.");
-  if (valider && !etat.validable) retour("Tu pourras valider la fin du raid une fois l'heure de fin passée.");
+  if (!etat.modifiable) retour(d.erreur.presencesFigees);
+  if (valider && !etat.validable) retour(d.erreur.finPasPassee);
 
   const confirmes = annonce.places.flatMap((p) => p.inscriptions).filter((i) => i.personnageId);
   await db.$transaction(async (tx) => {
@@ -390,6 +388,7 @@ export async function enregistrerPresences(form: FormData) {
  */
 export async function seDesinscrire(form: FormData) {
   const utilisateur = await exigerUtilisateur();
+  const d = await dicoCourant();
   const inscription = await db.inscription.findFirst({
     where: { id: String(form.get("inscriptionId") ?? ""), utilisateurId: utilisateur.id },
     include: { place: { include: { annonce: { include: { createur: true } } } } },
@@ -398,8 +397,8 @@ export async function seDesinscrire(form: FormData) {
   const { annonce } = inscription.place;
   const retour = form.get("depuis") === "liste" ? retourListe(form) : retourVers(annonce.id);
 
-  if (!estActive(inscription.statut)) retour("Tu n'es plus inscrit à ce raid.");
-  if (!accepteCandidatures(annonce)) retour("Ce raid a commencé ou n'est plus actif : tu ne peux plus te désinscrire.");
+  if (!estActive(inscription.statut)) retour(d.erreur.plusInscrit);
+  if (!accepteCandidatures(annonce)) retour(d.erreur.tropTardPourPartir);
   const etaitConvie = inscription.statut === "CONFIRME";
 
   await db.$transaction(async (tx) => {
@@ -429,12 +428,13 @@ export async function seDesinscrire(form: FormData) {
     }
   });
 
-  // Le RL est prévenu en MP Discord, comme sur le site.
+  // Le RL est prévenu en MP Discord, comme sur le site (dans sa langue).
   if (etaitConvie) {
     after(async () => {
       const place = await db.place.findUnique({ where: { id: inscription.placeId } });
       if (place?.statut !== "OUVERTE") return; // un remplaçant a pris la place : rien à signaler
-      const texte = texteNotification("DESISTEMENT", annonce, annonce.createur.fuseauHoraire);
+      const dRl = dico(annonce.createur.langueSite);
+      const texte = texteNotification("DESISTEMENT", annonce, annonce.createur.fuseauHoraire, dRl);
       await envoyerMp(annonce.createur.discordId, `${texte}\n${URL_SITE}/annonces/${annonce.id}`);
     });
   }

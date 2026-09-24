@@ -30,19 +30,14 @@ export function calculer(evenements: Evenement[], maintenant: number) {
 
 export type Fiabilite = ReturnType<typeof calculer>;
 
+/** Niveau de fiabilité (le libellé est dans le dictionnaire : d.fiabilite[niveau]). */
 export function badge({ score, nombre }: Fiabilite) {
-  if (nombre < RAIDS_MINIMUM) return { icone: "🆕", niveau: "nouveau", libelle: "Nouveau", pourcent: null };
+  if (nombre < RAIDS_MINIMUM) return { niveau: "nouveau" as const, pourcent: null };
   const pourcent = Math.round(score * 100);
-  if (pourcent >= 90) return { icone: "🟢", niveau: "tres-fiable", libelle: "Très fiable", pourcent };
-  if (pourcent >= 75) return { icone: "🔵", niveau: "fiable", libelle: "Fiable", pourcent };
-  if (pourcent >= 60) return { icone: "🟠", niveau: "irregulier", libelle: "Irrégulier", pourcent };
-  return { icone: "🔴", niveau: "peu-fiable", libelle: "Peu fiable", pourcent };
-}
-
-/** « 🟢 Très fiable 92 % » ou « 🆕 Nouveau ». */
-export function texteBadge(f: Fiabilite) {
-  const b = badge(f);
-  return `${b.icone} ${b.libelle}${b.pourcent === null ? "" : ` ${b.pourcent} %`}`;
+  if (pourcent >= 90) return { niveau: "tres-fiable" as const, pourcent };
+  if (pourcent >= 75) return { niveau: "fiable" as const, pourcent };
+  if (pourcent >= 60) return { niveau: "irregulier" as const, pourcent };
+  return { niveau: "peu-fiable" as const, pourcent };
 }
 
 /**

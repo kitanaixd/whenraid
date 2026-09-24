@@ -3,12 +3,13 @@
 import { useState } from "react";
 import type { Classe, Contenu, Role } from "@/generated/prisma/enums";
 import { MAX_EXIGENCES, rolesParClasse } from "@/lib/jeu";
-import { libelleClasse, libelleRole, options } from "@/lib/libelles";
+import { options } from "@/lib/libelles";
 import { nomRaid, raids } from "@/lib/raids";
 import { NomClasse, NomRole, RoleIcone } from "@/app/ClasseIcone";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
+import { useDico } from "@/app/Langue";
 
-const tousLesRoles = Object.keys(libelleRole) as Role[];
+const tousLesRoles: Role[] = ["TANK", "SOIGNEUR", "DPS"];
 const cle = (classe: Classe, role: Role) => `${classe}.${role}`;
 
 /**
@@ -17,6 +18,7 @@ const cle = (classe: Classe, role: Role) => `${classe}.${role}`;
  * `personnage` est le choix du personnage, rendu par la page serveur.
  */
 export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage: React.ReactNode }) {
+  const d = useDico();
   const [contenu, setContenu] = useState<Contenu>("MONT_HYJAL_10");
   const [compo, setCompo] = useState<Record<string, number>>({});
   const [lignes, setLignes] = useState<number[]>([0]);
@@ -48,27 +50,27 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
     <>
       <div className="rangee rangee-raid">
         <label className="champ">
-          Raid
+          {d.champ.raid}
           <select name="contenu" required value={contenu} onChange={(e) => setContenu(e.target.value as Contenu)}>
             {options(raids).map(([v]) => (
               <option key={v} value={v}>
-                {nomRaid(v)}
+                {nomRaid(v, d)}
               </option>
             ))}
           </select>
         </label>
         <label className="champ">
-          Date
+          {d.creation.date}
           <input type="date" name="date" required />
         </label>
         <label className="champ">
           <span>
-            Heure <small className="fuseau">({fuseau})</small>
+            {d.creation.heure} <small className="fuseau">({fuseau})</small>
           </span>
           <input type="time" name="heure" required defaultValue="21:00" />
         </label>
         <label className="champ">
-          Durée
+          {d.champ.duree}
           <select name="dureeHeures" defaultValue="3">
             {[1, 2, 3, 4, 5, 6].map((h) => (
               <option key={h} value={h}>
@@ -81,27 +83,23 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
 
       {personnage}
 
-      <h2>Ta compo actuelle</h2>
+      <h2>{d.creation.compoActuelle}</h2>
       <div className="compteur-compo" aria-live="polite">
-        <span title="Tanks">
+        <span title={d.rolesPluriel.TANK}>
           <RoleIcone role="TANK" taille={24} /> {totalRole("TANK")}
         </span>
         <span className="separateur">/</span>
-        <span title="Soigneurs">
+        <span title={d.rolesPluriel.SOIGNEUR}>
           <RoleIcone role="SOIGNEUR" taille={24} /> {totalRole("SOIGNEUR")}
         </span>
         <span className="separateur">/</span>
-        <span title="DPS">
+        <span title={d.rolesPluriel.DPS}>
           <RoleIcone role="DPS" taille={24} /> {totalRole("DPS")}
         </span>
         <strong>
           {joueurs}/{taille}
         </strong>
-        <small>
-          {joueurs >= taille
-            ? "Ton raid est déjà plein : il ne reste aucune place à ouvrir."
-            : `Il reste ${places} place${places > 1 ? "s" : ""} à pourvoir. Compte-toi dedans.`}
-        </small>
+        <small>{joueurs >= taille ? d.creation.raidPlein : d.creation.placesRestantes(places)}</small>
       </div>
       <table className="tableau-compo">
         <thead>
@@ -115,38 +113,38 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
           </tr>
         </thead>
         <tbody>
-          {options(libelleClasse).map(([classe]) => (
+          {options(d.classe).map(([classe]) => (
             <tr key={classe}>
               <th scope="row">
-                <NomClasse classe={classe as Classe} />
+                <NomClasse classe={classe} />
               </th>
               {tousLesRoles.map((role) =>
-                rolesParClasse[classe as Classe].includes(role) ? (
+                rolesParClasse[classe].includes(role) ? (
                   <td key={role}>
                     <div className="compteur-pas">
                       <button
                         type="button"
                         className="pas"
-                        onClick={() => changer(classe as Classe, role, -1)}
-                        disabled={nombre(classe as Classe, role) === 0}
-                        aria-label={`Retirer un ${libelleClasse[classe as Classe]} ${libelleRole[role]}`}
+                        onClick={() => changer(classe, role, -1)}
+                        disabled={nombre(classe, role) === 0}
+                        aria-label={d.creation.retirerUn(d.classe[classe], d.role[role])}
                       >
                         −
                       </button>
                       <input
                         type="number"
                         name={`compo.${classe}.${role}`}
-                        value={nombre(classe as Classe, role)}
+                        value={nombre(classe, role)}
                         readOnly
                         tabIndex={-1}
-                        aria-label={`${libelleClasse[classe as Classe]} ${libelleRole[role]}`}
+                        aria-label={`${d.classe[classe]} ${d.role[role]}`}
                       />
                       <button
                         type="button"
                         className="pas"
-                        onClick={() => changer(classe as Classe, role, 1)}
+                        onClick={() => changer(classe, role, 1)}
                         disabled={joueurs >= taille}
-                        aria-label={`Ajouter un ${libelleClasse[classe as Classe]} ${libelleRole[role]}`}
+                        aria-label={d.creation.ajouterUn(d.classe[classe], d.role[role])}
                       >
                         +
                       </button>
@@ -163,8 +161,8 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
         </tbody>
       </table>
 
-      <h2>Besoins précis</h2>
-      <p className="doux">Facultatif. Les places sans exigence restent ouvertes à toute classe et tout rôle.</p>
+      <h2>{d.creation.besoins}</h2>
+      <p className="doux">{d.creation.besoinsAide}</p>
       {lignes.map((l) => (
         <div key={l} className="ligne-besoin">
           <input
@@ -173,27 +171,27 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
             min={0}
             max={places}
             defaultValue={0}
-            aria-label="Nombre de places"
+            aria-label={d.creation.nombrePlaces}
             onChange={(e) => setExigences({ ...exigences, [l]: Number(e.target.value) || 0 })}
           />
-          <span>place(s) pour</span>
+          <span>{d.creation.placesPour}</span>
           <div className="besoin-classe">
             <MenuDeroulant
               name={`exigences.${l}.classe`}
-              etiquette="Classe"
+              etiquette={d.champ.classe}
               options={[
-                { valeur: "", libelle: "toute classe" },
-                ...options(libelleClasse).map(([v, lib]) => ({ valeur: v, libelle: lib, classe: v })),
+                { valeur: "", libelle: d.commun.touteClasseMin },
+                ...options(d.classe).map(([v, lib]) => ({ valeur: v, libelle: lib, classe: v })),
               ]}
             />
           </div>
           <div className="besoin-role">
             <MenuDeroulant
               name={`exigences.${l}.role`}
-              etiquette="Rôle"
+              etiquette={d.champ.role}
               options={[
-                { valeur: "", libelle: "tout rôle" },
-                ...options(libelleRole).map(([v, lib]) => ({ valeur: v, libelle: lib, role: v })),
+                { valeur: "", libelle: d.commun.toutRoleMin },
+                ...options(d.role).map(([v, lib]) => ({ valeur: v, libelle: lib, role: v })),
               ]}
             />
           </div>
@@ -201,7 +199,7 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
             <button
               type="button"
               className="pas"
-              aria-label="Retirer ce besoin"
+              aria-label={d.creation.retirerBesoin}
               onClick={() => setLignes(lignes.filter((x) => x !== l))}
             >
               ✕
@@ -218,20 +216,11 @@ export function ChoixCompo({ fuseau, personnage }: { fuseau: string; personnage:
             setProchaineLigne(prochaineLigne + 1);
           }}
         >
-          + Ajouter un besoin
+          {d.creation.ajouterBesoin}
         </button>
       )}
-      {exigees > places && (
-        <p role="alert">
-          ⚠ Tu demandes {exigees} places précises, mais il n&apos;en reste que {places}.
-        </p>
-      )}
-      {exigees < places && (
-        <p className="doux">
-          {places - exigees} place{places - exigees > 1 ? "s" : ""} libre{places - exigees > 1 ? "s" : ""} (toute
-          classe, tout rôle).
-        </p>
-      )}
+      {exigees > places && <p role="alert">{d.creation.tropDemandees(exigees, places)}</p>}
+      {exigees < places && <p className="doux">{d.creation.placesLibres(places - exigees)}</p>}
     </>
   );
 }

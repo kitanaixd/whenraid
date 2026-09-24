@@ -18,6 +18,7 @@ import { LigneRaid, type Marque } from "./LigneRaid";
 import { candidater, seDesinscrire } from "./annonces/[id]/actions";
 import { BoutonDesinscrire } from "./annonces/[id]/BoutonDesinscrire";
 import { nomEnJeu, rolePossible } from "@/lib/jeu";
+import { dicoCourant } from "@/lib/langue";
 
 const DUREES_MAX = [2, 3, 4, 6];
 
@@ -28,19 +29,18 @@ function lendemain(date: string) {
 }
 
 export default async function Accueil({ searchParams }: PageProps<"/">) {
-  const utilisateur = await utilisateurConnecte();
+  const [utilisateur, d] = await Promise.all([utilisateurConnecte(), dicoCourant()]);
 
   if (!utilisateur) {
     return (
       <main className="accueil-visiteur">
         <Image src="/logo.webp" alt="Logo WhenRaid" width={315} height={256} priority />
-        <p className="surtitre">Le rendez-vous des raids de WoW Forever</p>
+        <p className="surtitre">{d.accueil.visiteurSurtitre}</p>
         <h1>WhenRaid</h1>
-        <div className="ornement" aria-hidden="true">◆</div>
-        <p className="accroche">
-          Ton groupe cherche un soigneur pour ce soir ? Tu cherches un raid qui a besoin de ta classe ? Trouvez-vous
-          en quelques clics.
-        </p>
+        <div className="ornement" aria-hidden="true">
+          ◆
+        </div>
+        <p className="accroche">{d.accueil.accroche}</p>
         <form
           action={async () => {
             "use server";
@@ -48,11 +48,11 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
           }}
         >
           <button type="submit" className="principal">
-            Se connecter avec Discord
+            {d.accueil.seConnecter}
           </button>
         </form>
         <p>
-          <small>En te connectant, tu rejoins le serveur Discord WhenRaid, qui t&apos;envoie tes convocations.</small>
+          <small>{d.accueil.rejoindreDiscord}</small>
         </p>
       </main>
     );
@@ -128,7 +128,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
       <BoutonDesinscrire
         action={seDesinscrire}
         inscriptionId={i.id}
-        resume={`${nomRaid(a.contenu)} — ${afficherDate(a.debutUtc, fuseau)}`}
+        resume={`${nomRaid(a.contenu, d)} — ${afficherDate(a.debutUtc, fuseau, d)}`}
         convie={i.statut === "CONFIRME"}
         retourListe={requete}
       />
@@ -137,27 +137,29 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
 
   /** Ce qui distingue un raid où je suis inscrit ou que j'organise. */
   const marqueDe = (annonceId: string, createurId: string): Marque | undefined => {
-    if (createurId === utilisateur.id) return { type: "organise", texte: "★ Votre raid" };
+    if (createurId === utilisateur.id) return { type: "organise", texte: d.accueil.votreRaid };
     const i = monInscription.get(annonceId);
     if (!i) return undefined;
     const perso = i.personnage ? { classe: i.personnage.classe, nom: nomEnJeu(i.personnage) } : undefined;
-    if (i.statut === "CONFIRME") return { type: "convie", texte: "✔ Convié", perso };
-    if (i.statut === "LISTE_ATTENTE") return { type: "attente", texte: "Réserve", perso };
-    return { type: "candidat", texte: "⏳ Liste d'attente", perso };
+    if (i.statut === "CONFIRME") return { type: "convie", texte: d.accueil.convie, perso };
+    if (i.statut === "LISTE_ATTENTE") return { type: "attente", texte: d.accueil.reserve, perso };
+    return { type: "candidat", texte: d.accueil.listeAttente, perso };
   };
 
   return (
     <main>
       <header className="accueil-connecte">
         <p className="surtitre">WoW Forever · {utilisateur.pseudo}</p>
-        <h1>Trouve ton prochain raid</h1>
-        <div className="ornement" aria-hidden="true">◆</div>
+        <h1>{d.accueil.titre}</h1>
+        <div className="ornement" aria-hidden="true">
+          ◆
+        </div>
       </header>
 
       {(convocations.length > 0 || candidatures.length > 0 || organises.length > 0) && (
         <section className="parchemin" aria-labelledby="titre-mes-raids">
-          <p className="surtitre">Organisés, convocations, candidatures</p>
-          <h2 id="titre-mes-raids">Tes raids</h2>
+          <p className="surtitre">{d.accueil.tesRaidsSurtitre}</p>
+          <h2 id="titre-mes-raids">{d.accueil.tesRaids}</h2>
           <ul className="liste-raids">
             {organises.map((a) => {
               const n = resumeLigneRaid(a).enAttente;
@@ -167,11 +169,12 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   compact
                   annonce={a}
                   fuseau={fuseau}
+                  d={d}
                   lien={`/annonces/${a.id}`}
                   marque={{
                     type: "organise",
-                    texte: "★ Votre raid",
-                    detail: n > 0 ? `${n} candidature${n > 1 ? "s" : ""}` : undefined,
+                    texte: d.accueil.votreRaid,
+                    detail: n > 0 ? d.accueil.candidatures(n) : undefined,
                   }}
                 />
               );
@@ -182,6 +185,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 compact
                 annonce={i.place.annonce}
                 fuseau={fuseau}
+                d={d}
                 lien={`/annonces/${i.place.annonce.id}`}
                 marque={marqueDe(i.place.annonce.id, i.place.annonce.createurId)}
                 action={annulation(i.place.annonce.id)}
@@ -192,8 +196,8 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
       )}
 
       <section className="parchemin" aria-labelledby="titre-raids">
-        <p className="surtitre">Ce soir et les jours à venir</p>
-        <h2 id="titre-raids">Raids qui recrutent</h2>
+        <p className="surtitre">{d.accueil.raidsSurtitre}</p>
+        <h2 id="titre-raids">{d.accueil.raidsTitre}</h2>
         {typeof erreur === "string" && erreur && (
           <p className="avertissement grave" role="alert">
             ⚠ {erreur}
@@ -201,127 +205,124 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
         )}
         {personnages.length === 0 ? (
           <div className="encadre appel-perso">
-            <p>
-              Déclare ton premier personnage pour voir les raids qui te correspondent : faction, ruleset, région,
-              classe et niveau.
-            </p>
+            <p>{d.accueil.declarePerso}</p>
             <Link href="/personnages" className="bouton principal">
-              Créer mon personnage
+              {d.accueil.creerPerso}
             </Link>
           </div>
         ) : (
           <>
-          <nav className="choix-perso" aria-label="Personnage pour lequel chercher un raid">
-            <p className="etiquette-place">Je cherche un raid pour</p>
-            <ul>
-              {personnages.map((p) => (
-                <li key={p.id}>
-                  <Link
-                    href={lienPerso(p.id)}
-                    className={`perso-choix ${p.id === perso?.id ? "choisi" : ""}`}
-                    aria-current={p.id === perso?.id ? "true" : undefined}
-                  >
-                    <ClasseIcone classe={p.classe} taille={26} />
-                    <span className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
-                      {nomEnJeu(p)}
-                    </span>
-                    <FactionIcone faction={p.faction} taille={18} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
-          {perso && (
-            /* Candidature rapide : rôle(s) et note choisis une fois, puis « Candidater » sur chaque raid.
-               Les boutons des lignes envoient ce formulaire avec l'identifiant de leur raid. */
-            <form id="candidature-rapide" action={candidater} className="candidature-rapide">
-              <input type="hidden" name="personnageId" value={perso.id} />
-              <input type="hidden" name="depuis" value="liste" />
-              <input type="hidden" name="retour" value={requete} />
-              <p className="etiquette-place">Candidature rapide avec {nomEnJeu(perso)}</p>
-              <div className="rapide-champs">
-                <fieldset className="rapide-roles">
-                  <legend className="sr-only">Rôles proposés</legend>
-                  {rolesPerso.map((r, n) => (
-                    <label key={r} className="case-role">
-                      <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
-                      <NomRole role={r} taille={20} />
-                    </label>
+            <nav className="choix-perso" aria-label={d.accueil.chercheRaidPourAria}>
+              <p className="etiquette-place">{d.accueil.chercheRaidPour}</p>
+              <ul>
+                {personnages.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={lienPerso(p.id)}
+                      className={`perso-choix ${p.id === perso?.id ? "choisi" : ""}`}
+                      aria-current={p.id === perso?.id ? "true" : undefined}
+                    >
+                      <ClasseIcone classe={p.classe} taille={26} />
+                      <span className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
+                        {nomEnJeu(p)}
+                      </span>
+                      <FactionIcone faction={p.faction} taille={18} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            {perso && (
+              /* Candidature rapide : rôle(s) et note choisis une fois, puis « Candidater » sur chaque raid.
+                 Les boutons des lignes envoient ce formulaire avec l'identifiant de leur raid. */
+              <form id="candidature-rapide" action={candidater} className="candidature-rapide">
+                <input type="hidden" name="personnageId" value={perso.id} />
+                <input type="hidden" name="depuis" value="liste" />
+                <input type="hidden" name="retour" value={requete} />
+                <p className="etiquette-place">{d.accueil.rapide(nomEnJeu(perso))}</p>
+                <div className="rapide-champs">
+                  <fieldset className="rapide-roles">
+                    <legend className="sr-only">{d.accueil.rolesProposes}</legend>
+                    {rolesPerso.map((r, n) => (
+                      <label key={r} className="case-role">
+                        <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
+                        <NomRole role={r} taille={20} />
+                      </label>
+                    ))}
+                  </fieldset>
+                  <label className="champ rapide-note">
+                    {d.accueil.noteRl} <small className="fuseau">{d.accueil.noteRlAide}</small>
+                    <input name="note" maxLength={80} placeholder={d.accueil.notePlaceholder} />
+                  </label>
+                </div>
+              </form>
+            )}
+            <form className="filtres" method="get" role="search" aria-label={d.accueil.filtrerAria}>
+              {perso && <input type="hidden" name="perso" value={perso.id} />}
+              <label className="champ">
+                {d.champ.raid}
+                <select name="raid" defaultValue={contenu ?? ""}>
+                  <option value="">{d.accueil.tousLesRaids}</option>
+                  {(Object.keys(raids) as Contenu[]).map((c) => (
+                    <option key={c} value={c}>
+                      {nomRaid(c, d)}
+                    </option>
                   ))}
-                </fieldset>
-                <label className="champ rapide-note">
-                  Note pour les RL <small className="fuseau">(facultatif, envoyée avec chaque candidature)</small>
-                  <input name="note" maxLength={80} placeholder="Ex. : stuff T2, dispo jusqu'à minuit" />
-                </label>
+                </select>
+              </label>
+              <label className="champ">
+                {d.accueil.du}
+                <input type="date" name="du" defaultValue={du} />
+              </label>
+              <label className="champ">
+                {d.accueil.au}
+                <input type="date" name="au" defaultValue={au} />
+              </label>
+              <label className="champ">
+                {d.accueil.duree}
+                <select name="duree" defaultValue={dureeMax ?? ""}>
+                  <option value="">{d.accueil.toutes}</option>
+                  {DUREES_MAX.map((h) => (
+                    <option key={h} value={h}>
+                      {d.accueil.heuresMax(h)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="filtres-boutons">
+                <button type="submit" className="principal petit">
+                  {d.accueil.filtrer}
+                </button>
+                {filtreActif && (
+                  <Link href={perso ? `/?perso=${perso.id}` : "/"} className="bouton petit">
+                    {d.accueil.effacer}
+                  </Link>
+                )}
               </div>
             </form>
-          )}
-          <form className="filtres" method="get" role="search" aria-label="Filtrer les raids">
-            {perso && <input type="hidden" name="perso" value={perso.id} />}
-            <label className="champ">
-              Raid
-              <select name="raid" defaultValue={contenu ?? ""}>
-                <option value="">Tous les raids</option>
-                {(Object.keys(raids) as Contenu[]).map((c) => (
-                  <option key={c} value={c}>
-                    {nomRaid(c)}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="champ">
-              Du
-              <input type="date" name="du" defaultValue={du} />
-            </label>
-            <label className="champ">
-              Au
-              <input type="date" name="au" defaultValue={au} />
-            </label>
-            <label className="champ">
-              Durée
-              <select name="duree" defaultValue={dureeMax ?? ""}>
-                <option value="">Toutes</option>
-                {DUREES_MAX.map((h) => (
-                  <option key={h} value={h}>
-                    {h} h maximum
-                  </option>
-                ))}
-              </select>
-            </label>
-            <div className="filtres-boutons">
-              <button type="submit" className="principal petit">
-                Filtrer
-              </button>
-              {filtreActif && (
-                <Link href={perso ? `/?perso=${perso.id}` : "/"} className="bouton petit">
-                  Effacer
-                </Link>
-              )}
-            </div>
-          </form>
           </>
         )}
         {personnages.length === 0 ? null : annonces.length === 0 ? (
           <p className="doux">
-            {filtreActif
-              ? "Aucun raid ne correspond à ces filtres."
-              : `Aucun raid ouvert à ${perso ? nomEnJeu(perso) : "ce personnage"} pour l'instant.`}{" "}
-            <Link href="/annonces/nouvelle">Crée le tien !</Link>
+            {filtreActif ? d.accueil.aucunFiltre : d.accueil.aucunRaid(perso ? nomEnJeu(perso) : d.accueil.ceperso)}{" "}
+            <Link href="/annonces/nouvelle">{d.accueil.creeTien}</Link>
           </p>
         ) : (
           <ul className="liste-raids">
             {annonces.map((a) => {
               const marque = marqueDe(a.id, a.createurId);
+              const libelleBouton = a.statut === "COMPLETE" ? d.accueil.reserveAria : d.accueil.candidater;
               return (
                 <LigneRaid
                   key={a.id}
                   annonce={a}
                   fuseau={fuseau}
+                  d={d}
                   lien={`/annonces/${a.id}${perso ? `?perso=${perso.id}` : ""}`}
                   marque={marque}
                   auteur={
                     <>
-                      par {a.createur.pseudo} <BadgeFiabilite fiabilite={fiabilite.get(a.createurId)} />
+                      {d.accueil.par(a.createur.pseudo)} <BadgeFiabilite fiabilite={fiabilite.get(a.createurId)} />
                     </>
                   }
                   action={
@@ -334,8 +335,8 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                         name="annonceId"
                         value={a.id}
                         className="bouton-icone principal"
-                        aria-label={a.statut === "COMPLETE" ? "Me mettre en réserve" : "Candidater"}
-                        title={a.statut === "COMPLETE" ? "Me mettre en réserve" : "Candidater"}
+                        aria-label={libelleBouton}
+                        title={libelleBouton}
                       >
                         <IconePlus />
                       </button>

@@ -3,14 +3,15 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { statsMercenaire, statsRl } from "@/lib/profil";
-import { libelleClasse, libelleFaction } from "@/lib/libelles";
 import { nomEnJeu } from "@/lib/invitations";
 import { ClasseIcone, FactionIcone } from "@/app/ClasseIcone";
 import { fiabiliteMercenaires, fiabiliteRls } from "@/lib/fiabilite";
 import { BadgeFiabilite } from "@/app/BadgeFiabilite";
+import { dicoCourant } from "@/lib/langue";
 
 export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">) {
   const moi = await exigerUtilisateur();
+  const d = await dicoCourant();
   const { id } = await params;
   const joueur = await db.utilisateur.findUnique({
     where: { id },
@@ -28,7 +29,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
   return (
     <main>
       <p>
-        <Link href="/">← Accueil</Link>
+        <Link href="/">{d.commun.accueil}</Link>
       </p>
       <h1>
         {joueur.avatarUrl && (
@@ -36,7 +37,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
           <img src={joueur.avatarUrl} alt="" width={40} height={40} style={{ verticalAlign: "middle" }} />
         )}{" "}
         {joueur.pseudo}
-        {joueur.id === moi.id && " (toi)"}
+        {joueur.id === moi.id && d.commun.toiParenthese}
       </h1>
 
       {joueur.personnages.length > 0 && (
@@ -49,13 +50,13 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
                 {nomEnJeu(p)}
               </span>{" "}
               <small>
-                {libelleClasse[p.classe]} {p.niveau} · <FactionIcone faction={p.faction} taille={16} />{" "}
-                {libelleFaction[p.faction]}
+                {d.classe[p.classe]} {p.niveau} · <FactionIcone faction={p.faction} taille={16} />{" "}
+                {d.faction[p.faction]}
                 {p.lienLogs && (
                   <>
                     {" · "}
                     <a href={p.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
-                      Logs ↗
+                      {d.commun.logs}
                     </a>
                   </>
                 )}
@@ -67,34 +68,37 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
 
       <div className="faces">
         <section className="face">
-          <h2>🛡️ Raid Leader</h2>
-          <p className="badge"><BadgeFiabilite fiabilite={fiabRl.get(joueur.id)} /></p>
+          <h2>{d.profil.raidLeader}</h2>
+          <p className="badge">
+            <BadgeFiabilite fiabilite={fiabRl.get(joueur.id)} />
+          </p>
           <dl>
-            <dt>Raids organisés</dt>
+            <dt>{d.profil.organises}</dt>
             <dd>{rl.organises}</dd>
-            <dt>Annulés à moins de 2 h du début</dt>
+            <dt>{d.profil.annulesTard}</dt>
             <dd className={rl.annulesDerniereMinute > 0 ? "alerte" : undefined}>{rl.annulesDerniereMinute}</dd>
           </dl>
         </section>
 
         <section className="face">
-          <h2>⚔️ Mercenaire</h2>
-          <p className="badge"><BadgeFiabilite fiabilite={fiabMerc.get(joueur.id)} /></p>
+          <h2>{d.profil.mercenaire}</h2>
+          <p className="badge">
+            <BadgeFiabilite fiabilite={fiabMerc.get(joueur.id)} />
+          </p>
           <dl>
-            <dt>Raids participés</dt>
+            <dt>{d.profil.participes}</dt>
             <dd>{mercenaire.participes}</dd>
-            <dt>Absences</dt>
+            <dt>{d.profil.absences}</dt>
             <dd className={mercenaire.absences > 0 ? "alerte" : undefined}>{mercenaire.absences}</dd>
-            <dt>Partis en cours de raid</dt>
+            <dt>{d.profil.partisEnCours}</dt>
             <dd>{mercenaire.partisEnCours}</dd>
-            <dt>Distinctions</dt>
+            <dt>{d.profil.distinctions}</dt>
             <dd>{mercenaire.distinctions > 0 ? `🏅 ${mercenaire.distinctions}` : 0}</dd>
           </dl>
         </section>
       </div>
       <p>
-        <small>La fiabilité est recalculée à chaque visite : chaque raid compte (présent 1, parti en cours ½, absent 0 ;
-          raid tenu 1, annulé à moins de 2 h 0), les plus récents pèsent davantage, et chacun démarre à 80 %.</small>
+        <small>{d.profil.explication}</small>
       </p>
     </main>
   );

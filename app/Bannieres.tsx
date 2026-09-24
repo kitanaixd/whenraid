@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDico } from "./Langue";
 
 type TypeBanniere =
   | "CANDIDATURE_ACCEPTEE"
@@ -13,14 +14,14 @@ type TypeBanniere =
 type Banniere = { id: string; type: TypeBanniere; texte: string; lien: string };
 type Reponse = { empreinte: string; bannieres: Banniere[] };
 
-/** Titre, symbole et couleur de chaque bannière. */
-const STYLE: Record<TypeBanniere, { titre: string; symbole: string; ton: string }> = {
-  CANDIDATURE_ACCEPTEE: { titre: "Convocation", symbole: "✔", ton: "succes" },
-  CANDIDATURE_REFUSEE: { titre: "Candidature refusée", symbole: "✕", ton: "alerte" },
-  NOUVELLE_CANDIDATURE: { titre: "Nouvelle candidature", symbole: "+", ton: "info" },
-  DESISTEMENT: { titre: "Désistement", symbole: "!", ton: "attention" },
-  RAID_ANNULE: { titre: "Raid annulé", symbole: "!", ton: "alerte" },
-  RAID_COMPLET: { titre: "Raid complet", symbole: "⏳", ton: "attention" },
+/** Symbole et couleur de chaque bannière (le titre est dans le dictionnaire : d.banniere). */
+const STYLE: Record<TypeBanniere, { symbole: string; ton: string }> = {
+  CANDIDATURE_ACCEPTEE: { symbole: "✔", ton: "succes" },
+  CANDIDATURE_REFUSEE: { symbole: "✕", ton: "alerte" },
+  NOUVELLE_CANDIDATURE: { symbole: "+", ton: "info" },
+  DESISTEMENT: { symbole: "!", ton: "attention" },
+  RAID_ANNULE: { symbole: "!", ton: "alerte" },
+  RAID_COMPLET: { symbole: "⏳", ton: "attention" },
 };
 
 const CLE = "whenraid.bannieres-vues";
@@ -52,6 +53,7 @@ function enregistrerVues(vues: Set<string>) {
 export function Bannieres() {
   const [affichees, setAffichees] = useState<Banniere[]>([]);
   const router = useRouter();
+  const d = useDico();
   const minuteries = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const derniereEmpreinte = useRef<string | null>(null);
 
@@ -111,10 +113,10 @@ export function Bannieres() {
             </span>
             {/* <a> simple : pas de préchargement, qui marquerait la notification comme lue. */}
             <a href={b.lien} className="banniere-texte" onClick={() => fermer(b.id)}>
-              <strong>{style.titre}</strong>
+              <strong>{d.banniere[b.type]}</strong>
               <span>{b.texte}</span>
             </a>
-            <button type="button" className="banniere-fermer" aria-label="Fermer" onClick={() => fermer(b.id)}>
+            <button type="button" className="banniere-fermer" aria-label={d.banniere.fermer} onClick={() => fermer(b.id)}>
               ✕
             </button>
           </div>

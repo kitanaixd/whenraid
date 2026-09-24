@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { Classe } from "@/generated/prisma/enums";
+import type { Dico } from "@/lib/i18n";
 import { afficherDate, afficherDateCourte } from "@/lib/dates";
 import { nomRaid, raids } from "@/lib/raids";
 import { resumeLigneRaid, type AnnonceLigne } from "@/lib/ligneRaid";
@@ -25,6 +26,7 @@ export function LigneRaid({
   annonce: a,
   fuseau,
   lien,
+  d,
   compact = false,
   marque,
   auteur,
@@ -33,6 +35,7 @@ export function LigneRaid({
   annonce: AnnonceLigne;
   fuseau: string;
   lien: string;
+  d: Dico;
   compact?: boolean;
   marque?: Marque;
   auteur?: ReactNode;
@@ -41,14 +44,14 @@ export function LigneRaid({
   const r = resumeLigneRaid(a);
   const taille = compact ? 18 : 34;
   const compo = (
-    <div className="compo-roles" title="Tanks · Soigneurs · DPS">
-      <span aria-label={`${r.roles.tanks} tanks`}>
+    <div className="compo-roles" title={d.accueil.compoTitre}>
+      <span aria-label={d.accueil.tanks(r.roles.tanks)}>
         <RoleIcone role="TANK" taille={taille} /> {r.roles.tanks}
       </span>
-      <span aria-label={`${r.roles.soigneurs} soigneurs`}>
+      <span aria-label={d.accueil.soigneurs(r.roles.soigneurs)}>
         <RoleIcone role="SOIGNEUR" taille={taille} /> {r.roles.soigneurs}
       </span>
-      <span aria-label={`${r.roles.dps} DPS`}>
+      <span aria-label={d.accueil.dps(r.roles.dps)}>
         <RoleIcone role="DPS" taille={taille} /> {r.roles.dps}
       </span>
       <strong>
@@ -70,18 +73,19 @@ export function LigneRaid({
       {marque.detail && <span className="doux">{marque.detail}</span>}
     </span>
   );
+  const nom = nomRaid(a.contenu, d);
 
   return (
     <li
       className={`ligne-raid ${compact ? "compacte" : ""} ${marque ? `ligne-${marque.type}` : ""}`}
       data-fond={raids[a.contenu].image}
     >
-      <Link href={lien} className="ligne-raid-lien" aria-label={`${nomRaid(a.contenu)}, ${afficherDate(a.debutUtc, fuseau)}`} />
+      <Link href={lien} className="ligne-raid-lien" aria-label={`${nom}, ${afficherDate(a.debutUtc, fuseau, d)}`} />
       <div className="ligne-raid-infos">
         {!compact && badge}
-        <h3>{nomRaid(a.contenu)}</h3>
+        <h3>{nom}</h3>
         <span className="quand">
-          {compact ? afficherDateCourte(a.debutUtc, fuseau) : afficherDate(a.debutUtc, fuseau)}
+          {compact ? afficherDateCourte(a.debutUtc, fuseau) : afficherDate(a.debutUtc, fuseau, d)}
         </span>
         {!compact && auteur && <small>{auteur}</small>}
       </div>
@@ -97,14 +101,14 @@ export function LigneRaid({
           {/* Sous la compo : « Complet », sinon les classes recherchées. */}
           {a.statut === "COMPLETE" ? (
             <div className="recherche">
-              <span className="pastille complet">Complet · liste d&apos;attente</span>
+              <span className="pastille complet">{d.accueil.complet}</span>
             </div>
           ) : (
-            <div className="recherche" aria-label="Classes recherchées">
+            <div className="recherche" aria-label={d.accueil.classesRecherchees}>
               {r.classesRecherchees.map((c) => (
                 <ClasseIcone key={c} classe={c} taille={40} />
               ))}
-              {r.placeLibre && <span className="pastille">Toutes classes</span>}
+              {r.placeLibre && <span className="pastille">{d.commun.toutesClasses}</span>}
             </div>
           )}
         </div>

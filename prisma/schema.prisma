@@ -62,6 +62,12 @@ enum Vocal {
   TEAMSPEAK
 }
 
+/// Langue de l'interface (anglais par défaut, français pour les joueurs situés en France).
+enum Langue {
+  en
+  fr
+}
+
 enum Region {
   EU
   US
@@ -129,8 +135,10 @@ model Utilisateur {
   avatarUrl     String?
   langues       String[] @default(["fr"]) // codes ISO 639-1
   fuseauHoraire String   @default("Europe/Paris") // IANA, pour l'affichage uniquement
-  region        Region?
-  creeLe        DateTime @default(now()) @db.Timestamptz(3)
+  langueSite    Langue   @default(en) // langue du site et des MP Discord
+
+  region Region?
+  creeLe DateTime @default(now()) @db.Timestamptz(3)
 
   personnages    Personnage[]
   groupes        Groupe[]

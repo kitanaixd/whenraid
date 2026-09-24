@@ -2,6 +2,7 @@ import NextAuth, { type DefaultSession } from "next-auth";
 import Discord from "next-auth/providers/discord";
 import { db } from "@/lib/db";
 import { ajouterAuServeur } from "@/lib/discord";
+import { langueCourante } from "@/lib/langue";
 
 declare module "next-auth" {
   interface Session {
@@ -40,7 +41,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const avatarUrl = urlAvatarDiscord(discordId, (profile.avatar as string | null) ?? null);
         const utilisateur = await db.utilisateur.upsert({
           where: { discordId },
-          create: { discordId, pseudo, avatarUrl },
+          // Nouveau compte : langue choisie sur le site, sinon français si situé en France, sinon anglais.
+          create: { discordId, pseudo, avatarUrl, langueSite: await langueCourante() },
           update: { pseudo, avatarUrl },
         });
         token.utilisateurId = utilisateur.id;

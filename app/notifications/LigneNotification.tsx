@@ -1,6 +1,7 @@
 import type { Contenu, TypeNotification } from "@/generated/prisma/enums";
 import { afficherDate } from "@/lib/dates";
 import { texteNotification } from "@/lib/notifications";
+import type { Dico } from "@/lib/i18n";
 
 /** Symbole et couleur de chaque type de notification. */
 const STYLE: Record<TypeNotification, { symbole: string; ton: string }> = {
@@ -25,16 +26,16 @@ type NotificationAffichee = {
  * Une notification : symbole de couleur, texte, date. Le lien passe par /notifications/[id],
  * qui la marque comme lue puis mène au raid concerné.
  */
-export function LigneNotification({ n, fuseau }: { n: NotificationAffichee; fuseau: string }) {
+export function LigneNotification({ n, fuseau, d }: { n: NotificationAffichee; fuseau: string; d: Dico }) {
   const style = STYLE[n.type];
   const contenu = (
     <>
       <span className={`notif-symbole ton-${style.ton}`} aria-hidden="true">
         {style.symbole}
       </span>
-      <span className="notif-texte">{texteNotification(n.type, n.annonce, fuseau)}</span>
-      <span className="notif-date">{afficherDate(n.creeLe, fuseau)}</span>
-      {!n.lue && <span className="sr-only">(non lue)</span>}
+      <span className="notif-texte">{texteNotification(n.type, n.annonce, fuseau, d)}</span>
+      <span className="notif-date">{afficherDate(n.creeLe, fuseau, d)}</span>
+      {!n.lue && <span className="sr-only">{d.notifications.nonLue}</span>}
     </>
   );
   return (

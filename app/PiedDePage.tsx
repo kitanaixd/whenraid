@@ -1,22 +1,17 @@
+import { dicoCourant } from "@/lib/langue";
+
 /**
  * Mentions exigées par la politique de Blizzard pour les sites de fans
  * (usage non commercial, notices de droits d'auteur et de marques).
  */
-export function PiedDePage() {
+export async function PiedDePage() {
+  const d = await dicoCourant();
   return (
     <footer className="pied-de-page">
+      <p>{d.pied.fan}</p>
+      <p>{d.pied.marques}</p>
       <p>
-        WhenRaid est un site de fans, gratuit et non commercial. Il n&apos;est ni affilié à Blizzard Entertainment, ni
-        approuvé par Blizzard Entertainment.
-      </p>
-      <p>
-        World of Warcraft, Warcraft et Blizzard Entertainment sont des marques commerciales ou des marques déposées de
-        Blizzard Entertainment, Inc. aux États-Unis et/ou dans d&apos;autres pays. Illustrations © Blizzard
-        Entertainment, Inc.
-      </p>
-      <p>
-        Illustration du Mont Hyjal : Peter Lee. Icônes de classe : recréations par{" "}
-        <a href="https://github.com/brutaliccus/ClassicWoWClassIcons_Circle_HighRes">brutaliccus</a>.
+        {d.pied.credits} <a href="https://github.com/brutaliccus/ClassicWoWClassIcons_Circle_HighRes">brutaliccus</a>.
       </p>
     </footer>
   );

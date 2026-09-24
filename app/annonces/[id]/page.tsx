@@ -15,16 +15,6 @@ import {
   rlPeutAgir,
 } from "@/lib/annonces";
 import {
-  libelleClasse,
-  libelleFaction,
-  libelleReglesLoot,
-  libelleRole,
-  libelleRuleset,
-  libelleStatutAnnonce,
-  libelleStatutInscription,
-  libelleVocal,
-} from "@/lib/libelles";
-import {
   accepter,
   annuler,
   candidater,
@@ -37,17 +27,18 @@ import { BoutonDesinscrire } from "./BoutonDesinscrire";
 import { BoutonInvitations } from "./BoutonInvitations";
 import { nomEnJeu } from "@/lib/invitations";
 import { placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite";
-import type { Classe, Role } from "@/generated/prisma/enums";
+import { Classe, Role } from "@/generated/prisma/enums";
 import { BoutonAnnuler } from "./BoutonAnnuler";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { ClasseIcone, NomClasse, NomRole, PastilleFaction, PastilleRuleset, RoleIcone } from "@/app/ClasseIcone";
 import { FormCandidature } from "./FormCandidature";
 import { fiabiliteMercenaires, fiabiliteRls } from "@/lib/fiabilite";
 import { BadgeFiabilite } from "@/app/BadgeFiabilite";
+import { dicoCourant } from "@/lib/langue";
 
-const NOMBRE_DE_CLASSES = Object.keys(libelleClasse).length;
-const ORDRE_ROLES = Object.keys(libelleRole);
-const ORDRE_CLASSES = Object.keys(libelleClasse);
+const NOMBRE_DE_CLASSES = Object.keys(Classe).length;
+const ORDRE_ROLES = Object.keys(Role);
+const ORDRE_CLASSES = Object.keys(Classe);
 
 // Couleur des pastilles selon le statut.
 const CLASSE_STATUT_ANNONCE: Record<string, string> = { PUBLIEE: "ouvert", COMPLETE: "complet", ANNULEE: "alerte" };
@@ -57,9 +48,9 @@ const CLASSE_STATUT_INSCRIPTION: Record<string, string> = {
   INSCRIT: "ouvert",
 };
 
-
 export default async function PageAnnonce({ params, searchParams }: PageProps<"/annonces/[id]">) {
   const utilisateur = await exigerUtilisateur();
+  const d = await dicoCourant();
   const { id } = await params;
   const { erreur, perso: persoChoisi } = await searchParams;
 
@@ -84,6 +75,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   if (!annonce) notFound();
 
   const fuseau = utilisateur.fuseauHoraire;
+  const date = (instant: Date) => afficherDate(instant, fuseau, d);
   const estRl = annonce.createurId === utilisateur.id;
   const inscriptions = annonce.places.flatMap((p) => p.inscriptions.map((i) => ({ ...i, place: p })));
   const confirmes = inscriptions.filter((i) => i.statut === "CONFIRME" && i.personnage && i.role);
@@ -170,44 +162,45 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
     .map((p) => ({ perso: p, roles: rolesPourRaid(p, annonce.places, annonce) }))
     .filter((c) => c.roles.length > 0);
   const organisateur = annonce.organisateurPersonnage;
-  const resumeRaid = `${nomRaid(annonce.contenu)} — ${afficherDate(annonce.debutUtc, fuseau)}`;
+  const resumeRaid = `${nomRaid(annonce.contenu, d)} — ${date(annonce.debutUtc)}`;
 
   return (
     <main data-fond={raids[annonce.contenu].image}>
       <Link href="/" className="retour">
-        ← Tous les raids
+        {d.commun.tousLesRaids}
       </Link>
 
       <header className="entete-raid">
         <p className="surtitre">
-          {libelleFaction[annonce.faction]} · {libelleRuleset[annonce.ruleset]} {annonce.region}
+          {d.faction[annonce.faction]} · {d.ruleset[annonce.ruleset]} {annonce.region}
         </p>
-        <h1>{nomRaid(annonce.contenu)}</h1>
+        <h1>{nomRaid(annonce.contenu, d)}</h1>
         <div className="ornement" aria-hidden="true">
           ◆
         </div>
         <p className="quand-raid">
-          {afficherDate(annonce.debutUtc, fuseau)}
-          {annonce.dureeEstimee && <span className="doux"> · environ {annonce.dureeEstimee / 60} h</span>}
+          {date(annonce.debutUtc)}
+          {annonce.dureeEstimee && <span className="doux">{d.raid.environ(annonce.dureeEstimee / 60)}</span>}
         </p>
         <div className="pastilles centre">
           <PastilleFaction faction={annonce.faction} />
           <PastilleRuleset ruleset={annonce.ruleset} region={annonce.region} />
-          <span className="pastille">Loot : {libelleReglesLoot[annonce.reglesLoot]}</span>
-          <span className="pastille">Vocal : {libelleVocal[annonce.vocal]}</span>
-          {annonce.langueRequise && (
-            <span className="pastille">{annonce.langueRequise === "fr" ? "Français" : "Anglais"}</span>
+          <span className="pastille">{d.raid.loot(d.reglesLoot[annonce.reglesLoot])}</span>
+          <span className="pastille">{d.raid.vocal(d.vocal[annonce.vocal])}</span>
+          {(annonce.langueRequise === "fr" || annonce.langueRequise === "en") && (
+            <span className="pastille">{d.langueParlee[annonce.langueRequise]}</span>
           )}
-          {annonce.niveauMin && <span className="pastille">Niveau {annonce.niveauMin}+</span>}
+          {annonce.niveauMin && <span className="pastille">{d.raid.niveauMin(annonce.niveauMin)}</span>}
           <span className={`pastille ${CLASSE_STATUT_ANNONCE[annonce.statut] ?? ""}`}>
-            {libelleStatutAnnonce[annonce.statut]}
+            {d.statutAnnonce[annonce.statut]}
           </span>
         </div>
       </header>
 
       {annonce.statut === "ANNULEE" && (
         <p className="avertissement grave" role="status">
-          Ce raid a été annulé{annonce.annuleeLe && ` le ${afficherDate(annonce.annuleeLe, fuseau)}`}.
+          {d.raid.annule}
+          {annonce.annuleeLe && d.raid.annuleLe(date(annonce.annuleeLe))}.
         </p>
       )}
       {typeof erreur === "string" && (
@@ -216,170 +209,158 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         </p>
       )}
       <div className="bloc-rl">
-      {estRl && (
-        <section className="carte espace-rl">
-          <p className="surtitre">Espace RL</p>
-          {annonce.vocal === "DISCORD" && (
-            <p>
-              Discord : <code>{annonce.vocalDiscordLien}</code>
-            </p>
-          )}
-          {annonce.vocal === "TEAMSPEAK" && (
-            <p>
-              TeamSpeak : <code>{annonce.vocalTsAdresse}</code>
-              {annonce.vocalTsMotDePasse && (
-                <>
-                  {" "}
-                  — mot de passe : <code>{annonce.vocalTsMotDePasse}</code>
-                </>
-              )}
-            </p>
-          )}
-          {annonce.vocal !== "AUCUN" && (
-            <p className="doux">
-              Visibles par toi seul : le bot les enverra en MP aux joueurs confirmés avec les invitations.
-            </p>
-          )}
-          <div className="actions-rl">
-            {rlPeutAgir(annonce) && (
-              <BoutonInvitations
-                action={envoyerLesInvitations}
-                annonceId={annonce.id}
-                resume={resumeRaid}
-                nbConfirmes={confirmes.length}
-                nbAInviter={confirmes.filter((i) => !i.invitationEnvoyeeLe).length}
-                vocal={
-                  annonce.vocal === "DISCORD"
-                    ? `Discord (${annonce.vocalDiscordLien})`
-                    : annonce.vocal === "TEAMSPEAK"
-                      ? `TeamSpeak (${annonce.vocalTsAdresse})`
-                      : "aucun"
-                }
-                commandeWhisper={organisateur ? `/w ${nomEnJeu(organisateur)} inv` : null}
-                dejaEnvoyeesLe={annonce.invitationsEnvoyeesLe && afficherDate(annonce.invitationsEnvoyeesLe, fuseau)}
-              />
+        {estRl && (
+          <section className="carte espace-rl">
+            <p className="surtitre">{d.raid.espaceRl}</p>
+            {annonce.vocal === "DISCORD" && (
+              <p>
+                Discord : <code>{annonce.vocalDiscordLien}</code>
+              </p>
             )}
-            {ouvert && (
-              <BoutonAnnuler
-                action={annuler}
-                annonceId={annonce.id}
-                resume={resumeRaid}
-                nbInscrits={confirmes.length}
-                estComplet={complet}
-              />
+            {annonce.vocal === "TEAMSPEAK" && (
+              <p>
+                TeamSpeak : <code>{annonce.vocalTsAdresse}</code>
+                {annonce.vocalTsMotDePasse && (
+                  <>
+                    {" "}
+                    — {d.raid.motDePasse} <code>{annonce.vocalTsMotDePasse}</code>
+                  </>
+                )}
+              </p>
             )}
-          </div>
-        </section>
-      )}
-
-      {estRl && presences.visible && (
-        <section id="presences" className="carte">
-          <p className="surtitre">Feuille de présence</p>
-          {annonce.presencesValideesLe ? (
-            <p className="encadre">✔ Présences validées le {afficherDate(annonce.presencesValideesLe, fuseau)}.</p>
-          ) : (
-            <p className="doux">
-              Signale les absents pendant le raid, puis valide la fin du raid une fois terminé. Tout le monde est
-              présent par défaut.
-            </p>
-          )}
-          {confirmes.length === 0 ? (
-            <p>Aucun joueur confirmé sur ce raid.</p>
-          ) : (
-            <form action={enregistrerPresences}>
-              <input type="hidden" name="annonceId" value={annonce.id} />
-              <table>
-                <thead>
-                  <tr>
-                    <th>Joueur</th>
-                    <th>Présence</th>
-                    <th>S&apos;est distingué</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {confirmes.map((i) => {
-                    const p = participationDe(i.personnageId);
-                    return (
-                      <tr key={i.id}>
-                        <td>
-                          <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)}{" "}
-                          <small>
-                            (<Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>)
-                          </small>
-                        </td>
-                        <td>
-                          <select
-                            name={`presence.${i.id}`}
-                            defaultValue={p?.resultat ?? "PRESENT"}
-                            disabled={!presences.modifiable}
-                            aria-label={`Présence de ${nomEnJeu(i.personnage!)}`}
-                          >
-                            <option value="PRESENT">Présent</option>
-                            <option value="ABSENT">Absent</option>
-                            <option value="PARTI_EN_COURS">Parti en cours</option>
-                          </select>
-                        </td>
-                        <td>
-                          <input
-                            type="checkbox"
-                            name={`distinction.${i.id}`}
-                            defaultChecked={p?.distinction ?? false}
-                            disabled={!presences.modifiable}
-                            aria-label={`${nomEnJeu(i.personnage!)} s'est distingué`}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {presences.modifiable && (
-                <div className="actions-rl">
-                  <BoutonEnvoi enCours="Enregistrement…">Enregistrer</BoutonEnvoi>
-                  {presences.validable && (
-                    <BoutonEnvoi name="valider" value="1" className="principal" enCours="Validation…">
-                      Valider la fin du raid
-                    </BoutonEnvoi>
-                  )}
-                </div>
+            {annonce.vocal !== "AUCUN" && <p className="doux">{d.raid.identifiantsPrives}</p>}
+            <div className="actions-rl">
+              {rlPeutAgir(annonce) && (
+                <BoutonInvitations
+                  action={envoyerLesInvitations}
+                  annonceId={annonce.id}
+                  resume={resumeRaid}
+                  nbConfirmes={confirmes.length}
+                  nbAInviter={confirmes.filter((i) => !i.invitationEnvoyeeLe).length}
+                  vocal={
+                    annonce.vocal === "DISCORD"
+                      ? `Discord (${annonce.vocalDiscordLien})`
+                      : annonce.vocal === "TEAMSPEAK"
+                        ? `TeamSpeak (${annonce.vocalTsAdresse})`
+                        : d.raid.aucunVocal
+                  }
+                  commandeWhisper={organisateur ? `/w ${nomEnJeu(organisateur)} inv` : null}
+                  dejaEnvoyeesLe={annonce.invitationsEnvoyeesLe && date(annonce.invitationsEnvoyeesLe)}
+                />
               )}
-            </form>
-          )}
-        </section>
-      )}
+              {ouvert && (
+                <BoutonAnnuler
+                  action={annuler}
+                  annonceId={annonce.id}
+                  resume={resumeRaid}
+                  nbInscrits={confirmes.length}
+                  estComplet={complet}
+                />
+              )}
+            </div>
+          </section>
+        )}
 
+        {estRl && presences.visible && (
+          <section id="presences" className="carte">
+            <p className="surtitre">{d.raid.feuillePresence}</p>
+            {annonce.presencesValideesLe ? (
+              <p className="encadre">{d.raid.presencesValidees(date(annonce.presencesValideesLe))}</p>
+            ) : (
+              <p className="doux">{d.raid.presencesAide}</p>
+            )}
+            {confirmes.length === 0 ? (
+              <p>{d.raid.aucunConfirme}</p>
+            ) : (
+              <form action={enregistrerPresences}>
+                <input type="hidden" name="annonceId" value={annonce.id} />
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{d.raid.joueur}</th>
+                      <th>{d.raid.presence}</th>
+                      <th>{d.raid.distingue}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {confirmes.map((i) => {
+                      const p = participationDe(i.personnageId);
+                      return (
+                        <tr key={i.id}>
+                          <td>
+                            <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)}{" "}
+                            <small>
+                              (<Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>)
+                            </small>
+                          </td>
+                          <td>
+                            <select
+                              name={`presence.${i.id}`}
+                              defaultValue={p?.resultat ?? "PRESENT"}
+                              disabled={!presences.modifiable}
+                              aria-label={d.raid.presenceDe(nomEnJeu(i.personnage!))}
+                            >
+                              <option value="PRESENT">{d.raid.present}</option>
+                              <option value="ABSENT">{d.raid.absent}</option>
+                              <option value="PARTI_EN_COURS">{d.raid.partiEnCours}</option>
+                            </select>
+                          </td>
+                          <td>
+                            <input
+                              type="checkbox"
+                              name={`distinction.${i.id}`}
+                              defaultChecked={p?.distinction ?? false}
+                              disabled={!presences.modifiable}
+                              aria-label={d.raid.aDistingue(nomEnJeu(i.personnage!))}
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {presences.modifiable && (
+                  <div className="actions-rl">
+                    <BoutonEnvoi enCours={d.commun.enregistrement}>{d.raid.enregistrer}</BoutonEnvoi>
+                    {presences.validable && (
+                      <BoutonEnvoi name="valider" value="1" className="principal" enCours={d.raid.validation}>
+                        {d.raid.validerFin}
+                      </BoutonEnvoi>
+                    )}
+                  </div>
+                )}
+              </form>
+            )}
+          </section>
+        )}
       </div>
 
       <div className="grille-raid">
         <div className="colonne-principale">
           <header className="entete-colonne">
-            <p className="surtitre">
-              {complet ? "Raid complet" : `${placesRestantes} place${placesRestantes > 1 ? "s" : ""} à pourvoir`}
-            </p>
-            <h2>Le raid</h2>
+            <p className="surtitre">{complet ? d.raid.raidComplet : d.raid.placesAPourvoir(placesRestantes)}</p>
+            <h2>{d.raid.leRaid}</h2>
           </header>
 
           <section className="carte" aria-labelledby="titre-recherche">
             <p className="surtitre" id="titre-recherche">
-              Recherché
+              {d.raid.recherche}
             </p>
             <ul className="liste-besoins">
               {besoins.map((b) => (
                 <li key={b.cle} className={`besoin ${b.ouvertes === 0 ? "besoin-pourvu" : ""}`}>
                   <div className="besoin-quoi">
                     {b.classes.length === NOMBRE_DE_CLASSES ? (
-                      <span className="place-libre">Toute classe</span>
+                      <span className="place-libre">{d.commun.toutClasse}</span>
                     ) : (
                       b.classes.map((c) => <NomClasse key={c} classe={c} taille={24} />)
                     )}
                     <span className="place-role">
-                      {b.role ? <NomRole role={b.role} taille={20} /> : "Tout rôle"}
+                      {b.role ? <NomRole role={b.role} taille={20} /> : d.commun.toutRole}
                     </span>
                   </div>
                   <span className={`pastille ${b.ouvertes === 0 ? "complet" : "ouvert"}`}>
-                    {b.ouvertes === 0
-                      ? `${b.total} pourvue${b.total > 1 ? "s" : ""}`
-                      : `${b.ouvertes} / ${b.total} à pourvoir`}
+                    {b.ouvertes === 0 ? d.raid.pourvues(b.total) : d.raid.surAPourvoir(b.ouvertes, b.total)}
                   </span>
                 </li>
               ))}
@@ -389,10 +370,10 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           {estRl ? (
             <section className="carte" aria-labelledby="titre-candidatures">
               <p className="surtitre" id="titre-candidatures">
-                Candidatures reçues · {candidatsEnAttente.length}
+                {d.raid.candidaturesRecues(candidatsEnAttente.length)}
               </p>
               {candidatsEnAttente.length === 0 ? (
-                <p className="doux">Aucune candidature en attente pour le moment.</p>
+                <p className="doux">{d.raid.aucuneCandidature}</p>
               ) : (
                 <ul className="liste-candidats">
                   {candidatsEnAttente.map((i) => (
@@ -410,7 +391,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                           >
                             {i.personnage && nomEnJeu(i.personnage)}
                           </strong>{" "}
-                          <span className="doux">niv. {i.personnage?.niveau}</span>
+                          {i.personnage && <span className="doux">{d.commun.niv(i.personnage.niveau)}</span>}
                         </div>
                         <div className="roles-proposes">
                           {i.choixRoles.map((c) => (
@@ -423,14 +404,14 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         </div>
                         {i.personnage?.lienLogs && (
                           <a href={i.personnage.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
-                            Voir ses logs (Warcraft Logs) ↗
+                            {d.raid.voirLogsWcl}
                           </a>
                         )}
                         {i.note && <blockquote className="note">« {i.note} »</blockquote>}
                       </div>
                       <div className="candidat-actions">
                         <span className={`pastille ${CLASSE_STATUT_INSCRIPTION[i.statut] ?? ""}`}>
-                          {libelleStatutInscription[i.statut]}
+                          {d.statutInscription[i.statut]}
                         </span>
                         {rlPeutAgir(annonce) && (
                           <div className="boutons">
@@ -438,18 +419,18 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                               <form key={c.role} action={accepter}>
                                 <input type="hidden" name="inscriptionId" value={i.id} />
                                 <input type="hidden" name="role" value={c.role} />
-                                <BoutonEnvoi className="petit principal" enCours="…">
+                                <BoutonEnvoi className="petit principal" enCours={d.commun.enCours}>
                                   <span className="nom-classe">
-                                    {c.ouverte ? "Accepter" : "Remplaçant"}
-                                    {i.choixRoles.length > 1 && ` · ${libelleRole[c.role]}`}
+                                    {c.ouverte ? d.raid.accepter : d.raid.remplacant}
+                                    {i.choixRoles.length > 1 && ` · ${d.role[c.role]}`}
                                   </span>
                                 </BoutonEnvoi>
                               </form>
                             ))}
                             <form action={refuser}>
                               <input type="hidden" name="inscriptionId" value={i.id} />
-                              <BoutonEnvoi className="petit" enCours="…">
-                                Refuser
+                              <BoutonEnvoi className="petit" enCours={d.commun.enCours}>
+                                {d.raid.refuser}
                               </BoutonEnvoi>
                             </form>
                           </div>
@@ -463,11 +444,11 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           ) : (
             <section className="carte" aria-labelledby="titre-candidature">
               <p className="surtitre" id="titre-candidature">
-                Candidature
+                {d.raid.candidature}
               </p>
               {maCandidature ? (
                 <p>
-                  {maCandidature.statut === "CONFIRME" ? "✔ Tu es convié" : "⏳ Ta candidature est envoyée"} avec{" "}
+                  {maCandidature.statut === "CONFIRME" ? d.raid.tuEsConvie : d.raid.candidatureEnvoyee} {d.raid.avec}{" "}
                   {maCandidature.personnage && <ClasseIcone classe={maCandidature.personnage.classe} />}{" "}
                   <strong>{maCandidature.personnage && nomEnJeu(maCandidature.personnage)}</strong>
                   {/* En attente : les rôles proposés ; convié : le rôle retenu par le RL. */}
@@ -479,9 +460,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                       </span>
                     ),
                   )}{" "}
-                  — {libelleStatutInscription[maCandidature.statut]}.
-                  {maCandidature.statut === "LISTE_ATTENTE" &&
-                    " Aucune place compatible n'est libre : peu de chances d'être pris, mais le RL peut encore t'appeler en remplaçant."}
+                  — {d.statutInscription[maCandidature.statut]}.
+                  {maCandidature.statut === "LISTE_ATTENTE" && d.raid.listeAttenteAide}
                 </p>
               ) : null}
               {maCandidature && ouvert && (
@@ -493,23 +473,16 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                 />
               )}
               {maCandidature ? null : !ouvert ? (
-                <p className="doux">Ce raid n&apos;accepte plus de candidatures.</p>
+                <p className="doux">{d.raid.plusDeCandidatures}</p>
               ) : mesPersonnages.length === 0 ? (
                 <p className="doux">
-                  Pour candidater, déclare d&apos;abord <Link href="/personnages">un personnage</Link>.
+                  {d.raid.declarePersoAvant} <Link href="/personnages">{d.raid.unPersonnage}</Link>.
                 </p>
               ) : persosCandidats.length === 0 ? (
-                <p className="doux">
-                  Aucun de tes personnages ne correspond aux places de ce raid (faction, serveur, niveau ou classe).
-                </p>
+                <p className="doux">{d.raid.aucunPersoCompatible}</p>
               ) : (
                 <>
-                  {complet && (
-                    <p className="encadre">
-                      ⚠ Ce raid est complet : si tu candidates, tu seras en liste d&apos;attente avec peu de chances
-                      d&apos;être pris. Le RL pourra quand même t&apos;appeler en remplaçant.
-                    </p>
-                  )}
+                  {complet && <p className="encadre">{d.raid.completAvertissement}</p>}
                   <FormCandidature
                     action={candidater}
                     annonceId={annonce.id}
@@ -519,7 +492,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                       id: perso.id,
                       classe: perso.classe,
                       roles,
-                      libelle: `${nomEnJeu(perso)} — ${libelleClasse[perso.classe]} niv. ${perso.niveau}`,
+                      libelle: `${nomEnJeu(perso)} — ${d.classe[perso.classe]} ${d.commun.niv(perso.niveau)}`,
                     }))}
                   />
                 </>
@@ -529,10 +502,10 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
 
           <section className="carte" aria-labelledby="titre-acceptes">
             <p className="surtitre" id="titre-acceptes">
-              Joueurs acceptés · {titulaires.length}
+              {d.raid.joueursAcceptes(titulaires.length)}
             </p>
             {titulaires.length + remplacants.length === 0 ? (
-              <p className="doux">Personne n&apos;a encore été accepté.</p>
+              <p className="doux">{d.raid.personneAccepte}</p>
             ) : (
               <ul className="liste-acceptes">
                 {[...titulaires, ...remplacants].map((i) => (
@@ -548,7 +521,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                     </span>
                     <span className="doux">
                       <NomRole role={i.role!} taille={18} />
-                      {remplacants.includes(i) && " · remplaçant"}
+                      {remplacants.includes(i) && d.raid.remplacantMin}
                       {estRl && (
                         <>
                           {" · "}
@@ -565,38 +538,32 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
 
         <aside className="colonne-compo">
           <header className="entete-colonne">
-            <p className="surtitre">
-              {compo.total}/{annonce.taille} joueurs
-            </p>
-            <h2 id="titre-compo">Compo</h2>
+            <p className="surtitre">{d.raid.joueurs(compo.total, annonce.taille)}</p>
+            <h2 id="titre-compo">{d.raid.compo}</h2>
           </header>
           <section className="carte compo-panneau" aria-labelledby="titre-compo">
             <div className="compo-chiffres">
               <div>
                 <RoleIcone role="TANK" taille={30} />
                 <strong>{roles.tanks}</strong>
-                <small>Tanks</small>
+                <small>{d.rolesPluriel.TANK}</small>
               </div>
               <div>
                 <RoleIcone role="SOIGNEUR" taille={30} />
                 <strong>{roles.soigneurs}</strong>
-                <small>Soigneurs</small>
+                <small>{d.rolesPluriel.SOIGNEUR}</small>
               </div>
               <div>
                 <RoleIcone role="DPS" taille={30} />
                 <strong>{roles.dps}</strong>
-                <small>DPS</small>
+                <small>{d.rolesPluriel.DPS}</small>
               </div>
             </div>
             <p className="compo-total">
               <strong>
                 {compo.total}/{annonce.taille}
               </strong>{" "}
-              <span className="doux">
-                {complet
-                  ? "· complet"
-                  : `· ${placesRestantes} place${placesRestantes > 1 ? "s" : ""} restante${placesRestantes > 1 ? "s" : ""}`}
-              </span>
+              <span className="doux">{complet ? d.raid.complet : d.raid.placesRestantes(placesRestantes)}</span>
             </p>
             {compoParGroupe.map((g) => (
               <div key={g.role} className="compo-groupe">
@@ -623,7 +590,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             ))}
             {remplacants.length > 0 && (
               <div className="compo-groupe">
-                <h3>Remplaçants</h3>
+                <h3>{d.raid.remplacants}</h3>
                 <ul>
                   {remplacants.map((i) => (
                     <li key={i.id}>
@@ -640,8 +607,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             )}
           </section>
 
-          <section className="carte organisateur" aria-label="Organisateur">
-            <p className="surtitre">Organisé par</p>
+          <section className="carte organisateur" aria-label={d.raid.organisateur}>
+            <p className="surtitre">{d.raid.organisePar}</p>
             {organisateur && (
               <p className="organisateur-perso">
                 <ClasseIcone classe={organisateur.classe} taille={32} />
@@ -654,8 +621,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
               </p>
             )}
             <p className="doux">
-              {estRl ? "Toi" : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>} ·{" "}
-              <BadgeFiabilite fiabilite={fiabRl.get(annonce.createurId)} />
+              {estRl ? d.commun.toi : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>}{" "}
+              · <BadgeFiabilite fiabilite={fiabRl.get(annonce.createurId)} />
             </p>
           </section>
         </aside>

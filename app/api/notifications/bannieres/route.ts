@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { utilisateurConnecte } from "@/lib/session";
 import { texteNotification } from "@/lib/notifications";
 import { STATUTS_ACTIFS } from "@/lib/annonces";
+import { dicoCourant } from "@/lib/langue";
 
 /** Types de notification affichés en bannière (les autres restent dans la cloche). */
 const EN_BANNIERE: TypeNotification[] = [
@@ -25,6 +26,7 @@ export async function GET() {
   const utilisateur = await utilisateurConnecte();
   if (!utilisateur) return Response.json({ bannieres: [], empreinte: "" }, { status: 401 });
 
+  const d = await dicoCourant();
   const actifs = { statut: { in: ["PUBLIEE" as const, "COMPLETE" as const] } };
   const [notifications, derniere, miennes, surMesRaids, mesRaids] = await Promise.all([
     db.notification.findMany({
@@ -79,7 +81,7 @@ export async function GET() {
       id: n.id,
       type: n.type,
       // Le symbole de tête (✔…) est déjà dans la bannière.
-      texte: texteNotification(n.type, n.annonce, utilisateur.fuseauHoraire).replace(/^[^\p{L}]+/u, ""),
+      texte: texteNotification(n.type, n.annonce, utilisateur.fuseauHoraire, d).replace(/^[^\p{L}]+/u, ""),
       // Ouvrir la bannière marque la notification comme lue.
       lien: `/notifications/${n.id}`,
     })),

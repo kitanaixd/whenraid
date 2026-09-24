@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { afficherDate } from "@/lib/dates";
 import { envoyerMp } from "@/lib/discord";
 import { nomRaid } from "@/lib/raids";
+import { dico, type Dico } from "@/lib/i18n";
 
 export const URL_SITE = process.env.SITE_URL ?? "https://www.whenraid.com";
 
@@ -28,18 +29,17 @@ async function chargerRaid(annonceId: string) {
 
 type Raid = NonNullable<Awaited<ReturnType<typeof chargerRaid>>>;
 
-function texteInvitation({ annonce, perso }: Raid, fuseau: string) {
-  const lignes = [`🎮 **${nomRaid(annonce.contenu)}** commence le ${afficherDate(annonce.debutUtc, fuseau)} !`];
+/** Texte de l'invitation, dans la langue (d) et le fuseau du joueur qui la reçoit. */
+function texteInvitation({ annonce, perso }: Raid, fuseau: string, d: Dico) {
+  const t = d.discord.invitation;
+  const lignes = [t.commence(nomRaid(annonce.contenu, d), afficherDate(annonce.debutUtc, fuseau, d))];
   if (annonce.vocal === "DISCORD" && annonce.vocalDiscordLien) {
-    lignes.push(`Vocal Discord : ${annonce.vocalDiscordLien}`);
+    lignes.push(t.vocalDiscord(annonce.vocalDiscordLien));
   } else if (annonce.vocal === "TEAMSPEAK" && annonce.vocalTsAdresse) {
-    lignes.push(
-      `Vocal TeamSpeak : ${annonce.vocalTsAdresse}` +
-        (annonce.vocalTsMotDePasse ? ` — mot de passe : ${annonce.vocalTsMotDePasse}` : ""),
-    );
+    lignes.push(t.vocalTs(annonce.vocalTsAdresse, annonce.vocalTsMotDePasse));
   }
   if (perso) {
-    lignes.push(`Ton RL : **${nomEnJeu(perso)}**. Pour recevoir ton invitation, copie-colle en jeu :`);
+    lignes.push(t.tonRl(nomEnJeu(perso)));
     lignes.push("```\n/w " + nomEnJeu(perso) + " inv\n```");
   }
   lignes.push(`${URL_SITE}/annonces/${annonce.id}`);
@@ -62,9 +62,13 @@ export async function envoyerInvitation(inscriptionId: string) {
   });
   if (!inscription) return;
   const raid = await chargerRaid(inscription.place.annonceId);
+  const { utilisateur } = inscription;
   const envoye =
     raid !== null &&
-    (await envoyerMp(inscription.utilisateur.discordId, texteInvitation(raid, inscription.utilisateur.fuseauHoraire)));
+    (await envoyerMp(
+      utilisateur.discordId,
+      texteInvitation(raid, utilisateur.fuseauHoraire, dico(utilisateur.langueSite)),
+    ));
   if (!envoye) await db.inscription.update({ where: { id: inscriptionId }, data: { invitationEnvoyeeLe: null } });
 }
 
@@ -79,32 +83,35 @@ export async function envoyerInvitations(annonceId: string) {
   return confirmes.length;
 }
 
-/** Rappel au RL, 15 minutes avant le raid, avec le lien vers la page du raid. */
+/** Rappel au RL, 15 minutes avant le raid, avec le lien vers la page du raid (dans sa langue). */
 export async function envoyerRappelRl(annonceId: string) {
   const raid = await chargerRaid(annonceId);
   if (!raid) return;
   const { annonce } = raid;
+  const d = dico(annonce.createur.langueSite);
   const confirmes = await db.inscription.count({ where: { statut: "CONFIRME", place: { annonceId } } });
   await envoyerMp(
     annonce.createur.discordId,
-    `⏰ Ton raid **${nomRaid(annonce.contenu)}** commence le ${afficherDate(annonce.debutUtc, annonce.createur.fuseauHoraire)}.\n` +
-      `${confirmes} joueur${confirmes > 1 ? "s" : ""} confirmé${confirmes > 1 ? "s" : ""}. ` +
-      `Envoie-leur les invitations (vocal et /w) ici :\n${URL_SITE}/annonces/${annonce.id}`,
+    d.discord.rappelRl(
+      nomRaid(annonce.contenu, d),
+      afficherDate(annonce.debutUtc, annonce.createur.fuseauHoraire, d),
+      confirmes,
+      `${URL_SITE}/annonces/${annonce.id}`,
+    ),
   );
 }
 
-/** Fin du raid : on demande au RL de valider les présences (MP + notification sur le site). */
+/** Fin du raid : on demande au RL de valider les présences (MP dans sa langue + notification sur le site). */
 export async function envoyerRappelFin(annonceId: string) {
   const raid = await chargerRaid(annonceId);
   if (!raid) return;
   const { annonce } = raid;
+  const d = dico(annonce.createur.langueSite);
   await db.notification.create({
     data: { utilisateurId: annonce.createurId, type: "VALIDER_PRESENCES", annonceId: annonce.id },
   });
   await envoyerMp(
     annonce.createur.discordId,
-    `✅ Ton raid **${nomRaid(annonce.contenu)}** est terminé !\n` +
-      `Valide les présences (et qui s'est distingué) ici :\n${URL_SITE}/annonces/${annonce.id}#presences\n` +
-      `Sans validation sous 24 h, tous les joueurs confirmés seront comptés présents.`,
+    d.discord.rappelFin(nomRaid(annonce.contenu, d), `${URL_SITE}/annonces/${annonce.id}#presences`),
   );
 }

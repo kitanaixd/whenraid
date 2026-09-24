@@ -2,6 +2,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { LigneNotification } from "./LigneNotification";
+import { dicoCourant } from "@/lib/langue";
 
 async function toutMarquerCommeLu() {
   "use server";
@@ -19,31 +20,32 @@ export default async function PageNotifications() {
     include: { annonce: { select: { id: true, contenu: true, debutUtc: true } } },
   });
   const nonLues = notifications.filter((n) => !n.lue).length;
+  const d = await dicoCourant();
 
   return (
     <main>
       <header className="accueil-connecte">
-        <p className="surtitre">{nonLues > 0 ? `${nonLues} non lue${nonLues > 1 ? "s" : ""}` : "Tout est lu"}</p>
-        <h1>Notifications</h1>
+        <p className="surtitre">{nonLues > 0 ? d.entete.nonLues(nonLues) : d.notifications.toutLu}</p>
+        <h1>{d.notifications.titre}</h1>
         <div className="ornement" aria-hidden="true">
           ◆
         </div>
       </header>
 
-      <section className="parchemin" aria-label="Notifications">
+      <section className="parchemin" aria-label={d.notifications.titre}>
         {nonLues > 0 && (
           <form action={toutMarquerCommeLu} className="notifications-actions">
             <button type="submit" className="petit">
-              Tout marquer comme lu
+              {d.notifications.toutMarquer}
             </button>
           </form>
         )}
         {notifications.length === 0 ? (
-          <p className="doux centre">Aucune notification pour l&apos;instant.</p>
+          <p className="doux centre">{d.notifications.aucune}</p>
         ) : (
           <ul className="liste-notifications">
             {notifications.map((n) => (
-              <LigneNotification key={n.id} n={n} fuseau={utilisateur.fuseauHoraire} />
+              <LigneNotification key={n.id} n={n} fuseau={utilisateur.fuseauHoraire} d={d} />
             ))}
           </ul>
         )}
