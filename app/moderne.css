@@ -1189,3 +1189,17 @@ dialog.confirmation textarea {
 .accueil-perso .perso-choix .ruleset-perso + img {
   margin-left: auto;
 }
+
+/* Liste de raids vide : message et bouton « Créer un raid ». */
+.liste-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+.liste-vide p {
+  margin: 0;
+  color: var(--texte-doux);
+}

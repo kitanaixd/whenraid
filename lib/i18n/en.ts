@@ -292,7 +292,6 @@ export const en: Dico = {
     aucunFiltre: "No raid matches these filters.",
     aucunRaid: (nom) => `No raid open to ${nom} right now.`,
     ceperso: "this character",
-    creeTien: "Create yours!",
     par: (pseudo) => `by ${pseudo}`,
     candidater: "Apply",
     reserveAria: "Join as reserve",

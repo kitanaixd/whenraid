@@ -322,7 +322,6 @@ export const fr = {
     aucunFiltre: "Aucun raid ne correspond à ces filtres.",
     aucunRaid: (nom: string) => `Aucun raid ouvert à ${nom} pour l'instant.`,
     ceperso: "ce personnage",
-    creeTien: "Crée le tien !",
     par: (pseudo: string) => `par ${pseudo}`,
     candidater: "Candidater",
     reserveAria: "Me mettre en réserve",

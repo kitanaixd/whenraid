@@ -373,10 +373,15 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               </p>
             )}
             {annonces.length === 0 ? (
-              <p className="doux">
-                {filtreActif ? d.accueil.aucunFiltre : d.accueil.aucunRaid(perso ? nomEnJeu(perso) : d.accueil.ceperso)}{" "}
-                <Link href="/annonces/nouvelle">{d.accueil.creeTien}</Link>
-              </p>
+              /* Aucun raid : un encart avec un vrai bouton pour en créer un. */
+              <div className="carte liste-vide">
+                <p>
+                  {filtreActif ? d.accueil.aucunFiltre : d.accueil.aucunRaid(perso ? nomEnJeu(perso) : d.accueil.ceperso)}
+                </p>
+                <Link href="/annonces/nouvelle" className="bouton principal">
+                  {d.entete.creerRaid}
+                </Link>
+              </div>
             ) : (
               <ul className="liste-raids">
                 {annonces.map((a) => {
