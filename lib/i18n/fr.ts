@@ -265,7 +265,7 @@ export const fr = {
     notifications: "Notifications",
     notificationsNonLues: (n: number) => `Notifications : ${n} non lue${s(n)}`,
     nonLues: (n: number) => `${n} non lue${s(n)}`,
-    aucuneNotification: "Aucune notification pour l'instant.",
+    aucuneNotification: "Aucune nouvelle notification.",
     voirToutes: "Voir toutes les notifications",
     monProfil: "Mon profil",
     mesPersonnages: "Mes personnages",

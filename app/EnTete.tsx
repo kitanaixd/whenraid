@@ -20,8 +20,9 @@ export async function EnTete() {
   const [nonLues, dernieres] = utilisateur
     ? await Promise.all([
         db.notification.count({ where: { utilisateurId: utilisateur.id, lue: false } }),
+        // Aperçu de la cloche : seulement les notifications pas encore lues.
         db.notification.findMany({
-          where: { utilisateurId: utilisateur.id },
+          where: { utilisateurId: utilisateur.id, lue: false },
           orderBy: { creeLe: "desc" },
           take: 5,
           include: { annonce: { select: { id: true, contenu: true, debutUtc: true } } },

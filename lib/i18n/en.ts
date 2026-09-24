@@ -236,7 +236,7 @@ export const en: Dico = {
     notifications: "Notifications",
     notificationsNonLues: (n) => `Notifications: ${n} unread`,
     nonLues: (n) => `${n} unread`,
-    aucuneNotification: "No notifications yet.",
+    aucuneNotification: "No new notifications.",
     voirToutes: "See all notifications",
     monProfil: "My profile",
     mesPersonnages: "My characters",
