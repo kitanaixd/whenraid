@@ -972,3 +972,16 @@ span.profil-avatar {
   flex: none;
   gap: 0.2rem;
 }
+
+/* Mes personnages : classe, faction, ruleset, région et rôles centrés sur une même ligne. */
+.liste-persos small {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.35rem;
+  row-gap: 0.2rem;
+}
+.liste-persos small > *,
+.liste-persos small img {
+  vertical-align: middle;
+}
