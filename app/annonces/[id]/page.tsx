@@ -49,6 +49,7 @@ const ORDRE_ROLES = Object.keys(Role);
 const ORDRE_CLASSES = Object.keys(Classe);
 
 // Couleur des pastilles selon le statut.
+const TYPE_STATUT: Record<string, string> = { INSCRIT: "candidat", LISTE_ATTENTE: "attente", CONFIRME: "convie" };
 const CLASSE_STATUT_ANNONCE: Record<string, string> = { PUBLIEE: "ouvert", COMPLETE: "complet", ANNULEE: "alerte" };
 const CLASSE_STATUT_INSCRIPTION: Record<string, string> = {
   CONFIRME: "succes",
@@ -551,35 +552,75 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             </section>
           ) : (
             <section className="carte" aria-labelledby="titre-candidature">
-              <p className="surtitre" id="titre-candidature">
-                {d.raid.candidature}
-              </p>
-              {maCandidature ? (
-                <p>
-                  {maCandidature.statut === "CONFIRME" ? d.raid.tuEsConvie : d.raid.candidatureEnvoyee} {d.raid.avec}{" "}
-                  {maCandidature.personnage && <ClasseIcone classe={maCandidature.personnage.classe} />}{" "}
-                  <strong>{maCandidature.personnage && nomEnJeu(maCandidature.personnage)}</strong>
-                  {/* En attente : les rôles proposés ; convié : le rôle retenu par le RL. */}
-                  {(maCandidature.statut === "CONFIRME" ? [maCandidature.role!] : rolesProposes(maCandidature)).map(
-                    (r) => (
-                      <span key={r}>
-                        {" "}
-                        <NomRole role={r} taille={18} />
-                      </span>
-                    ),
-                  )}{" "}
-                  {maCandidature.escouade && <> {d.groupes.avecGroupe(maCandidature.escouade.nom)}</>}—{" "}
-                  {d.statutInscription[maCandidature.statut]}.
-                  {maCandidature.statut === "LISTE_ATTENTE" && d.raid.listeAttenteAide}
+              <div className="candidature-tete">
+                <p className="surtitre" id="titre-candidature">
+                  {d.raid.candidature}
                 </p>
-              ) : null}
-              {maCandidature && ouvert && (
-                <BoutonDesinscrire
-                  action={seDesinscrire}
-                  inscriptionId={maCandidature.id}
-                  resume={resumeRaid}
-                  convie={maCandidature.statut === "CONFIRME"}
-                />
+                {maCandidature && (
+                  <span className={`badge-raid badge-raid-${TYPE_STATUT[maCandidature.statut] ?? "candidat"}`}>
+                    {maCandidature.statut === "CONFIRME"
+                      ? d.accueil.convie
+                      : maCandidature.statut === "LISTE_ATTENTE"
+                        ? d.accueil.reserve
+                        : d.accueil.listeAttente}
+                  </span>
+                )}
+              </div>
+              {maCandidature && (
+                <>
+                  {maCandidature.escouade && (
+                    <p className="candidature-groupe">
+                      {d.groupes.enTete(
+                        maCandidature.escouade.nom,
+                        inscriptions.filter((i) => i.escouadeId === maCandidature.escouadeId && estActive(i.statut))
+                          .length,
+                      )}
+                    </p>
+                  )}
+                  <ul className="candidature-persos">
+                    {/* Seul : mon personnage ; en groupe : tous les membres inscrits sur ce raid. */}
+                    {(maCandidature.escouadeId
+                      ? inscriptions.filter((i) => i.escouadeId === maCandidature.escouadeId && estActive(i.statut))
+                      : [maCandidature]
+                    ).map(
+                      (i) =>
+                        i.personnage && (
+                          <li key={i.id} className={i.id === maCandidature.id ? "moi" : undefined}>
+                            <ClasseIcone classe={i.personnage.classe} taille={30} />
+                            <div>
+                              <strong
+                                className="classe"
+                                style={{ "--c": `var(--classe-${i.personnage.classe})` } as React.CSSProperties}
+                              >
+                                {nomEnJeu(i.personnage)}
+                              </strong>
+                              <span className="doux">
+                                {d.classe[i.personnage.classe]} {d.commun.niv(i.personnage.niveau)}
+                                {maCandidature.escouadeId && ` · ${i.utilisateur.pseudo}`}
+                              </span>
+                            </div>
+                            {/* En attente : les rôles proposés ; convié : le rôle retenu par le RL. */}
+                            <span className="roles-proposes">
+                              {(i.statut === "CONFIRME" ? [i.role!] : rolesProposes(i)).map((r) => (
+                                <NomRole key={r} role={r} taille={18} />
+                              ))}
+                            </span>
+                          </li>
+                        ),
+                    )}
+                  </ul>
+                  {maCandidature.statut === "LISTE_ATTENTE" && <p className="doux">{d.raid.listeAttenteAide}</p>}
+                  {ouvert && (
+                    <div className="candidature-actions">
+                      <BoutonDesinscrire
+                        action={seDesinscrire}
+                        inscriptionId={maCandidature.id}
+                        resume={resumeRaid}
+                        convie={maCandidature.statut === "CONFIRME"}
+                      />
+                    </div>
+                  )}
+                </>
               )}
               {maCandidature ? null : !ouvert ? (
                 <p className="doux">{d.raid.plusDeCandidatures}</p>

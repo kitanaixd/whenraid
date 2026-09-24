@@ -1251,3 +1251,64 @@ button.pas {
   height: var(--hauteur-controle) !important;
   padding: 0 !important;
 }
+
+/* ─── Page du raid : ma candidature ───────────────────────────────────────── */
+.candidature-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+.candidature-tete .surtitre {
+  margin: 0 !important;
+}
+.candidature-groupe {
+  margin: 0 0 0.6rem;
+  font-weight: 600;
+}
+.candidature-persos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.candidature-persos li {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--surface-2);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-2);
+}
+.candidature-persos li.moi {
+  border-color: rgb(226 189 111 / 0.45);
+}
+.candidature-persos li > div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+}
+.candidature-persos li .doux {
+  font-size: 0.85rem;
+}
+.candidature-persos .roles-proposes {
+  display: inline-flex;
+  gap: 0.6rem;
+  flex: none;
+}
+.candidature-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.9rem;
+}
+.candidature-tete .surtitre {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texte);
+}
