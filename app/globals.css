@@ -3151,6 +3151,9 @@ a.filtre-actif svg {
   display: grid;
   place-items: center;
   aspect-ratio: 1;
+  /* Tous les numéros un peu plus haut : la place du nombre de raids, en bas de la case. */
+  padding-bottom: 11px;
+  line-height: 1;
   border-radius: 6px;
   font-size: 0.82rem;
   color: var(--texte-doux);
@@ -3176,17 +3179,14 @@ a.calendrier-jour.choisi {
   background: var(--or);
   border-color: var(--or);
 }
-/* Nombre de raids du jour : sous la date, dans la case, en doré. */
-a.calendrier-jour.a-raids {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.05rem;
-  line-height: 1;
-}
+/* Nombre de raids du jour : en bas de la case, en doré ; la date reste centrée comme les autres jours. */
 .calendrier-nombre {
-  font-size: 0.62rem;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  text-align: center;
+  font-size: 0.58rem;
   font-weight: 700;
   line-height: 1;
   color: var(--or);
