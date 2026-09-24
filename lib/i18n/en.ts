@@ -256,6 +256,7 @@ export const en: Dico = {
 
   // ─── Home ──────────────────────────────────────────────────────────────────
   accueil: {
+    masquerMesRaids: "Hide my raids",
     visiteurSurtitre: "Where WoW Forever raids come together",
     accroche:
       "Your group needs a healer tonight? Looking for a raid that needs your class? Find each other in a few clicks.",

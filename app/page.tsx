@@ -36,7 +36,7 @@ import { dicoCourant } from "@/lib/langue";
 
 const DUREES_MAX = [2, 3, 4, 6];
 /** Paramètres de la liste gardés d'un lien à l'autre (personnage, filtres, mois du calendrier). */
-const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q"] as const;
+const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q", "masquer"] as const;
 
 /** Texte comparable : minuscules, sans accents (« Hyjal Déjà » ≈ « hyjal deja »). */
 const sansAccents = (texte: string) =>
@@ -147,19 +147,22 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
   const monInscription = new Map([...convocations, ...candidatures].map((i) => [i.place.annonce.id, i]));
   // Un raid n'apparaît que si le personnage choisi peut y tenir une place (classe, niveau…),
   // ou s'il y a déjà candidaté.
+  // « Masquer mes raids » : sans les raids que j'organise (liste et calendrier).
+  const masquerMesRaids = valeur("masquer") === "1";
   const ouverts = perso
     ? annoncesBrutes.filter(
         (a) =>
-          monInscription.get(a.id)?.personnageId === perso.id ||
-          (groupe
-            ? groupeValide &&
-              affecterGroupe(
-                a.places,
-                groupe.membres.map((m) => ({ perso: m.personnage, roles: m.roles })),
-                a,
-                ["OUVERTE", "POURVUE"],
-              ) !== null
-            : rolesPourRaid(perso, a.places, a).length > 0),
+          !(masquerMesRaids && a.createurId === utilisateur.id) &&
+          (monInscription.get(a.id)?.personnageId === perso.id ||
+            (groupe
+              ? groupeValide &&
+                affecterGroupe(
+                  a.places,
+                  groupe.membres.map((m) => ({ perso: m.personnage, roles: m.roles })),
+                  a,
+                  ["OUVERTE", "POURVUE"],
+                ) !== null
+              : rolesPourRaid(perso, a.places, a).length > 0)),
       )
     : [];
   // Le calendrier compte les raids de chaque jour ; la liste ne garde que le jour choisi.
@@ -179,7 +182,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
   const rolesPerso = perso ? perso.rolesJouables.filter((r) => rolePossible(perso.classe, r)) : [];
   const requete = lienListe({}).replace(/^\/\??/, "");
   const erreur = valeur("erreur");
-  const filtreActif = Boolean(contenus.length > 0 || jour || dureeMax || recherche);
+  const filtreActif = Boolean(contenus.length > 0 || jour || dureeMax || recherche || masquerMesRaids);
   /** Champs cachés qui gardent les paramètres actuels de la liste, sauf `sauf`. */
   const champsCaches = (...sauf: (typeof PARAMETRES)[number][]) =>
     PARAMETRES.filter((nom) => !sauf.includes(nom) && valeur(nom)).map((nom) => (
@@ -339,7 +342,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
           <section className="accueil-centre" id="titre-raids" aria-label={d.accueil.raidsTitre}>
             {/* Choix du raid : une ligne de chips (plusieurs raids possibles), appliquée au clic. */}
             <FormulaireAuto className="filtre-raids" label={d.calendrier.choixRaid}>
-              {champsCaches("raid")}
+              {champsCaches("raid", "masquer")}
               <fieldset className="rapide-roles choix-raids">
                 <legend className="sr-only">{d.champ.raid}</legend>
                 {(Object.keys(raids) as Contenu[]).map((c) => (
@@ -348,6 +351,10 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                     {nomRaid(c, d)}
                   </label>
                 ))}
+                <label className="case-role masquer-mes-raids">
+                  <input type="checkbox" name="masquer" value="1" defaultChecked={masquerMesRaids} />
+                  {d.accueil.masquerMesRaids}
+                </label>
               </fieldset>
             </FormulaireAuto>
             {/* Recherche par titre : garde le personnage et les autres filtres. */}
@@ -444,6 +451,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                       jour: null,
                     })}
                   {recherche && filtreRetirable(d.accueil.recherche(recherche), { q: null })}
+                  {masquerMesRaids && filtreRetirable(d.accueil.masquerMesRaids, { masquer: null })}
                   {contenus.map((c) => (
                     <span key={c}>
                       {filtreRetirable(nomRaid(c, d), { raid: contenus.filter((x) => x !== c).join(",") || null })}

@@ -285,6 +285,7 @@ export const fr = {
 
   // ─── Accueil ───────────────────────────────────────────────────────────────
   accueil: {
+    masquerMesRaids: "Masquer mes raids",
     visiteurSurtitre: "Le rendez-vous des raids de WoW Forever",
     accroche:
       "Ton groupe cherche un soigneur pour ce soir ? Tu cherches un raid qui a besoin de ta classe ? Trouvez-vous en quelques clics.",
