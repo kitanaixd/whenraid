@@ -259,7 +259,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
         </section>
       ) : (
         <div className="accueil-grille">
-          {/* ─── À gauche : calendrier et durée (reste visible au défilement) ─── */}
+          {/* ─── À gauche : calendrier, durée et prochains raids (reste visible au défilement) ─── */}
           <aside className="accueil-filtres">
             <Calendrier
               mois={mois}
@@ -285,6 +285,48 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 </label>
               </FormulaireAuto>
             </Calendrier>
+            <section className="carte prochains" aria-labelledby="titre-prochains">
+              <p className="surtitre" id="titre-prochains">
+                {d.accueil.prochainsRaids}
+              </p>
+              {prochains.length === 0 ? (
+                <p className="doux">{d.accueil.aucunProchain}</p>
+              ) : (
+                <ul className="liste-prochains">
+                  {prochains.map(({ cle, annonce: a, marque, action }) => {
+                    // Bulle des candidatures : seulement sur les raids que j'organise.
+                    const enAttente = a.createurId === utilisateur.id ? resumeLigneRaid(a).enAttente : 0;
+                    return (
+                      <li key={cle} className={`prochain ligne-${marque?.type ?? ""}`}>
+                        {enAttente > 0 && (
+                          <span className="bulle-candidatures" title={d.accueil.candidatures(enAttente)}>
+                            <span aria-hidden="true">{enAttente}</span>
+                            <span className="sr-only">{d.accueil.candidatures(enAttente)}</span>
+                          </span>
+                        )}
+                        <Link href={`/annonces/${a.id}`} className="prochain-lien">
+                          <strong>{a.titre ?? nomRaid(a.contenu, d)}</strong>
+                          <span className="doux">
+                            {a.titre && `${nomRaid(a.contenu, d)} · `}
+                            {afficherDateCourte(a.debutUtc, fuseau)}
+                          </span>
+                        </Link>
+                        <div className="prochain-bas">
+                          {marque && <span className={`badge-raid badge-raid-${marque.type}`}>{marque.texte}</span>}
+                          {marque?.groupe ? (
+                            <GroupeInscrit groupe={marque.groupe} />
+                          ) : (
+                            marque?.perso && <ClasseIcone classe={marque.perso.classe} taille={18} />
+                          )}
+                          {marque?.detail && <span className="doux">{marque.detail}</span>}
+                          {action && <span className="prochain-action">{action}</span>}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
           </aside>
 
           {/* ─── Au centre : la liste des raids ─── */}
@@ -368,7 +410,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
             )}
           </section>
 
-          {/* ─── À droite : vue filtrée, personnage, candidature rapide, prochains raids (reste visible) ─── */}
+          {/* ─── À droite : vue filtrée, personnage et candidature rapide (reste visible) ─── */}
           <aside className="accueil-perso">
             {perso && (
               /* La vue est déjà filtrée sur le personnage : on le montre, avec les filtres actifs. */
@@ -514,48 +556,6 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 </label>
               </form>
             )}
-            <section className="carte prochains" aria-labelledby="titre-prochains">
-              <p className="surtitre" id="titre-prochains">
-                {d.accueil.prochainsRaids}
-              </p>
-              {prochains.length === 0 ? (
-                <p className="doux">{d.accueil.aucunProchain}</p>
-              ) : (
-                <ul className="liste-prochains">
-                  {prochains.map(({ cle, annonce: a, marque, action }) => {
-                    // Bulle des candidatures : seulement sur les raids que j'organise.
-                    const enAttente = a.createurId === utilisateur.id ? resumeLigneRaid(a).enAttente : 0;
-                    return (
-                      <li key={cle} className={`prochain ligne-${marque?.type ?? ""}`}>
-                        {enAttente > 0 && (
-                          <span className="bulle-candidatures" title={d.accueil.candidatures(enAttente)}>
-                            <span aria-hidden="true">{enAttente}</span>
-                            <span className="sr-only">{d.accueil.candidatures(enAttente)}</span>
-                          </span>
-                        )}
-                        <Link href={`/annonces/${a.id}`} className="prochain-lien">
-                          <strong>{a.titre ?? nomRaid(a.contenu, d)}</strong>
-                          <span className="doux">
-                            {a.titre && `${nomRaid(a.contenu, d)} · `}
-                            {afficherDateCourte(a.debutUtc, fuseau)}
-                          </span>
-                        </Link>
-                        <div className="prochain-bas">
-                          {marque && <span className={`badge-raid badge-raid-${marque.type}`}>{marque.texte}</span>}
-                          {marque?.groupe ? (
-                            <GroupeInscrit groupe={marque.groupe} />
-                          ) : (
-                            marque?.perso && <ClasseIcone classe={marque.perso.classe} taille={18} />
-                          )}
-                          {marque?.detail && <span className="doux">{marque.detail}</span>}
-                          {action && <span className="prochain-action">{action}</span>}
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </section>
           </aside>
         </div>
       )}

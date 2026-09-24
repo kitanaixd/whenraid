@@ -3420,9 +3420,27 @@ a.calendrier-jour.choisi .calendrier-nombre {
   /* 5 éléments (≈ 4,6 rem chacun) + leurs écarts ; la bulle dépasse, d'où le petit retrait. */
   max-height: calc(5 * 4.6rem + 4 * 0.5rem + 0.7rem);
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 0.6rem 0.6rem 0.2rem 0;
   margin-right: -0.6rem;
-  scrollbar-width: thin;
+  /* Défilement à la molette, sans barre visible. */
+  scrollbar-width: none;
+}
+.liste-prochains::-webkit-scrollbar {
+  display: none;
+}
+/* Une ligne trop longue (groupe + bouton) : le nom du groupe se raccourcit, le bouton reste visible. */
+.prochain-bas {
+  min-width: 0;
+}
+.prochain-bas .groupe-inscrit {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.prochain-bas .badge-raid,
+.prochain-action {
+  flex: none;
 }
 
 /* Barre de recherche au-dessus de la liste des raids. */
