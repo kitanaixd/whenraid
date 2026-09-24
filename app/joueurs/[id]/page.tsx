@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
-import { statsMercenaire, statsRl } from "@/lib/profil";
+import { historiqueRaids, statsMercenaire, statsRl } from "@/lib/profil";
+import { afficherDateCourte } from "@/lib/dates";
+import { nomRaid } from "@/lib/raids";
 import { nomEnJeu } from "@/lib/invitations";
 import { ClasseIcone, FactionIcone } from "@/app/ClasseIcone";
 import { fiabiliteMercenaires, fiabiliteRls } from "@/lib/fiabilite";
@@ -19,12 +21,20 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
   });
   if (!joueur) notFound();
 
-  const [rl, mercenaire, fiabRl, fiabMerc] = await Promise.all([
+  const [rl, mercenaire, fiabRl, fiabMerc, historique] = await Promise.all([
     statsRl(joueur.id),
     statsMercenaire(joueur.id),
     fiabiliteRls([joueur.id]),
     fiabiliteMercenaires([joueur.id]),
+    historiqueRaids(joueur.id),
   ]);
+  // Résultat de la feuille de présence : couleur de l'étiquette et libellé.
+  const resultats = {
+    PRESENT: { classe: "convie", texte: d.raid.present },
+    PARTI_EN_COURS: { classe: "attente", texte: d.raid.partiEnCours },
+    ABSENT: { classe: "absent", texte: d.raid.absent },
+    ANNULE_A_TEMPS: { classe: "attente", texte: d.profil.annule },
+  } as const;
 
   return (
     <main>
@@ -100,6 +110,52 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
       <p>
         <small>{d.profil.explication}</small>
       </p>
+
+      <section className="carte historique" aria-labelledby="titre-historique">
+        <h2 id="titre-historique">{d.profil.historique}</h2>
+        {historique.length === 0 ? (
+          <p className="doux">{d.profil.aucunHistorique}</p>
+        ) : (
+          <ul className="liste-historique">
+            {historique.map((h) => {
+              const a = h.annonce;
+              const organise = h.type === "organise";
+              return (
+                <li key={h.cle} className={`prochain ${organise ? "ligne-organise" : ""}`}>
+                  <Link href={`/annonces/${a.id}`} className="prochain-lien">
+                    <strong>{a.titre ?? nomRaid(a.contenu, d)}</strong>
+                    <span className="doux">
+                      {a.titre && `${nomRaid(a.contenu, d)} · `}
+                      {afficherDateCourte(a.debutUtc, moi.fuseauHoraire)}
+                    </span>
+                  </Link>
+                  <div className="prochain-bas">
+                    {organise ? (
+                      <>
+                        <span className="badge-raid badge-raid-organise">{d.profil.organise}</span>
+                        {h.annule ? (
+                          <span className="badge-raid badge-raid-absent">{d.profil.annule}</span>
+                        ) : (
+                          h.joueurs > 0 && <span className="doux">{d.profil.joueurs(h.joueurs)}</span>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span className={`badge-raid badge-raid-${resultats[h.resultat].classe}`}>
+                          {resultats[h.resultat].texte}
+                        </span>
+                        <ClasseIcone classe={h.personnage.classe} taille={18} />
+                        <span className="doux">{nomEnJeu(h.personnage)}</span>
+                        {h.distinction && <span title={d.profil.distingue}>🏅</span>}
+                      </>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </main>
   );
 }

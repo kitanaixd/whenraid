@@ -423,6 +423,10 @@ button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compt
   color: var(--accent);
   border-color: rgb(226 189 111 / 0.45);
 }
+.badge-raid-absent {
+  color: #ff8a80;
+  border-color: rgb(237 66 69 / 0.45);
+}
 .ligne-raid-droite .recherche .pastille {
   font-size: 0.8rem;
   color: var(--texte);

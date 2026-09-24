@@ -3428,3 +3428,22 @@ a.calendrier-jour.choisi {
   background-position: 0.8rem center;
   background-size: 1.05rem;
 }
+
+/* ─── Historique des raids (profil) ───────────────────────────────────────── */
+.historique {
+  margin-top: 1.1rem;
+}
+.historique h2 {
+  margin-top: 0;
+}
+.liste-historique {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 0.6rem;
+}
+.badge-raid-absent {
+  color: #ff8a80;
+}

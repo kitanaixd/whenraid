@@ -508,6 +508,12 @@ export const en: Dico = {
 
   // ─── Player profile ────────────────────────────────────────────────────────
   profil: {
+    historique: "📜 Raid history",
+    aucunHistorique: "No past raids yet.",
+    organise: "Organized",
+    annule: "Cancelled",
+    joueurs: (n) => `${n} player${s(n)}`,
+    distingue: "🏅 Stood out",
     raidLeader: "🛡️ Raid Leader",
     mercenaire: "⚔️ Mercenary",
     organises: "Raids organized",

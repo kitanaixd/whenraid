@@ -536,6 +536,12 @@ export const fr = {
 
   // ─── Profil d'un joueur ────────────────────────────────────────────────────
   profil: {
+    historique: "📜 Historique des raids",
+    aucunHistorique: "Aucun raid passé pour l'instant.",
+    organise: "Organisé",
+    annule: "Annulé",
+    joueurs: (n: number) => `${n} joueur${s(n)}`,
+    distingue: "🏅 S'est distingué",
     raidLeader: "🛡️ Raid Leader",
     mercenaire: "⚔️ Mercenaire",
     organises: "Raids organisés",

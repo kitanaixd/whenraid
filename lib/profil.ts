@@ -37,3 +37,48 @@ export async function statsMercenaire(utilisateurId: string) {
     distinctions,
   };
 }
+
+/**
+ * Raids passés (déjà commencés) d'un joueur, du plus récent au plus ancien : ceux qu'il
+ * a organisés et ceux où il a joué (d'après la feuille de présence validée par le RL).
+ */
+export async function historiqueRaids(utilisateurId: string, limite = 30) {
+  const maintenant = new Date();
+  const champsRaid = { id: true, contenu: true, titre: true, debutUtc: true } as const;
+  const [organises, joues] = await Promise.all([
+    db.annonce.findMany({
+      where: { createurId: utilisateurId, statut: { not: "BROUILLON" }, debutUtc: { lt: maintenant } },
+      orderBy: { debutUtc: "desc" },
+      take: limite,
+      select: {
+        ...champsRaid,
+        statut: true,
+        _count: { select: { participations: { where: { resultat: { in: ["PRESENT", "PARTI_EN_COURS"] } } } } },
+      },
+    }),
+    db.participation.findMany({
+      where: { utilisateurId, annonce: { debutUtc: { lt: maintenant } } },
+      orderBy: { annonce: { debutUtc: "desc" } },
+      take: limite,
+      select: {
+        id: true,
+        resultat: true,
+        distinction: true,
+        personnage: { select: { nom: true, nomDeFamille: true, classe: true } },
+        annonce: { select: champsRaid },
+      },
+    }),
+  ]);
+  return [
+    ...organises.map((a) => ({
+      type: "organise" as const,
+      cle: `o-${a.id}`,
+      annonce: a,
+      annule: a.statut === "ANNULEE",
+      joueurs: a._count.participations,
+    })),
+    ...joues.map((p) => ({ type: "joue" as const, cle: `j-${p.id}`, ...p })),
+  ]
+    .sort((a, b) => b.annonce.debutUtc.getTime() - a.annonce.debutUtc.getTime())
+    .slice(0, limite);
+}
