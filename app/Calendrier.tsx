@@ -8,6 +8,13 @@ function decalerMois(mois: string, delta: number) {
   return date.toISOString().slice(0, 7);
 }
 
+/** Nombre court pour une case du calendrier : 1K à partir de 1 000 (1.5K, 12K…). */
+function abrege(n: number) {
+  if (n < 1000) return String(n);
+  const milliers = Math.round(n / 100) / 10;
+  return `${milliers >= 10 ? Math.round(milliers) : milliers}K`;
+}
+
 /**
  * Calendrier du mois : les jours qui ont des raids pour le personnage choisi portent
  * leur nombre ; un clic affiche les raids de ce jour (un second clic, ou « Toutes les
@@ -79,8 +86,10 @@ export function Calendrier({
               aria-label={`${numero} — ${d.calendrier.raids(nb)}`}
               title={d.calendrier.raids(nb)}
             >
-              {numero}
-              <span className="calendrier-nombre">{nb}</span>
+              <span>{numero}</span>
+              <span className="calendrier-nombre" aria-hidden="true">
+                {abrege(nb)}
+              </span>
             </Link>
           ) : (
             <span key={jour} className={classes}>
