@@ -197,8 +197,29 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
         </section>
       ) : (
         <div className="accueil-grille">
-          {/* ─── À gauche : choix du raid et calendrier (reste visible au défilement) ─── */}
+          {/* ─── À gauche : vue filtrée, choix du raid et calendrier (reste visible au défilement) ─── */}
           <aside className="accueil-filtres">
+            {perso && (
+              /* La vue est déjà filtrée sur le personnage : on le montre, avec les filtres actifs. */
+              <section className="carte filtres-actifs" aria-label={d.accueil.vueFiltree}>
+                <p className="surtitre">{d.accueil.vueFiltree}</p>
+                <div className="pastilles">
+                  <span className="pastille">
+                    <NomClasse classe={perso.classe} taille={16} /> {d.commun.niv(perso.niveau)}
+                  </span>
+                  <PastilleFaction faction={perso.faction} />
+                  <PastilleRuleset ruleset={perso.ruleset} region={perso.region} />
+                  {jour && filtreRetirable(d.accueil.leJour(jourAffiche(jour)), { jour: null })}
+                  {contenu && filtreRetirable(nomRaid(contenu, d), { raid: null })}
+                  {dureeMax && filtreRetirable(d.accueil.heuresMax(dureeMax), { duree: null })}
+                </div>
+                {filtreActif && (
+                  <Link href={lienListe({ jour: null, raid: null, duree: null })} className="lien-discret">
+                    {d.accueil.toutEffacer}
+                  </Link>
+                )}
+              </section>
+            )}
             <form className="carte filtres" method="get" role="search" aria-label={d.accueil.filtrerAria}>
               <p className="surtitre">{d.calendrier.choixRaid}</p>
               {perso && <input type="hidden" name="perso" value={perso.id} />}
@@ -297,7 +318,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
             )}
           </section>
 
-          {/* ─── À droite : personnage, vue filtrée, candidature rapide, prochains raids (reste visible) ─── */}
+          {/* ─── À droite : personnage, candidature rapide, prochains raids (reste visible) ─── */}
           <aside className="accueil-perso">
             <nav className="carte choix-perso" aria-label={d.accueil.chercheRaidPourAria}>
               <p className="surtitre">{d.accueil.chercheRaidPour}</p>
@@ -319,27 +340,6 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 ))}
               </ul>
             </nav>
-            {perso && (
-              /* La vue est déjà filtrée sur le personnage : on le montre, avec les filtres actifs. */
-              <section className="carte filtres-actifs" aria-label={d.accueil.vueFiltree}>
-                <p className="surtitre">{d.accueil.vueFiltree}</p>
-                <div className="pastilles">
-                  <span className="pastille">
-                    <NomClasse classe={perso.classe} taille={16} /> {d.commun.niv(perso.niveau)}
-                  </span>
-                  <PastilleFaction faction={perso.faction} />
-                  <PastilleRuleset ruleset={perso.ruleset} region={perso.region} />
-                  {jour && filtreRetirable(d.accueil.leJour(jourAffiche(jour)), { jour: null })}
-                  {contenu && filtreRetirable(nomRaid(contenu, d), { raid: null })}
-                  {dureeMax && filtreRetirable(d.accueil.heuresMax(dureeMax), { duree: null })}
-                </div>
-                {filtreActif && (
-                  <Link href={lienListe({ jour: null, raid: null, duree: null })} className="lien-discret">
-                    {d.accueil.toutEffacer}
-                  </Link>
-                )}
-              </section>
-            )}
             {perso && (
               /* Candidature rapide : rôle(s) et note choisis une fois, puis « + » sur chaque raid.
                  Les boutons des lignes envoient ce formulaire avec l'identifiant de leur raid. */
