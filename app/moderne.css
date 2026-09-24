@@ -1395,3 +1395,9 @@ form.recherche-raids input[type="search"][name="q"] {
   padding-left: 1rem;
   padding-right: 1rem;
 }
+
+/* Boutons : pas d'espacement entre les lettres (hérité de l'ancien thème). */
+button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton),
+a.bouton {
+  letter-spacing: 0 !important;
+}
