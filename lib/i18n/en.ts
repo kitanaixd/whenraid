@@ -257,6 +257,22 @@ export const en: Dico = {
     soigneurs: (n) => `${n} healers`,
     dps: (n) => `${n} DPS`,
     complet: "Full · waitlist",
+    vueFiltree: "Raids open to",
+    retirerFiltre: "Remove this filter",
+    leJour: (date) => `On ${date}`,
+    toutEffacer: "Clear all",
+    prochainsRaids: "Incoming raids",
+    aucunProchain: "No raid planned yet.",
+  },
+  calendrier: {
+    titre: "Calendar",
+    locale: "en-GB",
+    jours: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+    moisPrecedent: "Previous month",
+    moisSuivant: "Next month",
+    toutesDates: "All dates",
+    raids: (n) => `${n} raid${s(n)}`,
+    autresFiltres: "More filters",
   },
 
   // ─── Raid page ─────────────────────────────────────────────────────────────

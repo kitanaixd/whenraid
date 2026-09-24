@@ -55,7 +55,7 @@ const retourVers =
 function retourListe(form: FormData) {
   const recue = new URLSearchParams(String(form.get("retour") ?? ""));
   const params = new URLSearchParams();
-  for (const nom of ["perso", "raid", "du", "au", "duree"]) {
+  for (const nom of ["perso", "raid", "jour", "mois", "duree"]) {
     const v = recue.get(nom);
     if (v && /^[\w-]{1,40}$/.test(v)) params.set(nom, v);
   }

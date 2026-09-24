@@ -69,3 +69,16 @@ export function afficherDateCourte(instant: Date, fuseau: string) {
   const { jour, heure } = jourEtHeure(instant, fuseau);
   return `${jour} · ${heure}`;
 }
+
+/** Le jour local d'un instant, au format AAAA-MM-JJ (pour regrouper les raids par jour). */
+export function jourLocal(instant: Date, fuseau: string) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: fuseau, year: "numeric", month: "2-digit", day: "2-digit" }).format(
+    instant,
+  );
+}
+
+/** « 24/09/2026 » à partir de « 2026-09-24 ». */
+export function jourAffiche(jour: string) {
+  const [a, m, j] = jour.split("-");
+  return `${j}/${m}/${a}`;
+}

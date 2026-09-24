@@ -284,6 +284,22 @@ export const fr = {
     soigneurs: (n: number) => `${n} soigneurs`,
     dps: (n: number) => `${n} DPS`,
     complet: "Complet · liste d'attente",
+    vueFiltree: "Raids ouverts à",
+    retirerFiltre: "Retirer ce filtre",
+    leJour: (date: string) => `Le ${date}`,
+    toutEffacer: "Tout effacer",
+    prochainsRaids: "Prochains raids",
+    aucunProchain: "Aucun raid prévu pour l'instant.",
+  },
+  calendrier: {
+    titre: "Calendrier",
+    locale: "fr-FR",
+    jours: ["L", "M", "M", "J", "V", "S", "D"],
+    moisPrecedent: "Mois précédent",
+    moisSuivant: "Mois suivant",
+    toutesDates: "Toutes les dates",
+    raids: (n: number) => `${n} raid${s(n)}`,
+    autresFiltres: "Autres filtres",
   },
 
   // ─── Page d'un raid ────────────────────────────────────────────────────────

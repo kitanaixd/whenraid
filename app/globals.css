@@ -2937,3 +2937,295 @@ fieldset.rapide-roles::before {
 dialog.confirmation.invitations {
   --bord-biseau: var(--or);
 }
+
+/* ─── Accueil : 3 colonnes (candidature rapide | liste | calendrier) ────── */
+main.accueil-large {
+  max-width: 92rem;
+}
+.accueil-grille {
+  display: grid;
+  grid-template-columns: 17rem minmax(0, 1fr) 18rem;
+  grid-template-areas: "gauche centre droite";
+  gap: var(--espace);
+  align-items: start;
+}
+.accueil-gauche {
+  grid-area: gauche;
+}
+.accueil-centre {
+  grid-area: centre;
+  scroll-margin-top: 5rem;
+}
+.accueil-droite {
+  grid-area: droite;
+}
+/* Les colonnes latérales restent visibles pendant qu'on fait défiler la liste. */
+.accueil-gauche,
+.accueil-droite {
+  position: sticky;
+  top: 5.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espace);
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.accueil-gauche .carte,
+.accueil-droite .carte {
+  padding: 1rem 1.1rem;
+}
+.accueil-gauche .surtitre,
+.accueil-droite .surtitre {
+  justify-content: flex-start;
+  margin: 0 0 0.7rem;
+}
+
+/* Choix du personnage : liste verticale. */
+.accueil-gauche .choix-perso {
+  margin: 0;
+}
+.accueil-gauche .choix-perso ul {
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.accueil-gauche .perso-choix {
+  display: flex;
+  width: 100%;
+}
+.accueil-gauche .perso-choix .classe {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Candidature rapide dans la colonne. */
+.accueil-gauche .candidature-rapide {
+  margin: 0;
+}
+.accueil-gauche .rapide-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+.accueil-gauche .case-role {
+  height: 2.3rem;
+  padding: 0 0.7rem;
+}
+.accueil-gauche .rapide-note input {
+  width: 100%;
+}
+
+/* Prochains raids : liste chronologique compacte. */
+.liste-prochains {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.prochain {
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--filet);
+  border-left: 3px solid var(--bord-biseau, var(--filet-fort));
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.02);
+}
+.prochain.ligne-organise {
+  --bord-biseau: var(--or);
+}
+.prochain.ligne-convie {
+  --bord-biseau: var(--succes);
+}
+.prochain.ligne-candidat {
+  --bord-biseau: var(--turquoise);
+}
+.prochain.ligne-attente {
+  --bord-biseau: var(--attention);
+}
+.prochain-lien {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: var(--texte);
+  line-height: 1.3;
+}
+.prochain-lien strong {
+  font-size: 0.92rem;
+}
+.prochain-lien .doux {
+  font-size: 0.8rem;
+}
+.prochain-bas {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  font-size: 0.78rem;
+}
+.prochain-bas .badge-raid {
+  font-size: 0.7rem;
+  padding: 0.05rem 0.45rem;
+}
+.prochain-action {
+  margin-left: auto;
+}
+.prochain-action button.bouton-icone {
+  width: 1.9rem;
+  height: 1.9rem;
+}
+
+/* Pastilles de la vue filtrée. */
+.filtres-actifs .pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+}
+a.filtre-actif {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  color: var(--or-clair);
+  border-color: var(--or);
+}
+a.filtre-actif svg {
+  width: 10px;
+  height: 10px;
+}
+.lien-discret {
+  display: inline-block;
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--texte-doux);
+}
+
+/* Calendrier. */
+.calendrier-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+.calendrier-titre {
+  text-transform: capitalize;
+  font-size: 0.95rem;
+}
+.calendrier-fleche {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 6px;
+  text-decoration: none;
+  color: var(--texte);
+  border: 1px solid var(--filet);
+  font-size: 1.1rem;
+}
+.calendrier-fleche:hover {
+  border-color: var(--or);
+}
+.calendrier-grille {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.25rem;
+  text-align: center;
+}
+.calendrier-jour-semaine {
+  font-size: 0.7rem;
+  color: var(--texte-doux);
+  padding-bottom: 0.2rem;
+}
+.calendrier-jour {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: var(--texte-doux);
+  text-decoration: none;
+}
+.calendrier-jour.passe {
+  opacity: 0.35;
+}
+.calendrier-jour.aujourdhui {
+  outline: 1px solid var(--filet-fort);
+}
+a.calendrier-jour.a-raids {
+  color: var(--texte);
+  font-weight: 600;
+  background: rgb(217 181 106 / 0.12);
+  border: 1px solid rgb(217 181 106 / 0.35);
+}
+a.calendrier-jour.a-raids:hover {
+  background: rgb(217 181 106 / 0.22);
+}
+a.calendrier-jour.choisi {
+  color: #17110a;
+  background: var(--or);
+  border-color: var(--or);
+}
+.calendrier-nombre {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.2rem;
+  display: grid;
+  place-items: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 999px;
+  color: #04262b;
+  background: var(--turquoise);
+}
+.calendrier-tout {
+  margin-top: 0.8rem;
+  width: 100%;
+  text-align: center;
+}
+
+/* Autres filtres dans la colonne de droite : champs empilés. */
+.accueil-droite .filtres {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 0;
+}
+.accueil-droite .filtres .champ {
+  width: 100%;
+}
+
+/* Écrans moyens : le calendrier passe sous la candidature rapide, à gauche. */
+@media (max-width: 1200px) {
+  .accueil-grille {
+    grid-template-columns: 17rem minmax(0, 1fr);
+    grid-template-areas:
+      "gauche centre"
+      "droite centre";
+  }
+  .accueil-gauche,
+  .accueil-droite {
+    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+}
+/* Petits écrans : tout s'empile, la liste d'abord après le personnage. */
+@media (max-width: 860px) {
+  .accueil-grille {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "gauche"
+      "centre"
+      "droite";
+  }
+}
