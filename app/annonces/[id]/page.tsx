@@ -18,6 +18,7 @@ import {
   accepter,
   annuler,
   candidater,
+  enregistrerLogsRaid,
   enregistrerPresences,
   envoyerLesInvitations,
   refuser,
@@ -80,9 +81,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   const inscriptions = annonce.places.flatMap((p) => p.inscriptions.map((i) => ({ ...i, place: p })));
   const confirmes = inscriptions.filter((i) => i.statut === "CONFIRME" && i.personnage && i.role);
   // Par place, le premier confirmé est titulaire ; les suivants sont des remplaçants.
-  const premiers = annonce.places.flatMap((p) =>
-    p.inscriptions.filter((i) => i.statut === "CONFIRME").slice(0, 1),
-  );
+  const premiers = annonce.places.flatMap((p) => p.inscriptions.filter((i) => i.statut === "CONFIRME").slice(0, 1));
   const titulaires = confirmes.filter((i) => premiers.some((t) => t.id === i.id));
   const remplacants = confirmes.filter((i) => !titulaires.includes(i));
   const compo = compoActuelle(
@@ -94,6 +93,11 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   const maCandidature = inscriptions.find((i) => i.utilisateurId === utilisateur.id && estActive(i.statut));
   const ouvert = accepteCandidatures(annonce);
   const presences = etatPresences(annonce);
+  // Logs du raid : réservés au RL et aux joueurs qui y participent (confirmés ou présents à la feuille).
+  const participe =
+    inscriptions.some((i) => i.utilisateurId === utilisateur.id && i.statut === "CONFIRME") ||
+    annonce.participations.some((p) => p.utilisateurId === utilisateur.id);
+  const voitLogs = estRl ? annonce.statut !== "BROUILLON" : participe && annonce.lienLogs !== null;
   const [fiabRl, fiabCandidats] = await Promise.all([
     fiabiliteRls([annonce.createurId]),
     estRl ? fiabiliteMercenaires([...new Set(inscriptions.map((i) => i.utilisateurId))]) : new Map(),
@@ -153,9 +157,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
       // Pour chaque rôle proposé : reste-t-il une place ouverte ? (sinon « Remplaçant »)
       choixRoles: rolesProposes(i).map((role) => ({
         role,
-        ouverte: Boolean(
-          i.personnage && placePourRoles(annonce.places, i.personnage, [role], annonce)?.ouverte,
-        ),
+        ouverte: Boolean(i.personnage && placePourRoles(annonce.places, i.personnage, [role], annonce)?.ouverte),
       })),
     }));
   const persosCandidats = mesPersonnages
@@ -582,7 +584,10 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                       {m.nom ? (
                         <span className="nom-classe">
                           <ClasseIcone classe={m.classe} />
-                          <span className="classe" style={{ "--c": `var(--classe-${m.classe})` } as React.CSSProperties}>
+                          <span
+                            className="classe"
+                            style={{ "--c": `var(--classe-${m.classe})` } as React.CSSProperties}
+                          >
                             {m.nom}
                           </span>
                         </span>
@@ -613,6 +618,36 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             )}
           </section>
 
+          {voitLogs && (
+            <section className="carte logs-raid" aria-labelledby="titre-logs">
+              <p className="surtitre" id="titre-logs">
+                {d.raid.logsRaid}
+              </p>
+              {annonce.lienLogs && (
+                <a href={annonce.lienLogs} target="_blank" rel="noopener noreferrer nofollow" className="bouton petit">
+                  {d.raid.logsVoir}
+                </a>
+              )}
+              {estRl && (
+                <form action={enregistrerLogsRaid} className="formulaire-logs">
+                  <input type="hidden" name="annonceId" value={annonce.id} />
+                  <p className="doux">{d.raid.logsAide}</p>
+                  <input
+                    type="url"
+                    name="lienLogs"
+                    maxLength={300}
+                    aria-label={d.raid.logsLien}
+                    placeholder="https://fresh.warcraftlogs.com/reports/…"
+                    defaultValue={annonce.lienLogs ?? ""}
+                  />
+                  <BoutonEnvoi className="petit" enCours={d.commun.enregistrement}>
+                    {d.raid.logsEnregistrer}
+                  </BoutonEnvoi>
+                </form>
+              )}
+            </section>
+          )}
+
           <section className="carte organisateur" aria-label={d.raid.organisateur}>
             <p className="surtitre">{d.raid.organisePar}</p>
             {organisateur && (
@@ -627,8 +662,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
               </p>
             )}
             <p className="doux">
-              {estRl ? d.commun.toi : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>}{" "}
-              · <BadgeFiabilite fiabilite={fiabRl.get(annonce.createurId)} />
+              {estRl ? d.commun.toi : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>} ·{" "}
+              <BadgeFiabilite fiabilite={fiabRl.get(annonce.createurId)} />
             </p>
           </section>
         </aside>

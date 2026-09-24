@@ -303,6 +303,11 @@ export const en: Dico = {
 
   // ─── Raid page ─────────────────────────────────────────────────────────────
   raid: {
+    logsRaid: "📊 Raid logs",
+    logsAide: "Paste the raid's Warcraft Logs link: only you and confirmed players will see it.",
+    logsVoir: "View logs on Warcraft Logs ↗",
+    logsLien: "Warcraft Logs link",
+    logsEnregistrer: "Save",
     environ: (h) => ` · about ${h} h`,
     loot: (l) => `Loot: ${l}`,
     vocal: (v) => `Voice: ${v}`,
@@ -508,6 +513,7 @@ export const en: Dico = {
 
   // ─── Player profile ────────────────────────────────────────────────────────
   profil: {
+    personnages: "Characters",
     historique: "📜 Raid history",
     aucunHistorique: "No past raids yet.",
     organise: "Organized",

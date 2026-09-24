@@ -214,6 +214,7 @@ model Annonce {
   createurId    String
   contenu       Contenu
   titre         String? // donné par le RL, 20 caractères max (CHECK en SQL)
+  lienLogs      String? // lien Warcraft Logs du raid, visible du RL et des joueurs confirmés
   // Sur l'Annonce (et pas seulement le Groupe, facultatif) pour filtrer
   // les personnages qui peuvent s'inscrire.
   faction       Faction

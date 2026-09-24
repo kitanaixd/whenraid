@@ -3429,21 +3429,21 @@ a.calendrier-jour.choisi {
   background-size: 1.05rem;
 }
 
-/* ─── Historique des raids (profil) ───────────────────────────────────────── */
-.historique {
-  margin-top: 1.1rem;
+/* Logs du raid (colonne de droite de la page du raid). */
+.logs-raid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
 }
-.historique h2 {
-  margin-top: 0;
-}
-.liste-historique {
-  list-style: none;
+.logs-raid .surtitre {
   margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-  gap: 0.6rem;
 }
-.badge-raid-absent {
-  color: #ff8a80;
+.formulaire-logs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.formulaire-logs .doux {
+  margin: 0;
+  font-size: 0.85rem;
 }

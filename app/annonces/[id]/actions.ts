@@ -22,6 +22,7 @@ import { carteNotification } from "@/lib/carteDiscord";
 import { envoyerMp } from "@/lib/discord";
 import { dico } from "@/lib/i18n";
 import { prevenirEnMp } from "@/lib/prevenir";
+import { lienWarcraftLogs, messageErreur } from "@/lib/formulaire";
 import { dicoCourant } from "@/lib/langue";
 
 const retourVers =
@@ -425,5 +426,26 @@ export async function seDesinscrire(form: FormData) {
     });
   }
   rafraichir(annonce.id);
+  retour();
+}
+
+/** Le RL ajoute, change ou retire (champ vide) le lien Warcraft Logs du raid. */
+export async function enregistrerLogsRaid(form: FormData) {
+  const utilisateur = await exigerUtilisateur();
+  const d = await dicoCourant();
+  const annonce = await db.annonce.findFirst({
+    where: { id: String(form.get("annonceId") ?? ""), createurId: utilisateur.id, statut: { not: "BROUILLON" } },
+  });
+  if (!annonce) notFound();
+  const retour = retourVers(annonce.id);
+
+  let lienLogs: string | null;
+  try {
+    lienLogs = lienWarcraftLogs(form, "lienLogs");
+  } catch (e) {
+    return retour(messageErreur(e, d));
+  }
+  await db.annonce.update({ where: { id: annonce.id }, data: { lienLogs } });
+  revalidatePath(`/annonces/${annonce.id}`);
   retour();
 }

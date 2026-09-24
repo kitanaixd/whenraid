@@ -11,6 +11,16 @@ import { fiabiliteMercenaires, fiabiliteRls } from "@/lib/fiabilite";
 import { BadgeFiabilite } from "@/app/BadgeFiabilite";
 import { dicoCourant } from "@/lib/langue";
 
+/** Une statistique en tuile : le chiffre en grand, son libellé dessous. */
+function Tuile({ valeur, libelle, alerte = false }: { valeur: React.ReactNode; libelle: string; alerte?: boolean }) {
+  return (
+    <div className={alerte ? "alerte" : undefined}>
+      <strong>{valeur}</strong>
+      <small>{libelle}</small>
+    </div>
+  );
+}
+
 export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">) {
   const moi = await exigerUtilisateur();
   const d = await dicoCourant();
@@ -37,82 +47,96 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
   } as const;
 
   return (
-    <main>
+    <main className="profil">
       <p>
         <Link href="/">{d.commun.accueil}</Link>
       </p>
-      <h1>
-        {joueur.avatarUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={joueur.avatarUrl} alt="" width={40} height={40} style={{ verticalAlign: "middle" }} />
-        )}{" "}
-        {joueur.pseudo}
-        {joueur.id === moi.id && d.commun.toiParenthese}
-      </h1>
 
-      {joueur.personnages.length > 0 && (
-        <ul className="persos-profil">
-          {joueur.personnages.map((p) => (
-            <li key={p.id}>
-              <ClasseIcone classe={p.classe} taille={26} />{" "}
-              <span className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
-                {p.estPrincipal && "★ "}
-                {nomEnJeu(p)}
-              </span>{" "}
-              <small>
-                {d.classe[p.classe]} {p.niveau} · <FactionIcone faction={p.faction} taille={16} />{" "}
-                {d.faction[p.faction]}
-                {p.lienLogs && (
-                  <>
-                    {" · "}
-                    <a href={p.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
-                      {d.commun.logs}
-                    </a>
-                  </>
-                )}
-              </small>
-            </li>
-          ))}
-        </ul>
-      )}
+      <section className="carte profil-identite">
+        <div className="profil-titre">
+          {joueur.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={joueur.avatarUrl} alt="" width={56} height={56} className="profil-avatar" />
+          ) : (
+            <span className="profil-avatar avatar-vide" aria-hidden="true">
+              {joueur.pseudo.charAt(0).toUpperCase()}
+            </span>
+          )}
+          <h1>
+            {joueur.pseudo}
+            {joueur.id === moi.id && <small>{d.commun.toiParenthese}</small>}
+          </h1>
+        </div>
+        {joueur.personnages.length > 0 && (
+          <>
+            <p className="surtitre">{d.profil.personnages}</p>
+            <ul className="persos-profil">
+              {joueur.personnages.map((p) => (
+                <li key={p.id} className="perso-profil">
+                  <ClasseIcone classe={p.classe} taille={34} />
+                  <div>
+                    <strong className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
+                      {p.estPrincipal && "★ "}
+                      {nomEnJeu(p)}
+                    </strong>
+                    <span className="doux">
+                      {d.classe[p.classe]} {p.niveau} · <FactionIcone faction={p.faction} taille={14} />{" "}
+                      {d.faction[p.faction]}
+                      {p.lienLogs && (
+                        <>
+                          {" · "}
+                          <a href={p.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
+                            {d.commun.logs}
+                          </a>
+                        </>
+                      )}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
 
       <div className="faces">
-        <section className="face">
-          <h2>{d.profil.raidLeader}</h2>
-          <p className="badge">
+        <section className="carte face">
+          <div className="face-titre">
+            <h2>{d.profil.raidLeader}</h2>
             <BadgeFiabilite fiabilite={fiabRl.get(joueur.id)} />
-          </p>
-          <dl>
-            <dt>{d.profil.organises}</dt>
-            <dd>{rl.organises}</dd>
-            <dt>{d.profil.annulesTard}</dt>
-            <dd className={rl.annulesDerniereMinute > 0 ? "alerte" : undefined}>{rl.annulesDerniereMinute}</dd>
-          </dl>
+          </div>
+          <div className="tuiles-stats">
+            <Tuile valeur={rl.organises} libelle={d.profil.organises} />
+            <Tuile
+              valeur={rl.annulesDerniereMinute}
+              libelle={d.profil.annulesTard}
+              alerte={rl.annulesDerniereMinute > 0}
+            />
+          </div>
         </section>
 
-        <section className="face">
-          <h2>{d.profil.mercenaire}</h2>
-          <p className="badge">
+        <section className="carte face">
+          <div className="face-titre">
+            <h2>{d.profil.mercenaire}</h2>
             <BadgeFiabilite fiabilite={fiabMerc.get(joueur.id)} />
-          </p>
-          <dl>
-            <dt>{d.profil.participes}</dt>
-            <dd>{mercenaire.participes}</dd>
-            <dt>{d.profil.absences}</dt>
-            <dd className={mercenaire.absences > 0 ? "alerte" : undefined}>{mercenaire.absences}</dd>
-            <dt>{d.profil.partisEnCours}</dt>
-            <dd>{mercenaire.partisEnCours}</dd>
-            <dt>{d.profil.distinctions}</dt>
-            <dd>{mercenaire.distinctions > 0 ? `🏅 ${mercenaire.distinctions}` : 0}</dd>
-          </dl>
+          </div>
+          <div className="tuiles-stats">
+            <Tuile valeur={mercenaire.participes} libelle={d.profil.participes} />
+            <Tuile valeur={mercenaire.absences} libelle={d.profil.absences} alerte={mercenaire.absences > 0} />
+            <Tuile valeur={mercenaire.partisEnCours} libelle={d.profil.partisEnCours} />
+            <Tuile
+              valeur={mercenaire.distinctions > 0 ? `🏅 ${mercenaire.distinctions}` : 0}
+              libelle={d.profil.distinctions}
+            />
+          </div>
         </section>
       </div>
-      <p>
-        <small>{d.profil.explication}</small>
-      </p>
+      <p className="doux explication-fiabilite">{d.profil.explication}</p>
 
       <section className="carte historique" aria-labelledby="titre-historique">
-        <h2 id="titre-historique">{d.profil.historique}</h2>
+        <p className="surtitre" id="titre-historique">
+          {d.profil.historique}
+        </p>
         {historique.length === 0 ? (
           <p className="doux">{d.profil.aucunHistorique}</p>
         ) : (
@@ -121,32 +145,32 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
               const a = h.annonce;
               const organise = h.type === "organise";
               return (
-                <li key={h.cle} className={`prochain ${organise ? "ligne-organise" : ""}`}>
-                  <Link href={`/annonces/${a.id}`} className="prochain-lien">
+                <li key={h.cle} className={`ligne-historique ${organise ? "ligne-organise" : ""}`}>
+                  <Link href={`/annonces/${a.id}`} className="historique-raid">
                     <strong>{a.titre ?? nomRaid(a.contenu, d)}</strong>
                     <span className="doux">
                       {a.titre && `${nomRaid(a.contenu, d)} · `}
                       {afficherDateCourte(a.debutUtc, moi.fuseauHoraire)}
                     </span>
                   </Link>
-                  <div className="prochain-bas">
+                  <div className="historique-detail">
                     {organise ? (
                       <>
-                        <span className="badge-raid badge-raid-organise">{d.profil.organise}</span>
                         {h.annule ? (
                           <span className="badge-raid badge-raid-absent">{d.profil.annule}</span>
                         ) : (
                           h.joueurs > 0 && <span className="doux">{d.profil.joueurs(h.joueurs)}</span>
                         )}
+                        <span className="badge-raid badge-raid-organise">{d.profil.organise}</span>
                       </>
                     ) : (
                       <>
+                        {h.distinction && <span title={d.profil.distingue}>🏅</span>}
+                        <ClasseIcone classe={h.personnage.classe} taille={20} />
+                        <span className="doux">{nomEnJeu(h.personnage)}</span>
                         <span className={`badge-raid badge-raid-${resultats[h.resultat].classe}`}>
                           {resultats[h.resultat].texte}
                         </span>
-                        <ClasseIcone classe={h.personnage.classe} taille={18} />
-                        <span className="doux">{nomEnJeu(h.personnage)}</span>
-                        {h.distinction && <span title={d.profil.distingue}>🏅</span>}
                       </>
                     )}
                   </div>

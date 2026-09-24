@@ -626,3 +626,174 @@ button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compt
 .menu-langue + form {
   margin-top: 0.3rem;
 }
+
+/* ─── Profil d'un joueur ──────────────────────────────────────────────────── */
+.profil {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+.profil > p {
+  margin: 0;
+}
+.profil-titre {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.profil-titre h1 {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.profil-titre h1 small {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--texte-doux);
+}
+.profil-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--bord-fort);
+  object-fit: cover;
+  flex: none;
+}
+span.profil-avatar {
+  display: grid;
+  place-items: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  background: var(--surface-3);
+}
+.profil-identite > .surtitre {
+  margin: 1.2rem 0 0.6rem;
+}
+.persos-profil {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.6rem;
+}
+.perso-profil {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.65rem 0.8rem;
+  background: var(--surface-2);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-2);
+}
+.perso-profil > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.35;
+}
+.perso-profil .doux {
+  font-size: 0.82rem;
+}
+
+/* Les deux faces : titre + badge de fiabilité, puis les chiffres en tuiles. */
+.profil .faces {
+  gap: 1.1rem;
+}
+.face-titre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+.face-titre h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.tuiles-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+.tuiles-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.8rem 0.9rem;
+  background: var(--surface-2);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-2);
+}
+.tuiles-stats strong {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--texte);
+}
+.tuiles-stats small {
+  font-size: 0.8rem;
+  color: var(--texte-doux);
+}
+.tuiles-stats > .alerte strong {
+  color: #ff8a80;
+}
+.explication-fiabilite {
+  font-size: 0.8rem;
+}
+
+/* Historique : une ligne par raid, du plus récent au plus ancien. */
+.liste-historique {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.ligne-historique {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface-2);
+  border: 1px solid var(--bord);
+  border-left: 3px solid var(--bord-fort);
+  border-radius: var(--rayon-2);
+}
+.ligne-historique.ligne-organise {
+  border-left-color: var(--accent);
+}
+.historique-raid {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: var(--texte);
+  text-decoration: none;
+  line-height: 1.35;
+}
+.historique-raid:hover strong {
+  color: var(--accent);
+}
+.historique-raid .doux {
+  font-size: 0.82rem;
+}
+.historique-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  font-size: 0.85rem;
+}
+@media (max-width: 560px) {
+  .ligne-historique {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .historique-detail {
+    justify-content: flex-start;
+  }
+}

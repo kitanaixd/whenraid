@@ -332,6 +332,11 @@ export const fr = {
 
   // ─── Page d'un raid ────────────────────────────────────────────────────────
   raid: {
+    logsRaid: "📊 Logs du raid",
+    logsAide: "Colle le lien Warcraft Logs du raid : seuls toi et les joueurs confirmés le verront.",
+    logsVoir: "Voir les logs sur Warcraft Logs ↗",
+    logsLien: "Lien Warcraft Logs",
+    logsEnregistrer: "Enregistrer",
     environ: (h: number) => ` · environ ${h} h`,
     loot: (l: string) => `Loot : ${l}`,
     vocal: (v: string) => `Vocal : ${v}`,
@@ -536,6 +541,7 @@ export const fr = {
 
   // ─── Profil d'un joueur ────────────────────────────────────────────────────
   profil: {
+    personnages: "Personnages",
     historique: "📜 Historique des raids",
     aucunHistorique: "Aucun raid passé pour l'instant.",
     organise: "Organisé",
