@@ -1036,7 +1036,8 @@ span.profil-avatar {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas: "lien action" "bas action";
+  /* L’étiquette (et le personnage ou le groupe) en haut, puis le titre et la date. */
+  grid-template-areas: "bas action" "lien action";
   column-gap: 0.6rem;
   row-gap: 0.4rem;
   align-items: center;
