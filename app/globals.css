@@ -3321,3 +3321,52 @@ a.calendrier-jour.choisi {
 .accueil-filtres .filtres {
   align-items: stretch;
 }
+
+/* Classes recherchées sous la compo, dans la même colonne (alignées à droite). */
+.ligne-raid:not(.compacte) {
+  grid-template-columns: minmax(0, 1fr) 14rem 2.6rem;
+  grid-template-rows: auto auto;
+  align-content: center;
+  row-gap: 0.4rem;
+}
+.ligne-raid:not(.compacte) .ligne-raid-infos {
+  grid-row: 1 / span 2;
+}
+.ligne-raid:not(.compacte) .compo-roles {
+  grid-column: 2;
+  grid-row: 1;
+  align-self: end;
+}
+.ligne-raid:not(.compacte) .recherche {
+  grid-column: 2;
+  grid-row: 2;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  align-self: start;
+}
+.ligne-raid:not(.compacte) > .ligne-raid-action {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+}
+@media (max-width: 700px) {
+  .ligne-raid:not(.compacte) {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .ligne-raid:not(.compacte) .ligne-raid-infos {
+    grid-row: 1;
+  }
+  .ligne-raid:not(.compacte) > .ligne-raid-action {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .ligne-raid:not(.compacte) .compo-roles {
+    grid-column: 1 / span 2;
+    grid-row: 2;
+    justify-self: start;
+  }
+  .ligne-raid:not(.compacte) .recherche {
+    grid-column: 1 / span 2;
+    grid-row: 3;
+    justify-content: flex-start;
+  }
+}
