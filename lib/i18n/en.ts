@@ -273,6 +273,7 @@ export const en: Dico = {
     toutesDates: "All dates",
     raids: (n) => `${n} raid${s(n)}`,
     autresFiltres: "More filters",
+    choixRaid: "Raid selection",
   },
 
   // ─── Raid page ─────────────────────────────────────────────────────────────

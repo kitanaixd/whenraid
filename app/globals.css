@@ -2938,30 +2938,30 @@ dialog.confirmation.invitations {
   --bord-biseau: var(--or);
 }
 
-/* ─── Accueil : 3 colonnes (candidature rapide | liste | calendrier) ────── */
+/* ─── Accueil : 3 colonnes (choix du raid et calendrier | liste | personnage et candidature) ── */
 main.accueil-large {
   max-width: 92rem;
 }
 .accueil-grille {
   display: grid;
   grid-template-columns: 17rem minmax(0, 1fr) 18rem;
-  grid-template-areas: "gauche centre droite";
+  grid-template-areas: "filtres centre perso";
   gap: var(--espace);
   align-items: start;
 }
-.accueil-gauche {
-  grid-area: gauche;
+.accueil-perso {
+  grid-area: perso;
 }
 .accueil-centre {
   grid-area: centre;
   scroll-margin-top: 5rem;
 }
-.accueil-droite {
-  grid-area: droite;
+.accueil-filtres {
+  grid-area: filtres;
 }
 /* Les colonnes latérales restent visibles pendant qu'on fait défiler la liste. */
-.accueil-gauche,
-.accueil-droite {
+.accueil-perso,
+.accueil-filtres {
   position: sticky;
   top: 5.2rem;
   display: flex;
@@ -2971,29 +2971,29 @@ main.accueil-large {
   overflow-y: auto;
   scrollbar-width: thin;
 }
-.accueil-gauche .carte,
-.accueil-droite .carte {
+.accueil-perso .carte,
+.accueil-filtres .carte {
   padding: 1rem 1.1rem;
 }
-.accueil-gauche .surtitre,
-.accueil-droite .surtitre {
+.accueil-perso .surtitre,
+.accueil-filtres .surtitre {
   justify-content: flex-start;
   margin: 0 0 0.7rem;
 }
 
 /* Choix du personnage : liste verticale. */
-.accueil-gauche .choix-perso {
+.accueil-perso .choix-perso {
   margin: 0;
 }
-.accueil-gauche .choix-perso ul {
+.accueil-perso .choix-perso ul {
   flex-direction: column;
   gap: 0.4rem;
 }
-.accueil-gauche .perso-choix {
+.accueil-perso .perso-choix {
   display: flex;
   width: 100%;
 }
-.accueil-gauche .perso-choix .classe {
+.accueil-perso .perso-choix .classe {
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -3002,20 +3002,20 @@ main.accueil-large {
 }
 
 /* Candidature rapide dans la colonne. */
-.accueil-gauche .candidature-rapide {
+.accueil-perso .candidature-rapide {
   margin: 0;
 }
-.accueil-gauche .rapide-roles {
+.accueil-perso .rapide-roles {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   margin-bottom: 0.8rem;
 }
-.accueil-gauche .case-role {
+.accueil-perso .case-role {
   height: 2.3rem;
   padding: 0 0.7rem;
 }
-.accueil-gauche .rapide-note input {
+.accueil-perso .rapide-note input {
   width: 100%;
 }
 
@@ -3193,27 +3193,27 @@ a.calendrier-jour.choisi {
   text-align: center;
 }
 
-/* Autres filtres dans la colonne de droite : champs empilés. */
-.accueil-droite .filtres {
+/* Choix du raid (colonne de gauche) : champs empilés. */
+.accueil-filtres .filtres {
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
   margin: 0;
 }
-.accueil-droite .filtres .champ {
+.accueil-filtres .filtres .champ {
   width: 100%;
 }
 
-/* Écrans moyens : le calendrier passe sous la candidature rapide, à gauche. */
+/* Écrans moyens : liste à gauche, puis personnage et filtres empilés à droite. */
 @media (max-width: 1200px) {
   .accueil-grille {
-    grid-template-columns: 17rem minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 17rem;
     grid-template-areas:
-      "gauche centre"
-      "droite centre";
+      "centre perso"
+      "centre filtres";
   }
-  .accueil-gauche,
-  .accueil-droite {
+  .accueil-perso,
+  .accueil-filtres {
     position: static;
     max-height: none;
     overflow: visible;
@@ -3224,8 +3224,100 @@ a.calendrier-jour.choisi {
   .accueil-grille {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "gauche"
+      "perso"
       "centre"
-      "droite";
+      "filtres";
   }
+}
+
+/* ─── Cartes de raid (liste) : même hauteur, mêmes colonnes, bouton toujours au même endroit ──
+   Grille à 4 colonnes fixes : infos | compo | classes recherchées | bouton. */
+.ligne-raid:not(.compacte) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 12.5rem 10rem 2.6rem;
+  column-gap: 1rem;
+  align-items: center;
+  height: 7.6rem;
+  padding: 0.85rem 1.1rem;
+}
+.ligne-raid:not(.compacte) .ligne-raid-infos {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  gap: 0.1rem;
+}
+.ligne-raid:not(.compacte) .ligne-raid-infos > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* Ligne de l'étiquette réservée même vide. */
+.ligne-raid-marque {
+  display: flex;
+  align-items: center;
+  min-height: 1.6rem;
+}
+.ligne-raid:not(.compacte) .ligne-raid-droite {
+  display: contents;
+}
+.ligne-raid:not(.compacte) .compo-roles {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  font-size: 1.1rem;
+  gap: 0.55rem;
+}
+.ligne-raid:not(.compacte) .compo-roles strong {
+  font-size: 1.35rem;
+  padding-left: 0.6rem;
+}
+.ligne-raid:not(.compacte) .recherche {
+  grid-column: 3;
+  grid-row: 1;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  max-height: 100%;
+  overflow: hidden;
+}
+.ligne-raid:not(.compacte) .recherche .pastille {
+  font-size: 0.75rem;
+  padding: 0.15rem 0.55rem;
+}
+.classes-en-plus {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--texte-doux);
+}
+.ligne-raid:not(.compacte) > .ligne-raid-action {
+  grid-column: 4;
+  grid-row: 1;
+  width: auto;
+  justify-self: end;
+  align-self: center;
+}
+
+/* Petits écrans : deux lignes (infos + bouton, puis compo + classes). */
+@media (max-width: 700px) {
+  .ligne-raid:not(.compacte) {
+    grid-template-columns: minmax(0, 1fr) auto;
+    height: auto;
+    row-gap: 0.6rem;
+  }
+  .ligne-raid:not(.compacte) > .ligne-raid-action {
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .ligne-raid:not(.compacte) .compo-roles {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+  }
+  .ligne-raid:not(.compacte) .recherche {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+.accueil-filtres .filtres {
+  align-items: stretch;
 }

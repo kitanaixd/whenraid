@@ -42,7 +42,10 @@ export function LigneRaid({
   action?: ReactNode;
 }) {
   const r = resumeLigneRaid(a);
-  const taille = compact ? 18 : 34;
+  const taille = compact ? 18 : 22;
+  // Carte complète : au plus 4 icônes de classe, le reste en « +n » (hauteur de carte constante).
+  const classesVisibles = r.classesRecherchees.slice(0, 4);
+  const classesEnPlus = r.classesRecherchees.length - classesVisibles.length;
   const compo = (
     <div className="compo-roles" title={d.accueil.compoTitre}>
       <span aria-label={d.accueil.tanks(r.roles.tanks)}>
@@ -82,7 +85,8 @@ export function LigneRaid({
     >
       <Link href={lien} className="ligne-raid-lien" aria-label={`${nom}, ${afficherDate(a.debutUtc, fuseau, d)}`} />
       <div className="ligne-raid-infos">
-        {!compact && badge}
+        {/* Ligne de l'étiquette toujours présente : nom et date tombent à la même hauteur sur toutes les cartes. */}
+        {!compact && <div className="ligne-raid-marque">{badge}</div>}
         <h3>{nom}</h3>
         <span className="quand">
           {compact ? afficherDateCourte(a.debutUtc, fuseau) : afficherDate(a.debutUtc, fuseau, d)}
@@ -105,9 +109,10 @@ export function LigneRaid({
             </div>
           ) : (
             <div className="recherche" aria-label={d.accueil.classesRecherchees}>
-              {r.classesRecherchees.map((c) => (
-                <ClasseIcone key={c} classe={c} taille={40} />
+              {classesVisibles.map((c) => (
+                <ClasseIcone key={c} classe={c} taille={28} />
               ))}
+              {classesEnPlus > 0 && <span className="classes-en-plus">+{classesEnPlus}</span>}
               {r.placeLibre && <span className="pastille">{d.commun.toutesClasses}</span>}
             </div>
           )}

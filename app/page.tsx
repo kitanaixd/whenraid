@@ -197,79 +197,49 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
         </section>
       ) : (
         <div className="accueil-grille">
-          {/* ─── À gauche : personnage et candidature rapide (reste visible au défilement) ─── */}
-          <aside className="accueil-gauche">
-            <nav className="carte choix-perso" aria-label={d.accueil.chercheRaidPourAria}>
-              <p className="surtitre">{d.accueil.chercheRaidPour}</p>
-              <ul>
-                {personnages.map((p) => (
-                  <li key={p.id}>
-                    <Link
-                      href={lienListe({ perso: p.id, jour: null })}
-                      className={`perso-choix ${p.id === perso?.id ? "choisi" : ""}`}
-                      aria-current={p.id === perso?.id ? "true" : undefined}
-                    >
-                      <ClasseIcone classe={p.classe} taille={24} />
-                      <span className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
-                        {nomEnJeu(p)}
-                      </span>
-                      <FactionIcone faction={p.faction} taille={16} />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-            {perso && (
-              /* Candidature rapide : rôle(s) et note choisis une fois, puis « + » sur chaque raid.
-                 Les boutons des lignes envoient ce formulaire avec l'identifiant de leur raid. */
-              <form id="candidature-rapide" action={candidater} className="carte candidature-rapide">
-                <input type="hidden" name="personnageId" value={perso.id} />
-                <input type="hidden" name="depuis" value="liste" />
-                <input type="hidden" name="retour" value={requete} />
-                <p className="surtitre">{d.accueil.rapide(nomEnJeu(perso))}</p>
-                <fieldset className="rapide-roles">
-                  <legend className="sr-only">{d.accueil.rolesProposes}</legend>
-                  {rolesPerso.map((r, n) => (
-                    <label key={r} className="case-role">
-                      <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
-                      <NomRole role={r} taille={18} />
-                    </label>
+          {/* ─── À gauche : choix du raid et calendrier (reste visible au défilement) ─── */}
+          <aside className="accueil-filtres">
+            <form className="carte filtres" method="get" role="search" aria-label={d.accueil.filtrerAria}>
+              <p className="surtitre">{d.calendrier.choixRaid}</p>
+              {perso && <input type="hidden" name="perso" value={perso.id} />}
+              {jour && <input type="hidden" name="jour" value={jour} />}
+              <input type="hidden" name="mois" value={mois} />
+              <label className="champ">
+                {d.champ.raid}
+                <select name="raid" defaultValue={contenu ?? ""}>
+                  <option value="">{d.accueil.tousLesRaids}</option>
+                  {(Object.keys(raids) as Contenu[]).map((c) => (
+                    <option key={c} value={c}>
+                      {nomRaid(c, d)}
+                    </option>
                   ))}
-                </fieldset>
-                <label className="champ rapide-note">
-                  {d.accueil.noteRl} <small className="fuseau">{d.accueil.noteRlAide}</small>
-                  <input name="note" maxLength={80} placeholder={d.accueil.notePlaceholder} />
-                </label>
-              </form>
-            )}
-            <section className="carte prochains" aria-labelledby="titre-prochains">
-              <p className="surtitre" id="titre-prochains">
-                {d.accueil.prochainsRaids}
-              </p>
-              {prochains.length === 0 ? (
-                <p className="doux">{d.accueil.aucunProchain}</p>
-              ) : (
-                <ul className="liste-prochains">
-                  {prochains.map(({ cle, annonce: a, marque, action }) => (
-                    <li key={cle} className={`prochain ligne-${marque?.type ?? ""}`}>
-                      <Link href={`/annonces/${a.id}`} className="prochain-lien">
-                        <strong>{nomRaid(a.contenu, d)}</strong>
-                        <span className="doux">{afficherDateCourte(a.debutUtc, fuseau)}</span>
-                      </Link>
-                      <div className="prochain-bas">
-                        {marque && (
-                          <span className={`badge-raid badge-raid-${marque.type}`}>{marque.texte}</span>
-                        )}
-                        {marque?.perso && <ClasseIcone classe={marque.perso.classe} taille={18} />}
-                        {marque?.detail && <span className="doux">{marque.detail}</span>}
-                        {action && <span className="prochain-action">{action}</span>}
-                      </div>
-                    </li>
+                </select>
+              </label>
+              <label className="champ">
+                {d.accueil.duree}
+                <select name="duree" defaultValue={dureeMax ?? ""}>
+                  <option value="">{d.accueil.toutes}</option>
+                  {DUREES_MAX.map((h) => (
+                    <option key={h} value={h}>
+                      {d.accueil.heuresMax(h)}
+                    </option>
                   ))}
-                </ul>
-              )}
-            </section>
+                </select>
+              </label>
+              <button type="submit" className="principal petit">
+                {d.accueil.filtrer}
+              </button>
+            </form>
+            <Calendrier
+              mois={mois}
+              jourChoisi={jour}
+              aujourdHui={aujourdHui}
+              raidsParJour={raidsParJour}
+              lien={(j, m) => lienListe({ jour: j, mois: m })}
+              d={d}
+            />
           </aside>
+
 
           {/* ─── Au centre : la liste des raids ─── */}
           <section className="accueil-centre" id="titre-raids" aria-label={d.accueil.raidsTitre}>
@@ -327,8 +297,28 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
             )}
           </section>
 
-          {/* ─── À droite : calendrier et autres filtres (reste visible au défilement) ─── */}
-          <aside className="accueil-droite">
+          {/* ─── À droite : personnage, vue filtrée, candidature rapide, prochains raids (reste visible) ─── */}
+          <aside className="accueil-perso">
+            <nav className="carte choix-perso" aria-label={d.accueil.chercheRaidPourAria}>
+              <p className="surtitre">{d.accueil.chercheRaidPour}</p>
+              <ul>
+                {personnages.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={lienListe({ perso: p.id, jour: null })}
+                      className={`perso-choix ${p.id === perso?.id ? "choisi" : ""}`}
+                      aria-current={p.id === perso?.id ? "true" : undefined}
+                    >
+                      <ClasseIcone classe={p.classe} taille={24} />
+                      <span className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
+                        {nomEnJeu(p)}
+                      </span>
+                      <FactionIcone faction={p.faction} taille={16} />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
             {perso && (
               /* La vue est déjà filtrée sur le personnage : on le montre, avec les filtres actifs. */
               <section className="carte filtres-actifs" aria-label={d.accueil.vueFiltree}>
@@ -350,45 +340,56 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 )}
               </section>
             )}
-            <Calendrier
-              mois={mois}
-              jourChoisi={jour}
-              aujourdHui={aujourdHui}
-              raidsParJour={raidsParJour}
-              lien={(j, m) => lienListe({ jour: j, mois: m })}
-              d={d}
-            />
-            <form className="carte filtres" method="get" role="search" aria-label={d.accueil.filtrerAria}>
-              <p className="surtitre">{d.calendrier.autresFiltres}</p>
-              {perso && <input type="hidden" name="perso" value={perso.id} />}
-              {jour && <input type="hidden" name="jour" value={jour} />}
-              <input type="hidden" name="mois" value={mois} />
-              <label className="champ">
-                {d.champ.raid}
-                <select name="raid" defaultValue={contenu ?? ""}>
-                  <option value="">{d.accueil.tousLesRaids}</option>
-                  {(Object.keys(raids) as Contenu[]).map((c) => (
-                    <option key={c} value={c}>
-                      {nomRaid(c, d)}
-                    </option>
+            {perso && (
+              /* Candidature rapide : rôle(s) et note choisis une fois, puis « + » sur chaque raid.
+                 Les boutons des lignes envoient ce formulaire avec l'identifiant de leur raid. */
+              <form id="candidature-rapide" action={candidater} className="carte candidature-rapide">
+                <input type="hidden" name="personnageId" value={perso.id} />
+                <input type="hidden" name="depuis" value="liste" />
+                <input type="hidden" name="retour" value={requete} />
+                <p className="surtitre">{d.accueil.rapide(nomEnJeu(perso))}</p>
+                <fieldset className="rapide-roles">
+                  <legend className="sr-only">{d.accueil.rolesProposes}</legend>
+                  {rolesPerso.map((r, n) => (
+                    <label key={r} className="case-role">
+                      <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
+                      <NomRole role={r} taille={18} />
+                    </label>
                   ))}
-                </select>
-              </label>
-              <label className="champ">
-                {d.accueil.duree}
-                <select name="duree" defaultValue={dureeMax ?? ""}>
-                  <option value="">{d.accueil.toutes}</option>
-                  {DUREES_MAX.map((h) => (
-                    <option key={h} value={h}>
-                      {d.accueil.heuresMax(h)}
-                    </option>
+                </fieldset>
+                <label className="champ rapide-note">
+                  {d.accueil.noteRl} <small className="fuseau">{d.accueil.noteRlAide}</small>
+                  <input name="note" maxLength={80} placeholder={d.accueil.notePlaceholder} />
+                </label>
+              </form>
+            )}
+            <section className="carte prochains" aria-labelledby="titre-prochains">
+              <p className="surtitre" id="titre-prochains">
+                {d.accueil.prochainsRaids}
+              </p>
+              {prochains.length === 0 ? (
+                <p className="doux">{d.accueil.aucunProchain}</p>
+              ) : (
+                <ul className="liste-prochains">
+                  {prochains.map(({ cle, annonce: a, marque, action }) => (
+                    <li key={cle} className={`prochain ligne-${marque?.type ?? ""}`}>
+                      <Link href={`/annonces/${a.id}`} className="prochain-lien">
+                        <strong>{nomRaid(a.contenu, d)}</strong>
+                        <span className="doux">{afficherDateCourte(a.debutUtc, fuseau)}</span>
+                      </Link>
+                      <div className="prochain-bas">
+                        {marque && (
+                          <span className={`badge-raid badge-raid-${marque.type}`}>{marque.texte}</span>
+                        )}
+                        {marque?.perso && <ClasseIcone classe={marque.perso.classe} taille={18} />}
+                        {marque?.detail && <span className="doux">{marque.detail}</span>}
+                        {action && <span className="prochain-action">{action}</span>}
+                      </div>
+                    </li>
                   ))}
-                </select>
-              </label>
-              <button type="submit" className="principal petit">
-                {d.accueil.filtrer}
-              </button>
-            </form>
+                </ul>
+              )}
+            </section>
           </aside>
         </div>
       )}

@@ -300,6 +300,7 @@ export const fr = {
     toutesDates: "Toutes les dates",
     raids: (n: number) => `${n} raid${s(n)}`,
     autresFiltres: "Autres filtres",
+    choixRaid: "Choix du raid",
   },
 
   // ─── Page d'un raid ────────────────────────────────────────────────────────
