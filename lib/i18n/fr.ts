@@ -152,6 +152,8 @@ export const fr = {
     groupeAucunePlace: "Il n'y a pas assez de places compatibles pour tout le groupe.",
     groupePasAssezOuvertes: "Il ne reste pas assez de places ouvertes pour accepter tout le groupe.",
     groupePlein: "Ce groupe est déjà complet (5 membres).",
+    groupeIncompatible:
+      "Ce personnage n'est pas de la même faction, du même ruleset ou de la même région que les autres membres du groupe.",
     dejaMembre: "Tu fais déjà partie de ce groupe.",
     candidatureDeGroupe: "C'est une candidature de groupe : accepte ou refuse tout le groupe.",
     obligatoire: (champ: string) => `Le champ « ${champ} » est obligatoire.`,
@@ -614,6 +616,8 @@ export const fr = {
     rejoindre: "Rejoindre le groupe",
     invitePar: (pseudo: string) => `Invitation de ${pseudo}`,
     lienInvalide: "Ce lien d'invitation n'est plus valide.",
+    aucunCompatible:
+      "Aucun de tes personnages n'est de la même faction, du même ruleset et de la même région que ce groupe.",
     retour: "← Mes groupes",
     rubrique: "Groupes",
     candidatureDe: (nom: string) => `Candidature du groupe ${nom}`,

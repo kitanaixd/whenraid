@@ -4,9 +4,9 @@ import { db } from "@/lib/db";
 import { utilisateurConnecte } from "@/lib/session";
 import { signIn } from "@/lib/auth";
 import { dicoCourant } from "@/lib/langue";
-import { MAX_MEMBRES, rolesDuPerso } from "@/lib/groupes";
+import { MAX_MEMBRES, memeMonde, rolesDuPerso } from "@/lib/groupes";
 import { nomEnJeu } from "@/lib/jeu";
-import { ClasseIcone } from "@/app/ClasseIcone";
+import { ClasseIcone, PastilleFaction, PastilleRuleset } from "@/app/ClasseIcone";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { ChoixPersoRoles } from "../../ChoixPersoRoles";
 import { rejoindreGroupe } from "../../actions";
@@ -54,8 +54,12 @@ export default async function PageRejoindre({ params, searchParams }: PageProps<
     where: { utilisateurId: utilisateur.id, supprimeLe: null },
     orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }],
   });
-  const persos = personnages.map((p) => ({ id: p.id, nom: nomEnJeu(p), classe: p.classe, roles: rolesDuPerso(p) }));
+  // Seuls les personnages du même monde que le groupe (faction, ruleset, région) peuvent le rejoindre.
+  const persos = personnages
+    .filter((p) => groupe.membres.every((m) => memeMonde(m.personnage, p)))
+    .map((p) => ({ id: p.id, nom: nomEnJeu(p), classe: p.classe, roles: rolesDuPerso(p) }));
   const plein = groupe.membres.length >= MAX_MEMBRES;
+  const monde = groupe.membres[0]?.personnage;
 
   return (
     <main className="page-groupes">
@@ -69,6 +73,12 @@ export default async function PageRejoindre({ params, searchParams }: PageProps<
       )}
       <section className="carte">
         <p className="surtitre">{d.groupes.membres(groupe.membres.length)}</p>
+        {monde && (
+          <div className="pastilles">
+            <PastilleFaction faction={monde.faction} />
+            <PastilleRuleset ruleset={monde.ruleset} region={monde.region} />
+          </div>
+        )}
         <div className="groupe-icones">
           {groupe.membres.map((m) => (
             <span key={m.id} className="nom-classe">
@@ -82,7 +92,13 @@ export default async function PageRejoindre({ params, searchParams }: PageProps<
           <p className="avertissement">{d.erreur.groupePlein}</p>
         ) : persos.length === 0 ? (
           <p className="doux">
-            {d.raid.declarePersoAvant} <Link href="/personnages">{d.raid.unPersonnage}</Link>.
+            {personnages.length === 0 ? (
+              <>
+                {d.raid.declarePersoAvant} <Link href="/personnages">{d.raid.unPersonnage}</Link>.
+              </>
+            ) : (
+              d.groupes.aucunCompatible
+            )}
           </p>
         ) : (
           <form action={rejoindreGroupe} className="formulaire">

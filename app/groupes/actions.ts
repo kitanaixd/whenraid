@@ -41,11 +41,18 @@ export async function creerGroupe(form: FormData) {
 export async function rejoindreGroupe(form: FormData) {
   const utilisateur = await exigerUtilisateur();
   const code = String(form.get("code") ?? "");
-  const groupe = await db.escouade.findUnique({ where: { code }, include: { membres: true } });
+  const groupe = await db.escouade.findUnique({
+    where: { code },
+    include: { membres: { include: { personnage: true } } },
+  });
   if (!groupe) notFound();
   if (groupe.membres.some((m) => m.utilisateurId === utilisateur.id)) redirect(`/groupes/${groupe.id}`);
   await tenter(`/groupes/rejoindre/${code}`, async () => {
-    const membre = await lireMembre(form, utilisateur.id);
+    const membre = await lireMembre(
+      form,
+      utilisateur.id,
+      groupe.membres.map((m) => m.personnage),
+    );
     await db.$transaction(async (tx) => {
       // Recompté dans la transaction : deux amis qui rejoignent en même temps ne dépassent pas 5.
       const nombre = await tx.membreEscouade.count({ where: { escouadeId: groupe.id } });
@@ -65,7 +72,15 @@ export async function modifierMonPerso(form: FormData) {
   });
   if (!moi) notFound();
   await tenter(`/groupes/${escouadeId}`, async () => {
-    const membre = await lireMembre(form, utilisateur.id);
+    const autres = await db.membreEscouade.findMany({
+      where: { escouadeId, id: { not: moi.id } },
+      include: { personnage: true },
+    });
+    const membre = await lireMembre(
+      form,
+      utilisateur.id,
+      autres.map((m) => m.personnage),
+    );
     await db.membreEscouade.update({ where: { id: moi.id }, data: membre });
   });
 }

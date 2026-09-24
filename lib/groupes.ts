@@ -15,12 +15,22 @@ export function rolesDuPerso(perso: { classe: Parameters<typeof rolePossible>[0]
   return perso.rolesJouables.filter((r) => rolePossible(perso.classe, r));
 }
 
-/** Lit le personnage (du joueur, non supprimé) et les rôles qu'il jouera dans le groupe. */
-export async function lireMembre(form: FormData, utilisateurId: string) {
+type Monde = { faction: string; ruleset: string; region: string };
+
+/** Même faction, même ruleset et même région : ils peuvent faire les mêmes raids. */
+export const memeMonde = (a: Monde, b: Monde) =>
+  a.faction === b.faction && a.ruleset === b.ruleset && a.region === b.region;
+
+/**
+ * Lit le personnage (du joueur, non supprimé) et les rôles qu'il jouera dans le groupe.
+ * Il doit être du même monde (faction, ruleset, région) que les `autres` membres.
+ */
+export async function lireMembre(form: FormData, utilisateurId: string, autres: Monde[] = []) {
   const personnage = await db.personnage.findFirst({
     where: { id: String(form.get("personnageId") ?? ""), utilisateurId, supprimeLe: null },
   });
   if (!personnage) throw new ErreurFormulaire((d) => d.erreur.choisisPerso);
+  if (autres.some((m) => !memeMonde(m, personnage))) throw new ErreurFormulaire((d) => d.erreur.groupeIncompatible);
   const coches = new Set(form.getAll("roles").map(String));
   const roles = rolesDuPerso(personnage).filter((r) => coches.has(r));
   if (roles.length === 0) throw new ErreurFormulaire((d) => d.erreur.unRole);
@@ -59,10 +69,5 @@ export type GroupeAvecMembres = NonNullable<Awaited<ReturnType<typeof monGroupe>
 /** Tous les personnages du groupe peuvent-ils faire le même raid (faction, ruleset, région) ? */
 export function groupeHomogene(membres: { personnage: { faction: string; ruleset: string; region: string } }[]) {
   const [premier] = membres;
-  return membres.every(
-    (m) =>
-      m.personnage.faction === premier.personnage.faction &&
-      m.personnage.ruleset === premier.personnage.ruleset &&
-      m.personnage.region === premier.personnage.region,
-  );
+  return membres.every((m) => memeMonde(m.personnage, premier.personnage));
 }

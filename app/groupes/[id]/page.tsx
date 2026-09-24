@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { dicoCourant } from "@/lib/langue";
-import { groupeHomogene, MAX_MEMBRES, monGroupe, rolesDuPerso } from "@/lib/groupes";
+import { groupeHomogene, MAX_MEMBRES, memeMonde, monGroupe, rolesDuPerso } from "@/lib/groupes";
 import { nomEnJeu } from "@/lib/jeu";
 import { URL_SITE } from "@/lib/site";
 import { ClasseIcone, FactionIcone, NomRole } from "@/app/ClasseIcone";
@@ -25,7 +25,11 @@ export default async function PageGroupe({ params, searchParams }: PageProps<"/g
     where: { utilisateurId: utilisateur.id, supprimeLe: null },
     orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }],
   });
-  const persos = personnages.map((p) => ({ id: p.id, nom: nomEnJeu(p), classe: p.classe, roles: rolesDuPerso(p) }));
+  // Seuls mes personnages du même monde que les autres membres (faction, ruleset, région).
+  const autres = groupe.membres.filter((m) => m.id !== moi.id);
+  const persos = personnages
+    .filter((p) => autres.every((m) => memeMonde(m.personnage, p)))
+    .map((p) => ({ id: p.id, nom: nomEnJeu(p), classe: p.classe, roles: rolesDuPerso(p) }));
   const lien = `${URL_SITE}/groupes/rejoindre/${groupe.code}`;
 
   return (
