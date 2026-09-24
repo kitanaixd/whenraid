@@ -2969,7 +2969,12 @@ main.accueil-large {
   gap: var(--espace);
   max-height: calc(100vh - 6rem);
   overflow-y: auto;
-  scrollbar-width: thin;
+  /* Défilement à la molette, sans barre visible. */
+  scrollbar-width: none;
+}
+.accueil-perso::-webkit-scrollbar,
+.accueil-filtres::-webkit-scrollbar {
+  display: none;
 }
 .accueil-perso .carte,
 .accueil-filtres .carte {
