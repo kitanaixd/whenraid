@@ -443,7 +443,6 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                                 </strong>
                               </span>
                               <span className="doux">
-                                {ecrireSurDiscord(i)}{" "}
                                 <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
                                 <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} />
                                 {i.personnage?.lienLogs && (
@@ -455,6 +454,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                                   </>
                                 )}
                               </span>
+                              {ecrireSurDiscord(i)}
                               {/* Le RL choisit le rôle de chacun parmi ceux proposés. */}
                               <select
                                 name={`role.${i.id}`}
@@ -488,8 +488,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                   {candidatsSeuls.map((i) => (
                     <li key={i.id} className="candidat">
                       <div className="candidat-infos">
-                        <div>
-                          {i.personnage && <ClasseIcone classe={i.personnage.classe} taille={26} />}{" "}
+                        <div className="candidat-nom">
+                          {i.personnage && <ClasseIcone classe={i.personnage.classe} taille={26} />}
                           <strong
                             className="classe"
                             style={
@@ -499,7 +499,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                             }
                           >
                             {i.personnage && nomEnJeu(i.personnage)}
-                          </strong>{" "}
+                          </strong>
                           {i.personnage && <span className="doux">{d.commun.niv(i.personnage.niveau)}</span>}
                         </div>
                         <div className="roles-proposes">
@@ -507,9 +507,9 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                             <NomRole key={c.role} role={c.role} taille={18} />
                           ))}
                         </div>
-                        <div className="doux">
-                          <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
-                          <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} /> {ecrireSurDiscord(i)}
+                        <div className="doux candidat-joueur">
+                          <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link>
+                          <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} />
                         </div>
                         {i.personnage?.lienLogs && (
                           <a href={i.personnage.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
@@ -524,6 +524,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         </span>
                         {rlPeutAgir(annonce) && (
                           <div className="boutons">
+                            {ecrireSurDiscord(i)}
                             {i.choixRoles.map((c) => (
                               <form key={c.role} action={accepter}>
                                 <input type="hidden" name="inscriptionId" value={i.id} />
@@ -700,6 +701,10 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         </div>
 
         <aside className="colonne-compo">
+          <header className="entete-colonne">
+            <p className="surtitre">{d.raid.joueurs(compo.total, annonce.taille)}</p>
+            <h2 id="titre-compo">{d.raid.compo}</h2>
+          </header>
           <section className="carte organisateur" aria-label={d.raid.organisateur}>
             <p className="surtitre">{d.raid.organisePar}</p>
             {organisateur && (
@@ -718,10 +723,6 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
               <BadgeFiabilite fiabilite={fiabRl.get(annonce.createurId)} />
             </p>
           </section>
-          <header className="entete-colonne">
-            <p className="surtitre">{d.raid.joueurs(compo.total, annonce.taille)}</p>
-            <h2 id="titre-compo">{d.raid.compo}</h2>
-          </header>
           <section className="carte compo-panneau" aria-labelledby="titre-compo">
             <div className="compo-chiffres">
               <div>

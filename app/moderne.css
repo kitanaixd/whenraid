@@ -1412,3 +1412,46 @@ a:focus-visible * {
 .banniere-texte:hover span {
   text-decoration: none !important;
 }
+
+/* ─── Page du raid : carte d'un candidat alignée ──────────────────────────── */
+.liste-candidats > li.candidat:not(.candidat-groupe) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+.candidat-infos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+}
+.candidat-nom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.candidat-joueur {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.candidat-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+.candidat-actions .boutons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.candidat-actions .boutons form {
+  margin: 0;
+}
+
+/* Carte d'un groupe : nom | joueur | message | rôle. */
+.membres-candidats li {
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+}

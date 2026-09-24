@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { IconeMessage } from "@/app/Icones";
 import { useDico } from "@/app/Langue";
@@ -17,6 +18,12 @@ export function BoutonMessage({
 }) {
   const dialogue = useRef<HTMLDialogElement>(null);
   const d = useDico();
+  // La fenêtre n'existe qu'une fois ouverte, rendue à la racine de la page : ce bouton peut
+  // être dans un autre formulaire (carte d'un groupe), et un formulaire ne peut pas en contenir un autre.
+  const [ouvert, setOuvert] = useState(false);
+  useEffect(() => {
+    if (ouvert) dialogue.current?.showModal();
+  }, [ouvert]);
   const t = d.retrait;
   return (
     <>
@@ -25,26 +32,35 @@ export function BoutonMessage({
         className="bouton-icone lien-discord"
         aria-label={t.message(pseudo)}
         title={t.message(pseudo)}
-        onClick={() => dialogue.current?.showModal()}
+        onClick={() => setOuvert(true)}
       >
         <IconeMessage />
       </button>
-      <dialog ref={dialogue} className="confirmation" aria-labelledby={`titre-message-${inscriptionId}`}>
-        <form action={action}>
-          <input type="hidden" name="inscriptionId" value={inscriptionId} />
-          <h2 id={`titre-message-${inscriptionId}`}>{t.messageTitre(pseudo)}</h2>
-          <p className="doux">{t.messageAide}</p>
-          <textarea name="texte" required maxLength={500} rows={4} placeholder={t.messagePlaceholder} />
-          <p className="actions">
-            <button type="button" onClick={() => dialogue.current?.close()}>
-              {t.annuler}
-            </button>{" "}
-            <BoutonEnvoi className="principal" enCours={d.commun.enCours}>
-              {t.envoyer}
-            </BoutonEnvoi>
-          </p>
-        </form>
-      </dialog>
+      {ouvert &&
+        createPortal(
+          <dialog
+            ref={dialogue}
+            className="confirmation"
+            aria-labelledby={`titre-message-${inscriptionId}`}
+            onClose={() => setOuvert(false)}
+          >
+            <form action={action}>
+              <input type="hidden" name="inscriptionId" value={inscriptionId} />
+              <h2 id={`titre-message-${inscriptionId}`}>{t.messageTitre(pseudo)}</h2>
+              <p className="doux">{t.messageAide}</p>
+              <textarea name="texte" required maxLength={500} rows={4} placeholder={t.messagePlaceholder} />
+              <p className="actions">
+                <button type="button" onClick={() => dialogue.current?.close()}>
+                  {t.annuler}
+                </button>{" "}
+                <BoutonEnvoi className="principal" enCours={d.commun.enCours}>
+                  {t.envoyer}
+                </BoutonEnvoi>
+              </p>
+            </form>
+          </dialog>,
+          document.body,
+        )}
     </>
   );
 }
