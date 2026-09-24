@@ -24,6 +24,7 @@ import {
 } from "./ClasseIcone";
 import { LigneRaid, type Marque } from "./LigneRaid";
 import { Calendrier } from "./Calendrier";
+import { FormulaireAuto } from "./FormulaireAuto";
 import { candidater, seDesinscrire } from "./annonces/[id]/actions";
 import { BoutonDesinscrire } from "./annonces/[id]/BoutonDesinscrire";
 import { nomEnJeu, rolePossible } from "@/lib/jeu";
@@ -74,8 +75,12 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
 
   const fuseau = utilisateur.fuseauHoraire;
   const filtres = await searchParams;
-  const valeur = (nom: string) => (typeof filtres[nom] === "string" ? (filtres[nom] as string) : "");
-  const contenu = valeur("raid") in Contenu ? (valeur("raid") as Contenu) : null;
+  const valeur = (nom: string) => {
+    const v = filtres[nom];
+    return typeof v === "string" ? v : Array.isArray(v) ? v.join(",") : "";
+  };
+  // Raids choisis (plusieurs possibles) : « raid » répété par les cases, ou séparé par des virgules.
+  const contenus = [...new Set(valeur("raid").split(","))].filter((c): c is Contenu => c in Contenu);
   const jour = /^\d{4}-\d{2}-\d{2}$/.test(valeur("jour")) ? valeur("jour") : null;
   const dureeMax = DUREES_MAX.includes(Number(valeur("duree"))) ? Number(valeur("duree")) : null;
   const aujourdHui = jourLocal(new Date(), fuseau);
@@ -114,7 +119,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
           where: {
             statut: { in: ["PUBLIEE", "COMPLETE"] },
             debutUtc: { gt: new Date() },
-            ...(contenu && { contenu }),
+            ...(contenus.length > 0 && { contenu: { in: contenus } }),
             ...(dureeMax && { dureeEstimee: { lte: dureeMax * 60 } }),
             // Premier tri en base : même faction, ruleset et région que le personnage choisi.
             faction: perso.faction,
@@ -165,7 +170,12 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
   const rolesPerso = perso ? perso.rolesJouables.filter((r) => rolePossible(perso.classe, r)) : [];
   const requete = lienListe({}).replace(/^\/\??/, "");
   const erreur = valeur("erreur");
-  const filtreActif = Boolean(contenu || jour || dureeMax || recherche);
+  const filtreActif = Boolean(contenus.length > 0 || jour || dureeMax || recherche);
+  /** Champs cachés qui gardent les paramètres actuels de la liste, sauf `sauf`. */
+  const champsCaches = (...sauf: (typeof PARAMETRES)[number][]) =>
+    PARAMETRES.filter((nom) => !sauf.includes(nom) && valeur(nom)).map((nom) => (
+      <input key={nom} type="hidden" name={nom} value={valeur(nom)} />
+    ));
 
   /** Bouton « Annuler » (ou « Me désister ») pour un raid où je suis inscrit. */
   const annulation = (annonceId: string) => {
@@ -238,43 +248,8 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
         </section>
       ) : (
         <div className="accueil-grille">
-          {/* ─── À gauche : choix du raid et calendrier (reste visible au défilement) ─── */}
+          {/* ─── À gauche : calendrier et durée (reste visible au défilement) ─── */}
           <aside className="accueil-filtres">
-            <form className="carte filtres" method="get" role="search" aria-label={d.accueil.filtrerAria}>
-              <p className="surtitre">{d.calendrier.choixRaid}</p>
-              {groupe ? (
-                <input type="hidden" name="groupe" value={groupe.id} />
-              ) : (
-                perso && <input type="hidden" name="perso" value={perso.id} />
-              )}
-              {jour && <input type="hidden" name="jour" value={jour} />}
-              <input type="hidden" name="mois" value={mois} />
-              <label className="champ">
-                {d.champ.raid}
-                <select name="raid" defaultValue={contenu ?? ""}>
-                  <option value="">{d.accueil.tousLesRaids}</option>
-                  {(Object.keys(raids) as Contenu[]).map((c) => (
-                    <option key={c} value={c}>
-                      {nomRaid(c, d)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="champ">
-                {d.accueil.duree}
-                <select name="duree" defaultValue={dureeMax ?? ""}>
-                  <option value="">{d.accueil.toutes}</option>
-                  {DUREES_MAX.map((h) => (
-                    <option key={h} value={h}>
-                      {d.accueil.heuresMax(h)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button type="submit" className="principal petit">
-                {d.accueil.filtrer}
-              </button>
-            </form>
             <Calendrier
               mois={mois}
               jourChoisi={jour}
@@ -282,16 +257,43 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               raidsParJour={raidsParJour}
               lien={(j, m) => lienListe({ jour: j, mois: m })}
               d={d}
-            />
+            >
+              {/* Durée : appliquée dès qu'on la change. */}
+              <FormulaireAuto className="duree-calendrier" label={d.accueil.duree}>
+                {champsCaches("duree")}
+                <label className="champ">
+                  {d.accueil.duree}
+                  <select name="duree" defaultValue={dureeMax ?? ""}>
+                    <option value="">{d.accueil.toutes}</option>
+                    {DUREES_MAX.map((h) => (
+                      <option key={h} value={h}>
+                        {d.accueil.heuresMax(h)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </FormulaireAuto>
+            </Calendrier>
           </aside>
 
           {/* ─── Au centre : la liste des raids ─── */}
           <section className="accueil-centre" id="titre-raids" aria-label={d.accueil.raidsTitre}>
+            {/* Choix du raid : une ligne de chips (plusieurs raids possibles), appliquée au clic. */}
+            <FormulaireAuto className="filtre-raids" label={d.calendrier.choixRaid}>
+              {champsCaches("raid")}
+              <fieldset className="rapide-roles choix-raids">
+                <legend className="sr-only">{d.champ.raid}</legend>
+                {(Object.keys(raids) as Contenu[]).map((c) => (
+                  <label key={c} className="case-role">
+                    <input type="checkbox" name="raid" value={c} defaultChecked={contenus.includes(c)} />
+                    {nomRaid(c, d)}
+                  </label>
+                ))}
+              </fieldset>
+            </FormulaireAuto>
             {/* Recherche par titre : garde le personnage et les autres filtres. */}
             <form className="recherche-raids" method="get" role="search" aria-label={d.accueil.rechercheAria}>
-              {(["perso", "groupe", "raid", "jour", "mois", "duree"] as const).map(
-                (nom) => valeur(nom) && <input key={nom} type="hidden" name={nom} value={valeur(nom)} />,
-              )}
+              {champsCaches("q")}
               <input
                 type="search"
                 name="q"
@@ -376,7 +378,11 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                       jour: null,
                     })}
                   {recherche && filtreRetirable(d.accueil.recherche(recherche), { q: null })}
-                  {contenu && filtreRetirable(nomRaid(contenu, d), { raid: null })}
+                  {contenus.map((c) => (
+                    <span key={c}>
+                      {filtreRetirable(nomRaid(c, d), { raid: contenus.filter((x) => x !== c).join(",") || null })}
+                    </span>
+                  ))}
                   {dureeMax &&
                     filtreRetirable(d.accueil.heuresMax(dureeMax), {
                       duree: null,

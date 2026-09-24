@@ -985,3 +985,28 @@ span.profil-avatar {
 .liste-persos small img {
   vertical-align: middle;
 }
+
+/* Choix du raid : une ligne de chips à cocher au-dessus de la recherche, comme le choix des rôles. */
+.filtre-raids {
+  margin: 0 0 0.8rem;
+}
+.choix-raids {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.choix-raids .case-role {
+  white-space: nowrap;
+}
+/* Durée, sous le calendrier. */
+.duree-calendrier {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--bord);
+}
+.duree-calendrier .champ {
+  margin: 0;
+}
+.duree-calendrier + .calendrier-tout {
+  margin-top: 0.8rem;
+}

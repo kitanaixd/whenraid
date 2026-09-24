@@ -38,8 +38,8 @@ function retourListe(form: FormData) {
   const recue = new URLSearchParams(String(form.get("retour") ?? ""));
   const params = new URLSearchParams();
   for (const nom of ["perso", "groupe", "raid", "jour", "mois", "duree"]) {
-    const v = recue.get(nom);
-    if (v && /^[\w-]{1,40}$/.test(v)) params.set(nom, v);
+    const v = recue.getAll(nom).join(",");
+    if (v && /^[\w,-]{1,120}$/.test(v)) params.set(nom, v);
   }
   // Recherche par titre : lettres, chiffres, espaces et tirets seulement.
   const q = recue.get("q");

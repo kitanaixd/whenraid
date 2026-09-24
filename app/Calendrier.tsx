@@ -27,6 +27,7 @@ export function Calendrier({
   raidsParJour,
   lien,
   d,
+  children,
 }: {
   /** Mois affiché, « AAAA-MM ». */
   mois: string;
@@ -37,14 +38,18 @@ export function Calendrier({
   /** Construit l'adresse de la liste pour un jour (null = toutes les dates) et un mois affiché. */
   lien: (jour: string | null, mois: string) => string;
   d: Dico;
+  /** Filtres affichés sous le calendrier (la durée). */
+  children?: React.ReactNode;
 }) {
   const [annee, numeroMois] = mois.split("-").map(Number);
   const premier = new Date(Date.UTC(annee, numeroMois - 1, 1));
   const decalage = (premier.getUTCDay() + 6) % 7; // lundi en premier
   const nbJours = new Date(Date.UTC(annee, numeroMois, 0)).getUTCDate();
-  const titre = new Intl.DateTimeFormat(d.calendrier.locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(
-    premier,
-  );
+  const titre = new Intl.DateTimeFormat(d.calendrier.locale, {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(premier);
   const cases: (string | null)[] = [
     ...Array.from({ length: decalage }, () => null),
     ...Array.from({ length: nbJours }, (_, i) => `${mois}-${String(i + 1).padStart(2, "0")}`),
@@ -53,11 +58,19 @@ export function Calendrier({
   return (
     <section className="carte calendrier" aria-label={d.calendrier.titre}>
       <div className="calendrier-entete">
-        <Link href={lien(jourChoisi, decalerMois(mois, -1))} aria-label={d.calendrier.moisPrecedent} className="calendrier-fleche">
+        <Link
+          href={lien(jourChoisi, decalerMois(mois, -1))}
+          aria-label={d.calendrier.moisPrecedent}
+          className="calendrier-fleche"
+        >
           ‹
         </Link>
         <strong className="calendrier-titre">{titre}</strong>
-        <Link href={lien(jourChoisi, decalerMois(mois, 1))} aria-label={d.calendrier.moisSuivant} className="calendrier-fleche">
+        <Link
+          href={lien(jourChoisi, decalerMois(mois, 1))}
+          aria-label={d.calendrier.moisSuivant}
+          className="calendrier-fleche"
+        >
           ›
         </Link>
       </div>
@@ -73,7 +86,13 @@ export function Calendrier({
           const nb = raidsParJour.get(jour) ?? 0;
           const passe = jour < aujourdHui;
           const choisi = jour === jourChoisi;
-          const classes = ["calendrier-jour", passe && "passe", nb > 0 && "a-raids", choisi && "choisi", jour === aujourdHui && "aujourdhui"]
+          const classes = [
+            "calendrier-jour",
+            passe && "passe",
+            nb > 0 && "a-raids",
+            choisi && "choisi",
+            jour === aujourdHui && "aujourdhui",
+          ]
             .filter(Boolean)
             .join(" ");
           // Seuls les jours à venir qui ont des raids sont cliquables.
@@ -98,6 +117,7 @@ export function Calendrier({
           );
         })}
       </div>
+      {children}
       {jourChoisi && (
         <Link href={lien(null, mois)} className="bouton petit calendrier-tout">
           {d.calendrier.toutesDates}
