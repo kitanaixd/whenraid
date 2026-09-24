@@ -489,6 +489,8 @@ export const fr = {
 
   // ─── Création de raid ──────────────────────────────────────────────────────
   creation: {
+    aucunRolePossible: "Ce personnage n'a aucun rôle jouable pour sa classe : modifie-le dans « Mes personnages ».",
+    tonRole: "Ton rôle dans ce raid",
     titre: "Créer un raid",
     sansPerso1: "Déclare d'abord",
     sansPerso2: ": le raid prendra sa faction, son ruleset et sa région.",
@@ -509,7 +511,7 @@ export const fr = {
     heure: "Heure",
     compoActuelle: "Ta compo actuelle",
     raidPlein: "Ton raid est déjà plein : il ne reste aucune place à ouvrir.",
-    placesRestantes: (n: number) => `Il reste ${n} place${s(n)} à pourvoir. Compte-toi dedans.`,
+    placesRestantes: (n: number) => `Il reste ${n} place${s(n)} à pourvoir.`,
     retirerUn: (classe: string, role: string) => `Retirer un ${classe} ${role}`,
     ajouterUn: (classe: string, role: string) => `Ajouter un ${classe} ${role}`,
     besoins: "Besoins précis",

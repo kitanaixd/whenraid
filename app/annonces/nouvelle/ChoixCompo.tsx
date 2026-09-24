@@ -15,11 +15,16 @@ const cle = (classe: Classe, role: Role) => `${classe}.${role}`;
 /** Un besoin précis : « n places pour telle classe / tel rôle » ('' = toute classe / tout rôle). */
 export type Besoin = { classe: string; role: string; nombre: number };
 
+/** Un personnage avec lequel le RL peut organiser, et les rôles qu'il peut y tenir. */
+export type PersoOrganisateur = { id: string; libelle: string; classe: Classe; roles: Role[] };
+
 /**
  * Formulaire de compo : raid, date, heure, durée (à la création), puis la compo
  * actuelle (boutons − / +) et les besoins précis (lignes ajoutables).
  * À la modification d'un raid : pas de ligne raid / date (`entete` faux), compo et
  * besoins pré-remplis, et `dejaPris` places déjà occupées par des joueurs acceptés.
+ * À la création (`organisateurs`) : le RL choisit son personnage et son rôle, et compte
+ * aussitôt dans la compo (une place qu'on ne peut pas retirer avec « − »).
  */
 export function ChoixCompo({
   fuseau,
@@ -30,6 +35,7 @@ export function ChoixCompo({
   besoinsInitiaux = [],
   dejaPris = 0,
   dateMin,
+  organisateurs,
 }: {
   fuseau: string;
   personnage?: React.ReactNode;
@@ -40,10 +46,17 @@ export function ChoixCompo({
   dejaPris?: number;
   /** Premier jour possible (aujourd'hui, dans le fuseau du RL) : pas de raid dans le passé. */
   dateMin?: string;
+  organisateurs?: PersoOrganisateur[];
 }) {
   const d = useDico();
   const [contenu, setContenu] = useState<Contenu>(contenuInitial);
   const [compo, setCompo] = useState<Record<string, number>>(compoInitiale);
+  // Le personnage et le rôle du RL : une place comptée d'office dans la compo.
+  const [persoRlId, setPersoRlId] = useState(organisateurs?.[0]?.id ?? "");
+  const persoRl = organisateurs?.find((p) => p.id === persoRlId);
+  const [roleRl, setRoleRl] = useState<Role | undefined>(persoRl?.roles[0]);
+  const cleRl = persoRl && roleRl ? cle(persoRl.classe, roleRl) : null;
+  const moi = cleRl ? 1 : 0;
   const nbLignes = Math.max(1, besoinsInitiaux.length);
   const [lignes, setLignes] = useState<number[]>(Array.from({ length: nbLignes }, (_, i) => i));
   const [prochaineLigne, setProchaineLigne] = useState(nbLignes);
@@ -53,12 +66,14 @@ export function ChoixCompo({
 
   // Places que le RL peut répartir : la taille, moins les joueurs acceptés (qui gardent leur place).
   const taille = raids[contenu].taille - dejaPris;
-  const nombre = (classe: Classe, role: Role) => compo[cle(classe, role)] ?? 0;
+  // Les nombres affichés (et envoyés) comptent le RL dans sa case.
+  const nombre = (classe: Classe, role: Role) =>
+    (compo[cle(classe, role)] ?? 0) + (cleRl === cle(classe, role) ? 1 : 0);
   const totalRole = (role: Role) =>
     Object.entries(compo)
       .filter(([k]) => k.endsWith(`.${role}`))
-      .reduce((t, [, n]) => t + n, 0);
-  const joueurs = Object.values(compo).reduce((a, b) => a + b, 0);
+      .reduce((t, [, n]) => t + n, 0) + (roleRl === role && cleRl ? 1 : 0);
+  const joueurs = Object.values(compo).reduce((a, b) => a + b, 0) + moi;
   const places = Math.max(0, taille - joueurs);
   const exigees = lignes.reduce((t, l) => t + (exigences[l] ?? 0), 0);
 
@@ -66,7 +81,7 @@ export function ChoixCompo({
   const changer = (classe: Classe, role: Role, delta: number) => {
     setCompo((precedent) => {
       const actuel = precedent[cle(classe, role)] ?? 0;
-      const total = Object.values(precedent).reduce((a, b) => a + b, 0);
+      const total = Object.values(precedent).reduce((a, b) => a + b, 0) + moi;
       // Impossible de dépasser la taille du raid ou de descendre sous zéro.
       const suivant = Math.max(0, Math.min(actuel + delta, actuel + (taille - total)));
       return { ...precedent, [cle(classe, role)]: suivant };
@@ -111,6 +126,38 @@ export function ChoixCompo({
       )}
 
       {personnage}
+      {organisateurs && (
+        <div className="rangee choix-organisateur">
+          <div className="champ">
+            {d.creation.avecQuelPerso}
+            <MenuDeroulant
+              name="personnageId"
+              etiquette={d.creation.avecQuelPerso}
+              options={organisateurs.map((p) => ({ valeur: p.id, classe: p.classe, libelle: p.libelle }))}
+              surChangement={(id) => {
+                setPersoRlId(id);
+                setRoleRl(organisateurs.find((p) => p.id === id)?.roles[0]);
+              }}
+            />
+          </div>
+          <fieldset className="rapide-roles">
+            <legend>{d.creation.tonRole}</legend>
+            {persoRl?.roles.length === 0 && <p className="doux">{d.creation.aucunRolePossible}</p>}
+            {persoRl?.roles.map((r) => (
+              <label key={r} className="case-role">
+                <input
+                  type="radio"
+                  name="roleOrganisateur"
+                  value={r}
+                  checked={roleRl === r}
+                  onChange={() => setRoleRl(r)}
+                />
+                <NomRole role={r} taille={18} />
+              </label>
+            ))}
+          </fieldset>
+        </div>
+      )}
 
       <h2>{d.creation.compoActuelle}</h2>
       <div className="compteur-compo" aria-live="polite">
@@ -155,7 +202,7 @@ export function ChoixCompo({
                         type="button"
                         className="pas"
                         onClick={() => changer(classe, role, -1)}
-                        disabled={nombre(classe, role) === 0}
+                        disabled={(compo[cle(classe, role)] ?? 0) === 0}
                         aria-label={d.creation.retirerUn(d.classe[classe], d.role[role])}
                       >
                         −

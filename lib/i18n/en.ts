@@ -460,6 +460,8 @@ export const en: Dico = {
 
   // ─── Raid creation ─────────────────────────────────────────────────────────
   creation: {
+    aucunRolePossible: "This character has no playable role for its class: edit it in “My characters”.",
+    tonRole: "Your role in this raid",
     titre: "Create a raid",
     sansPerso1: "First add",
     sansPerso2: ": the raid will use its faction, ruleset and region.",
@@ -480,7 +482,7 @@ export const en: Dico = {
     heure: "Time",
     compoActuelle: "Your current roster",
     raidPlein: "Your raid is already full: no spots are left to open.",
-    placesRestantes: (n) => `${n} spot${s(n)} left to fill. Count yourself in.`,
+    placesRestantes: (n) => `${n} spot${s(n)} left to fill.`,
     retirerUn: (classe, role) => `Remove a ${classe} ${role}`,
     ajouterUn: (classe, role) => `Add a ${classe} ${role}`,
     besoins: "Specific needs",

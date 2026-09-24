@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Contenu } from "@/generated/prisma/enums";
+import { Contenu, Role } from "@/generated/prisma/enums";
+import { rolesDuPerso } from "@/lib/groupes";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { exigerUtilisateur } from "@/lib/session";
@@ -9,7 +10,6 @@ import { FormulaireConserve } from "@/app/FormulaireConserve";
 import { raids } from "@/lib/raids";
 import { nomEnJeu } from "@/lib/jeu";
 import { ChoixCompo } from "./ChoixCompo";
-import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
 import { choix, ErreurFormulaire, messageErreur } from "@/lib/formulaire";
 import { dicoCourant, langueCourante } from "@/lib/langue";
@@ -39,7 +39,13 @@ async function creerAnnonce(form: FormData) {
     if (!debutUtc) throw new ErreurFormulaire((d) => d.erreur.dateInvalide);
     if (debutUtc.getTime() <= Date.now()) throw new ErreurFormulaire((d) => d.erreur.datePassee);
 
+    // Le RL compte dans la compo avec son personnage et le rôle choisi (les nombres envoyés l'incluent).
+    const roleRl = choix(form, "roleOrganisateur", Role, "role");
+    if (!rolesDuPerso(personnage).includes(roleRl)) throw new ErreurFormulaire((d) => d.erreur.unRole);
     const { composition, places } = lireCompoEtBesoins(form, taille, { pleinAutorise: false });
+    if (!composition.some((c) => c.classe === personnage.classe && c.role === roleRl)) {
+      throw new ErreurFormulaire((d) => d.erreur.valeurInvalide(d.champ.compo));
+    }
 
     const donnees = {
       createurId: utilisateur.id,
@@ -111,20 +117,12 @@ export default async function PageNouvelleAnnonce() {
         <ChoixCompo
           fuseau={utilisateur.fuseauHoraire}
           dateMin={jourLocal(new Date(), utilisateur.fuseauHoraire)}
-          personnage={
-            <div className="champ">
-              {d.creation.avecQuelPerso}
-              <MenuDeroulant
-                name="personnageId"
-                etiquette={d.creation.avecQuelPerso}
-                options={personnages.map((p) => ({
-                  valeur: p.id,
-                  classe: p.classe,
-                  libelle: `${nomEnJeu(p)} — ${d.classe[p.classe]}, ${d.faction[p.faction]}, ${d.ruleset[p.ruleset]} ${p.region}`,
-                }))}
-              />
-            </div>
-          }
+          organisateurs={personnages.map((p) => ({
+            id: p.id,
+            classe: p.classe,
+            roles: rolesDuPerso(p),
+            libelle: `${nomEnJeu(p)} — ${d.classe[p.classe]}, ${d.faction[p.faction]}, ${d.ruleset[p.ruleset]} ${p.region}`,
+          }))}
         />
 
         <ChampsOrganisation d={d} langueParDefaut={langue} />
