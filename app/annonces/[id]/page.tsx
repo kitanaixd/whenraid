@@ -700,6 +700,24 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         </div>
 
         <aside className="colonne-compo">
+          <section className="carte organisateur" aria-label={d.raid.organisateur}>
+            <p className="surtitre">{d.raid.organisePar}</p>
+            {organisateur && (
+              <p className="organisateur-perso">
+                <ClasseIcone classe={organisateur.classe} taille={32} />
+                <strong
+                  className="classe"
+                  style={{ "--c": `var(--classe-${organisateur.classe})` } as React.CSSProperties}
+                >
+                  {nomEnJeu(organisateur)}
+                </strong>
+              </p>
+            )}
+            <p className="doux">
+              {estRl ? d.commun.toi : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>} ·{" "}
+              <BadgeFiabilite fiabilite={fiabRl.get(annonce.createurId)} />
+            </p>
+          </section>
           <header className="entete-colonne">
             <p className="surtitre">{d.raid.joueurs(compo.total, annonce.taille)}</p>
             <h2 id="titre-compo">{d.raid.compo}</h2>
@@ -802,25 +820,6 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
               )}
             </section>
           )}
-
-          <section className="carte organisateur" aria-label={d.raid.organisateur}>
-            <p className="surtitre">{d.raid.organisePar}</p>
-            {organisateur && (
-              <p className="organisateur-perso">
-                <ClasseIcone classe={organisateur.classe} taille={32} />
-                <strong
-                  className="classe"
-                  style={{ "--c": `var(--classe-${organisateur.classe})` } as React.CSSProperties}
-                >
-                  {nomEnJeu(organisateur)}
-                </strong>
-              </p>
-            )}
-            <p className="doux">
-              {estRl ? d.commun.toi : <Link href={`/joueurs/${annonce.createurId}`}>{annonce.createur.pseudo}</Link>} ·{" "}
-              <BadgeFiabilite fiabilite={fiabRl.get(annonce.createurId)} />
-            </p>
-          </section>
         </aside>
       </div>
     </main>

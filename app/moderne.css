@@ -1384,3 +1384,14 @@ input[type="range"].curseur-duree {
   color: var(--accent);
   font-weight: 600;
 }
+
+/* Au-dessus de la liste : chips des raids et barre de recherche en 48 px. */
+.filtre-raids .case-role,
+form.recherche-raids input[type="search"][name="q"] {
+  height: 48px !important;
+  min-height: 48px;
+}
+.filtre-raids .case-role {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
