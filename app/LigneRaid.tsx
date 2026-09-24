@@ -31,6 +31,7 @@ export function LigneRaid({
   marque,
   auteur,
   action,
+  bulleCandidatures = false,
 }: {
   annonce: AnnonceLigne;
   fuseau: string;
@@ -40,6 +41,8 @@ export function LigneRaid({
   marque?: Marque;
   auteur?: ReactNode;
   action?: ReactNode;
+  /** Bulle du nombre de candidatures en attente : seulement sur les raids que l'on organise. */
+  bulleCandidatures?: boolean;
 }) {
   const r = resumeLigneRaid(a);
   const taille = compact ? 18 : 22;
@@ -86,7 +89,7 @@ export function LigneRaid({
       data-fond={raids[a.contenu].image}
     >
       {/* Bulle en haut à droite : nombre de candidatures en attente. */}
-      {r.enAttente > 0 && (
+      {bulleCandidatures && r.enAttente > 0 && (
         <span className="bulle-candidatures" title={d.accueil.candidatures(r.enAttente)}>
           <span aria-hidden="true">{r.enAttente}</span>
           <span className="sr-only">{d.accueil.candidatures(r.enAttente)}</span>

@@ -291,6 +291,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                       d={d}
                       lien={`/annonces/${a.id}${perso ? `?perso=${perso.id}` : ""}`}
                       marque={marque}
+                      bulleCandidatures={a.createurId === utilisateur.id}
                       auteur={
                         <>
                           {d.accueil.par(a.createur.pseudo)} <BadgeFiabilite fiabilite={fiabilite.get(a.createurId)} />
@@ -381,7 +382,8 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               ) : (
                 <ul className="liste-prochains">
                   {prochains.map(({ cle, annonce: a, marque, action }) => {
-                    const enAttente = resumeLigneRaid(a).enAttente;
+                    // Bulle des candidatures : seulement sur les raids que j'organise.
+                    const enAttente = a.createurId === utilisateur.id ? resumeLigneRaid(a).enAttente : 0;
                     return (
                       <li key={cle} className={`prochain ligne-${marque?.type ?? ""}`}>
                         {enAttente > 0 && (
