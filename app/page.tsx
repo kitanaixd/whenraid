@@ -24,6 +24,9 @@ import {
 } from "./ClasseIcone";
 import { GroupeInscrit, LigneRaid, type Marque } from "./LigneRaid";
 import { Calendrier } from "./Calendrier";
+import { MemoriserChoix } from "./MemoriserChoix";
+import { COOKIE_CHOIX } from "@/lib/choixListe";
+import { cookies } from "next/headers";
 import { FormulaireAuto } from "./FormulaireAuto";
 import { candidater, seDesinscrire } from "./annonces/[id]/actions";
 import { BoutonDesinscrire } from "./annonces/[id]/BoutonDesinscrire";
@@ -105,8 +108,13 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
     mesGroupes(utilisateur.id),
   ]);
   // Le joueur cherche un raid pour un de ses groupes, ou pour un personnage (par défaut : son principal).
-  const groupe = groupes.find((g) => g.id === valeur("groupe"));
-  const persoChoisi = personnages.find((p) => p.id === valeur("perso")) ?? personnages[0];
+  // Sans choix dans l'adresse, on reprend le dernier personnage ou groupe choisi (cookie).
+  const [typeRetenu, idRetenu] = ((await cookies()).get(COOKIE_CHOIX)?.value ?? "").split(":");
+  const sansChoix = !valeur("groupe") && !valeur("perso");
+  const groupeId = valeur("groupe") || (sansChoix && typeRetenu === "groupe" ? idRetenu : "");
+  const persoId = valeur("perso") || (sansChoix && typeRetenu === "perso" ? idRetenu : "");
+  const groupe = groupes.find((g) => g.id === groupeId);
+  const persoChoisi = personnages.find((p) => p.id === persoId) ?? personnages[0];
   // Avec un groupe, la liste suit la faction, le ruleset et la région de mon personnage dans ce groupe.
   const perso = groupe ? groupe.membres.find((m) => m.utilisateurId === utilisateur.id)?.personnage : persoChoisi;
   // Un groupe ne peut candidater que si tous ses personnages existent encore et vont ensemble.
@@ -259,6 +267,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
         </section>
       ) : (
         <div className="accueil-grille">
+          {perso && <MemoriserChoix valeur={groupe ? `groupe:${groupe.id}` : `perso:${perso.id}`} />}
           {/* ─── À gauche : calendrier, durée et prochains raids (reste visible au défilement) ─── */}
           <aside className="accueil-filtres">
             <Calendrier
