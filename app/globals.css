@@ -3370,3 +3370,10 @@ a.calendrier-jour.choisi {
     justify-content: flex-start;
   }
 }
+/* Choix du raid : même écart entre le titre, chaque champ et le bouton. */
+.accueil-filtres .filtres {
+  gap: 0.9rem;
+}
+.accueil-filtres .filtres > .surtitre {
+  margin: 0;
+}

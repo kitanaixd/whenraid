@@ -581,3 +581,17 @@ button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compt
   padding-bottom: 0;
   font-size: 0.95rem;
 }
+
+/* Titre de la candidature rapide : même style que les autres titres de carte
+   (le formulaire commence par des champs cachés, d'où une règle dédiée). */
+.carte.candidature-rapide > .surtitre {
+  justify-content: flex-start;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--texte);
+  margin: 0 0 0.9rem;
+}
+/* Choix du raid : le titre suit le même écart que les champs (gap du formulaire). */
+.accueil-filtres form.filtres.carte > p.surtitre:first-child {
+  margin: 0;
+}
