@@ -76,20 +76,42 @@ export const en: Dico = {
     fermer: "Close",
   },
   discord: {
-    invitation: {
-      commence: (raid, date) => `🎮 **${raid}** starts on ${date}!`,
-      vocalDiscord: (lien) => `Discord voice: ${lien}`,
-      vocalTs: (adresse, motDePasse) =>
-        `TeamSpeak voice: ${adresse}` + (motDePasse ? ` — password: ${motDePasse}` : ""),
-      tonRl: (nom) => `Your RL: **${nom}**. To get your invite, paste this in game:`,
+    titre: {
+      CANDIDATURE_ACCEPTEE: "✅ You're in!",
+      CANDIDATURE_REFUSEE: "Application declined",
+      RAID_COMPLET: "Raid full",
+      RAID_ANNULE: "⚠️ Raid cancelled",
+      NOUVELLE_CANDIDATURE: "📥 New application",
+      VALIDER_PRESENCES: "✅ Raid over",
+      DESISTEMENT: "⚠️ A player dropped out",
     },
-    rappelRl: (raid, date, n, lien) =>
-      `⏰ Your raid **${raid}** starts on ${date}.\n` +
-      `${n} confirmed player${s(n)}. Send them the invites (voice and /w) here:\n${lien}`,
-    rappelFin: (raid, lien) =>
-      `✅ Your raid **${raid}** is over!\n` +
-      `Confirm attendance (and who stood out) here:\n${lien}\n` +
-      `Without confirmation within 24 h, every confirmed player will be counted as present.`,
+    champ: {
+      date: "📅 Date",
+      personnage: "🧙 Character",
+      rl: "👑 Your RL",
+      vocal: "🎙️ Voice",
+      confirmes: "👥 Confirmed",
+    },
+    voirRaid: "View raid",
+    rejoindreVocal: "Join voice",
+    validerPresences: "Confirm attendance",
+    envoyerInvitations: "Send invites",
+    motDePasse: (mdp) => `password: \`${mdp}\``,
+    pied: "WhenRaid · raids for WoW Forever",
+    invitation: {
+      titre: "🎮 Raid time is near!",
+      description: (raid) => `The raid **${raid}** is about to start.`,
+      commande: "To get your invite, paste this in game:",
+    },
+    rappelRl: {
+      titre: "⏰ Your raid starts soon",
+      description: (raid) => `**${raid}** starts in 15 minutes. Send the invites (voice and /w) to your players.`,
+    },
+    rappelFin: {
+      titre: "✅ Your raid is over!",
+      description: (raid) =>
+        `Confirm attendance for **${raid}** (and who stood out). Without confirmation within 24 h, every confirmed player will be counted as present.`,
+    },
   },
 
   // ─── Form and action errors ────────────────────────────────────────────────
@@ -226,8 +248,7 @@ export const en: Dico = {
     candidatures: (n) => `${n} application${s(n)}`,
     raidsSurtitre: "Tonight and the coming days",
     raidsTitre: "Raids recruiting",
-    declarePerso:
-      "Add your first character to see the raids that fit you: faction, ruleset, region, class and level.",
+    declarePerso: "Add your first character to see the raids that fit you: faction, ruleset, region, class and level.",
     creerPerso: "Create my character",
     chercheRaidPour: "Looking for a raid for",
     chercheRaidPourAria: "Character to find a raid for",
@@ -383,7 +404,9 @@ export const en: Dico = {
     definitive: "permanent",
     nonRetablissable: ": the raid can't be restored.",
     reserve: (n) =>
-      n > 1 ? ` ${n} players have set aside their evening for this raid.` : ` ${n} player has set aside their evening for this raid.`,
+      n > 1
+        ? ` ${n} players have set aside their evening for this raid.`
+        : ` ${n} player has set aside their evening for this raid.`,
     complet1: "This raid is",
     complet2: "full",
     complet3: ". Cancelling it now will be recorded and",
@@ -477,7 +500,8 @@ export const en: Dico = {
     suppression: "Deleting…",
     garder: "Keep",
     titreSupprimer: (nom) => `Delete ${nom}?`,
-    supprimerAide: "It will disappear from your list and can no longer apply. Its pending applications will be withdrawn.",
+    supprimerAide:
+      "It will disappear from your list and can no longer apply. Its pending applications will be withdrawn.",
     reputationAide:
       "Your reputation belongs to your account: it doesn't change. Past raids keep its name in the history.",
   },

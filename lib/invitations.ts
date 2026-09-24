@@ -1,10 +1,9 @@
 import { db } from "@/lib/db";
-import { afficherDate } from "@/lib/dates";
 import { envoyerMp } from "@/lib/discord";
-import { nomRaid } from "@/lib/raids";
+import { carteRaid, COULEUR_OR, lienRaid, nomCarte } from "@/lib/carteDiscord";
 import { dico, type Dico } from "@/lib/i18n";
 
-export const URL_SITE = process.env.SITE_URL ?? "https://www.whenraid.com";
+export { URL_SITE } from "@/lib/site";
 
 import { nomEnJeu } from "@/lib/jeu";
 
@@ -29,21 +28,24 @@ async function chargerRaid(annonceId: string) {
 
 type Raid = NonNullable<Awaited<ReturnType<typeof chargerRaid>>>;
 
-/** Texte de l'invitation, dans la langue (d) et le fuseau du joueur qui la reçoit. */
-function texteInvitation({ annonce, perso }: Raid, fuseau: string, d: Dico) {
+/** Carte d'invitation, dans la langue (d) du joueur qui la reçoit. */
+function carteInvitation({ annonce, perso }: Raid, d: Dico) {
   const t = d.discord.invitation;
-  const lignes = [t.commence(nomRaid(annonce.contenu, d), afficherDate(annonce.debutUtc, fuseau, d))];
+  const champs = [];
+  const boutons = [{ libelle: d.discord.voirRaid, url: lienRaid(annonce.id) }];
   if (annonce.vocal === "DISCORD" && annonce.vocalDiscordLien) {
-    lignes.push(t.vocalDiscord(annonce.vocalDiscordLien));
+    champs.push({ name: d.discord.champ.vocal, value: annonce.vocalDiscordLien });
+    boutons.unshift({ libelle: d.discord.rejoindreVocal, url: annonce.vocalDiscordLien });
   } else if (annonce.vocal === "TEAMSPEAK" && annonce.vocalTsAdresse) {
-    lignes.push(t.vocalTs(annonce.vocalTsAdresse, annonce.vocalTsMotDePasse));
+    const mdp = annonce.vocalTsMotDePasse ? " · " + d.discord.motDePasse(annonce.vocalTsMotDePasse) : "";
+    champs.push({ name: d.discord.champ.vocal, value: "TeamSpeak : `" + annonce.vocalTsAdresse + "`" + mdp });
   }
+  let description = t.description(nomCarte(annonce, d));
   if (perso) {
-    lignes.push(t.tonRl(nomEnJeu(perso)));
-    lignes.push("```\n/w " + nomEnJeu(perso) + " inv\n```");
+    champs.push({ name: d.discord.champ.rl, value: nomEnJeu(perso), inline: true });
+    description += "\n\n" + t.commande + "\n```\n/w " + nomEnJeu(perso) + " inv\n```";
   }
-  lignes.push(`${URL_SITE}/annonces/${annonce.id}`);
-  return lignes.join("\n");
+  return carteRaid({ annonce, d, titre: t.titre, couleur: COULEUR_OR, description, champs, boutons });
 }
 
 /**
@@ -64,11 +66,7 @@ export async function envoyerInvitation(inscriptionId: string) {
   const raid = await chargerRaid(inscription.place.annonceId);
   const { utilisateur } = inscription;
   const envoye =
-    raid !== null &&
-    (await envoyerMp(
-      utilisateur.discordId,
-      texteInvitation(raid, utilisateur.fuseauHoraire, dico(utilisateur.langueSite)),
-    ));
+    raid !== null && (await envoyerMp(utilisateur.discordId, carteInvitation(raid, dico(utilisateur.langueSite))));
   if (!envoye) await db.inscription.update({ where: { id: inscriptionId }, data: { invitationEnvoyeeLe: null } });
 }
 
@@ -92,12 +90,15 @@ export async function envoyerRappelRl(annonceId: string) {
   const confirmes = await db.inscription.count({ where: { statut: "CONFIRME", place: { annonceId } } });
   await envoyerMp(
     annonce.createur.discordId,
-    d.discord.rappelRl(
-      nomRaid(annonce.contenu, d),
-      afficherDate(annonce.debutUtc, annonce.createur.fuseauHoraire, d),
-      confirmes,
-      `${URL_SITE}/annonces/${annonce.id}`,
-    ),
+    carteRaid({
+      annonce,
+      d,
+      titre: d.discord.rappelRl.titre,
+      couleur: COULEUR_OR,
+      description: d.discord.rappelRl.description(nomCarte(annonce, d)),
+      champs: [{ name: d.discord.champ.confirmes, value: String(confirmes), inline: true }],
+      boutons: [{ libelle: d.discord.envoyerInvitations, url: lienRaid(annonce.id) }],
+    }),
   );
 }
 
@@ -112,6 +113,13 @@ export async function envoyerRappelFin(annonceId: string) {
   });
   await envoyerMp(
     annonce.createur.discordId,
-    d.discord.rappelFin(nomRaid(annonce.contenu, d), `${URL_SITE}/annonces/${annonce.id}#presences`),
+    carteRaid({
+      annonce,
+      d,
+      titre: d.discord.rappelFin.titre,
+      couleur: COULEUR_OR,
+      description: d.discord.rappelFin.description(nomCarte(annonce, d)),
+      boutons: [{ libelle: d.discord.validerPresences, url: lienRaid(annonce.id, "#presences") }],
+    }),
   );
 }

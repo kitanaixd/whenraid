@@ -98,20 +98,43 @@ export const fr = {
     fermer: "Fermer",
   },
   discord: {
-    invitation: {
-      commence: (raid: string, date: string) => `🎮 **${raid}** commence le ${date} !`,
-      vocalDiscord: (lien: string) => `Vocal Discord : ${lien}`,
-      vocalTs: (adresse: string, motDePasse: string | null) =>
-        `Vocal TeamSpeak : ${adresse}` + (motDePasse ? ` — mot de passe : ${motDePasse}` : ""),
-      tonRl: (nom: string) => `Ton RL : **${nom}**. Pour recevoir ton invitation, copie-colle en jeu :`,
+    titre: {
+      CANDIDATURE_ACCEPTEE: "✅ Tu es convié !",
+      CANDIDATURE_REFUSEE: "Candidature non retenue",
+      RAID_COMPLET: "Raid complet",
+      RAID_ANNULE: "⚠️ Raid annulé",
+      NOUVELLE_CANDIDATURE: "📥 Nouvelle candidature",
+      VALIDER_PRESENCES: "✅ Raid terminé",
+      DESISTEMENT: "⚠️ Désistement",
     },
-    rappelRl: (raid: string, date: string, n: number, lien: string) =>
-      `⏰ Ton raid **${raid}** commence le ${date}.\n` +
-      `${n} joueur${s(n)} confirmé${s(n)}. Envoie-leur les invitations (vocal et /w) ici :\n${lien}`,
-    rappelFin: (raid: string, lien: string) =>
-      `✅ Ton raid **${raid}** est terminé !\n` +
-      `Valide les présences (et qui s'est distingué) ici :\n${lien}\n` +
-      `Sans validation sous 24 h, tous les joueurs confirmés seront comptés présents.`,
+    champ: {
+      date: "📅 Date",
+      personnage: "🧙 Personnage",
+      rl: "👑 Ton RL",
+      vocal: "🎙️ Vocal",
+      confirmes: "👥 Confirmés",
+    },
+    voirRaid: "Voir le raid",
+    rejoindreVocal: "Rejoindre le vocal",
+    validerPresences: "Valider les présences",
+    envoyerInvitations: "Envoyer les invitations",
+    motDePasse: (mdp: string) => `mot de passe : \`${mdp}\``,
+    pied: "WhenRaid · raids pour WoW Forever",
+    invitation: {
+      titre: "🎮 C'est bientôt l'heure !",
+      description: (raid: string) => `Le raid **${raid}** va commencer.`,
+      commande: "Pour recevoir ton invitation, copie-colle en jeu :",
+    },
+    rappelRl: {
+      titre: "⏰ Ton raid commence bientôt",
+      description: (raid: string) =>
+        `**${raid}** commence dans 15 minutes. Envoie les invitations (vocal et /w) à tes joueurs.`,
+    },
+    rappelFin: {
+      titre: "✅ Ton raid est terminé !",
+      description: (raid: string) =>
+        `Valide les présences de **${raid}** (et qui s'est distingué). Sans validation sous 24 h, tous les joueurs confirmés seront comptés présents.`,
+    },
   },
 
   // ─── Erreurs de formulaire et d'action ─────────────────────────────────────

@@ -17,9 +17,9 @@ import {
 import { nomEnJeu, seChevauchent } from "@/lib/jeu";
 import { placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite";
 import { Role } from "@/generated/prisma/enums";
-import { envoyerInvitations, URL_SITE } from "@/lib/invitations";
+import { envoyerInvitations } from "@/lib/invitations";
+import { carteNotification } from "@/lib/carteDiscord";
 import { envoyerMp } from "@/lib/discord";
-import { texteNotification } from "@/lib/notifications";
 import { dico } from "@/lib/i18n";
 import { prevenirEnMp } from "@/lib/prevenir";
 import { dicoCourant } from "@/lib/langue";
@@ -206,7 +206,11 @@ export async function accepter(form: FormData) {
         });
         const destinataires = [...new Set(enAttente.map((i) => i.utilisateurId))];
         await tx.notification.createMany({
-          data: destinataires.map((utilisateurId) => ({ utilisateurId, type: "RAID_COMPLET" as const, annonceId: annonce.id })),
+          data: destinataires.map((utilisateurId) => ({
+            utilisateurId,
+            type: "RAID_COMPLET" as const,
+            annonceId: annonce.id,
+          })),
         });
       }
     }
@@ -335,7 +339,9 @@ export async function enregistrerPresences(form: FormData) {
   await db.$transaction(async (tx) => {
     for (const i of confirmes) {
       const brut = String(form.get(`presence.${i.id}`) ?? "PRESENT");
-      const resultat = (RESULTATS as readonly string[]).includes(brut) ? (brut as (typeof RESULTATS)[number]) : "PRESENT";
+      const resultat = (RESULTATS as readonly string[]).includes(brut)
+        ? (brut as (typeof RESULTATS)[number])
+        : "PRESENT";
       // On ne peut pas se distinguer en étant absent.
       const distinction = resultat !== "ABSENT" && form.get(`distinction.${i.id}`) === "on";
       await tx.participation.upsert({
@@ -415,8 +421,7 @@ export async function seDesinscrire(form: FormData) {
       const place = await db.place.findUnique({ where: { id: inscription.placeId } });
       if (place?.statut !== "OUVERTE") return; // un remplaçant a pris la place : rien à signaler
       const dRl = dico(annonce.createur.langueSite);
-      const texte = texteNotification("DESISTEMENT", annonce, annonce.createur.fuseauHoraire, dRl);
-      await envoyerMp(annonce.createur.discordId, `${texte}\n${URL_SITE}/annonces/${annonce.id}`);
+      await envoyerMp(annonce.createur.discordId, carteNotification("DESISTEMENT", annonce, dRl));
     });
   }
   rafraichir(annonce.id);

@@ -2,6 +2,8 @@
 // d'erreur : un MP ou un ajout au serveur raté ne doit pas bloquer le site
 // (la notification sur le site existe toujours).
 
+import type { MessageDiscord } from "@/lib/carteDiscord";
+
 const API = "https://discord.com/api/v10";
 
 async function appel(chemin: string, init: RequestInit) {
@@ -37,9 +39,8 @@ export async function ajouterAuServeur(discordId: string, jetonAcces: string) {
   });
 }
 
-/** Envoie un message privé. Échoue silencieusement si le joueur bloque les MP. */
 /** Envoie un MP Discord. Renvoie false si le message n'a pas pu partir (MP fermés, bot absent…). */
-export async function envoyerMp(discordId: string, contenu: string) {
+export async function envoyerMp(discordId: string, envoi: string | MessageDiscord) {
   const canal = await appel("/users/@me/channels", {
     method: "POST",
     body: JSON.stringify({ recipient_id: discordId }),
@@ -47,7 +48,10 @@ export async function envoyerMp(discordId: string, contenu: string) {
   if (!canal?.id) return false;
   const message = await appel(`/channels/${canal.id}/messages`, {
     method: "POST",
-    body: JSON.stringify({ content: contenu.slice(0, 2000), allowed_mentions: { parse: [] } }),
+    body: JSON.stringify({
+      ...(typeof envoi === "string" ? { content: envoi.slice(0, 2000) } : envoi),
+      allowed_mentions: { parse: [] },
+    }),
   });
   return message !== null;
 }
