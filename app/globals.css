@@ -3377,3 +3377,41 @@ a.calendrier-jour.choisi {
 .accueil-filtres .filtres > .surtitre {
   margin: 0;
 }
+
+/* ─── Bulle du nombre de candidatures (en haut à droite d'un raid) ────────── */
+.ligne-raid,
+.prochain {
+  position: relative;
+  overflow: visible;
+}
+.bulle-candidatures {
+  position: absolute;
+  top: -0.55rem;
+  right: -0.55rem;
+  z-index: 3;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.35rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #04262b;
+  background: var(--turquoise);
+  box-shadow:
+    0 0 0 2px var(--fond),
+    0 0 10px rgb(69 201 220 / 0.55);
+  pointer-events: none;
+}
+
+/* ─── Prochains raids : 5 visibles, défilement dans la carte pour les suivants ── */
+.liste-prochains {
+  /* 5 éléments (≈ 4,6 rem chacun) + leurs écarts ; la bulle dépasse, d'où le petit retrait. */
+  max-height: calc(5 * 4.6rem + 4 * 0.5rem + 0.7rem);
+  overflow-y: auto;
+  padding: 0.6rem 0.6rem 0.2rem 0;
+  margin-right: -0.6rem;
+  scrollbar-width: thin;
+}

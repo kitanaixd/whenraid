@@ -77,18 +77,28 @@ export function LigneRaid({
     </span>
   );
   const nom = nomRaid(a.contenu, d);
+  // Titre donné par le RL s'il y en a un ; le nom du raid passe alors devant la date.
+  const titre = a.titre ?? nom;
 
   return (
     <li
       className={`ligne-raid ${compact ? "compacte" : ""} ${marque ? `ligne-${marque.type}` : ""}`}
       data-fond={raids[a.contenu].image}
     >
-      <Link href={lien} className="ligne-raid-lien" aria-label={`${nom}, ${afficherDate(a.debutUtc, fuseau, d)}`} />
+      {/* Bulle en haut à droite : nombre de candidatures en attente. */}
+      {r.enAttente > 0 && (
+        <span className="bulle-candidatures" title={d.accueil.candidatures(r.enAttente)}>
+          <span aria-hidden="true">{r.enAttente}</span>
+          <span className="sr-only">{d.accueil.candidatures(r.enAttente)}</span>
+        </span>
+      )}
+      <Link href={lien} className="ligne-raid-lien" aria-label={`${titre}, ${afficherDate(a.debutUtc, fuseau, d)}`} />
       <div className="ligne-raid-infos">
         {/* Ligne de l'étiquette toujours présente : nom et date tombent à la même hauteur sur toutes les cartes. */}
         {!compact && <div className="ligne-raid-marque">{badge}</div>}
-        <h3>{nom}</h3>
+        <h3>{titre}</h3>
         <span className="quand">
+          {a.titre && `${nom} · `}
           {compact ? afficherDateCourte(a.debutUtc, fuseau) : afficherDate(a.debutUtc, fuseau, d)}
         </span>
         {!compact && auteur && <small>{auteur}</small>}

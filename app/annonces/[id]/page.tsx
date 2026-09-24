@@ -162,7 +162,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
     .map((p) => ({ perso: p, roles: rolesPourRaid(p, annonce.places, annonce) }))
     .filter((c) => c.roles.length > 0);
   const organisateur = annonce.organisateurPersonnage;
-  const resumeRaid = `${nomRaid(annonce.contenu, d)} — ${date(annonce.debutUtc)}`;
+  const resumeRaid = `${annonce.titre ?? nomRaid(annonce.contenu, d)} — ${date(annonce.debutUtc)}`;
 
   return (
     <main data-fond={raids[annonce.contenu].image}>
@@ -174,11 +174,12 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
         <p className="surtitre">
           {d.faction[annonce.faction]} · {d.ruleset[annonce.ruleset]} {annonce.region}
         </p>
-        <h1>{nomRaid(annonce.contenu, d)}</h1>
+        <h1>{annonce.titre ?? nomRaid(annonce.contenu, d)}</h1>
         <div className="ornement" aria-hidden="true">
           ◆
         </div>
         <p className="quand-raid">
+          {annonce.titre && `${nomRaid(annonce.contenu, d)} · `}
           {date(annonce.debutUtc)}
           {annonce.dureeEstimee && <span className="doux">{d.raid.environ(annonce.dureeEstimee / 60)}</span>}
         </p>

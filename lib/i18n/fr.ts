@@ -169,6 +169,7 @@ export const fr = {
       "Ce personnage est engagé dans un raid à venir : sa faction, son ruleset, sa région et sa classe ne peuvent pas changer pour l'instant.",
   },
   champ: {
+    titre: "Titre du raid",
     prenom: "Prénom du personnage",
     nom: "Nom du personnage",
     duree: "Durée",
@@ -437,6 +438,8 @@ export const fr = {
     sansPerso1: "Déclare d'abord",
     sansPerso2: ": le raid prendra sa faction, son ruleset et sa région.",
     avecQuelPerso: "Avec quel personnage ?",
+    titreAide: "(facultatif, 20 caractères)",
+    titrePlaceholder: "Ex. : Hyjal du jeudi soir",
     organisation: "Organisation",
     peuImporte: "Peu importe",
     lienDiscord: "Lien d'invitation Discord",

@@ -213,6 +213,7 @@ model Annonce {
   groupeId      String?
   createurId    String
   contenu       Contenu
+  titre         String? // donné par le RL, 20 caractères max (CHECK en SQL)
   // Sur l'Annonce (et pas seulement le Groupe, facultatif) pour filtrer
   // les personnages qui peuvent s'inscrire.
   faction       Faction

@@ -104,6 +104,7 @@ async function creerAnnonce(form: FormData) {
     const donnees = {
       createurId: utilisateur.id,
       contenu,
+      titre: texte(form, "titre", { max: 20, champ: "titre" }),
       faction: personnage.faction,
       ruleset: personnage.ruleset,
       region: personnage.region,
@@ -170,6 +171,14 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
       <h1>{d.creation.titre}</h1>
       {typeof erreur === "string" && <p role="alert">⚠ {erreur}</p>}
       <form action={creerAnnonce} className="formulaire">
+        <div className="rangee">
+          <label className="champ">
+            <span>
+              {d.champ.titre} <small className="fuseau">{d.creation.titreAide}</small>
+            </span>
+            <input name="titre" maxLength={20} placeholder={d.creation.titrePlaceholder} autoComplete="off" />
+          </label>
+        </div>
         <ChoixCompo
           fuseau={utilisateur.fuseauHoraire}
           personnage={

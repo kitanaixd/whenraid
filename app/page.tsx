@@ -155,12 +155,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
   // Prochains raids : organisés, convocations et candidatures, du plus proche au plus lointain.
   const prochains = [
     ...organises.map((a) => {
-      const n = resumeLigneRaid(a).enAttente;
-      const marque: Marque = {
-        type: "organise",
-        texte: d.accueil.votreRaid,
-        detail: n > 0 ? d.accueil.candidatures(n) : undefined,
-      };
+      const marque: Marque = { type: "organise", texte: d.accueil.votreRaid };
       return { cle: a.id, annonce: a, marque, action: undefined };
     }),
     ...[...convocations, ...candidatures].map((i) => ({
@@ -173,7 +168,11 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
 
   /** Pastille d'un filtre actif, avec une croix pour le retirer. */
   const filtreRetirable = (libelle: React.ReactNode, sans: Parametres) => (
-    <Link href={lienListe(sans)} className="pastille filtre-actif" aria-label={`${d.accueil.retirerFiltre} : ${String(libelle)}`}>
+    <Link
+      href={lienListe(sans)}
+      className="pastille filtre-actif"
+      aria-label={`${d.accueil.retirerFiltre} : ${String(libelle)}`}
+    >
       {libelle}
       <IconeCroix />
     </Link>
@@ -209,9 +208,15 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   </span>
                   <PastilleFaction faction={perso.faction} />
                   <PastilleRuleset ruleset={perso.ruleset} region={perso.region} />
-                  {jour && filtreRetirable(d.accueil.leJour(jourAffiche(jour)), { jour: null })}
+                  {jour &&
+                    filtreRetirable(d.accueil.leJour(jourAffiche(jour)), {
+                      jour: null,
+                    })}
                   {contenu && filtreRetirable(nomRaid(contenu, d), { raid: null })}
-                  {dureeMax && filtreRetirable(d.accueil.heuresMax(dureeMax), { duree: null })}
+                  {dureeMax &&
+                    filtreRetirable(d.accueil.heuresMax(dureeMax), {
+                      duree: null,
+                    })}
                 </div>
                 {filtreActif && (
                   <Link href={lienListe({ jour: null, raid: null, duree: null })} className="lien-discret">
@@ -261,7 +266,6 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
             />
           </aside>
 
-
           {/* ─── Au centre : la liste des raids ─── */}
           <section className="accueil-centre" id="titre-raids" aria-label={d.accueil.raidsTitre}>
             {typeof erreur === "string" && erreur && (
@@ -271,9 +275,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
             )}
             {annonces.length === 0 ? (
               <p className="doux">
-                {filtreActif
-                  ? d.accueil.aucunFiltre
-                  : d.accueil.aucunRaid(perso ? nomEnJeu(perso) : d.accueil.ceperso)}{" "}
+                {filtreActif ? d.accueil.aucunFiltre : d.accueil.aucunRaid(perso ? nomEnJeu(perso) : d.accueil.ceperso)}{" "}
                 <Link href="/annonces/nouvelle">{d.accueil.creeTien}</Link>
               </p>
             ) : (
@@ -331,7 +333,14 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                       aria-current={p.id === perso?.id ? "true" : undefined}
                     >
                       <ClasseIcone classe={p.classe} taille={24} />
-                      <span className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
+                      <span
+                        className="classe"
+                        style={
+                          {
+                            "--c": `var(--classe-${p.classe})`,
+                          } as React.CSSProperties
+                        }
+                      >
                         {nomEnJeu(p)}
                       </span>
                       <FactionIcone faction={p.faction} taille={16} />
@@ -371,29 +380,38 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 <p className="doux">{d.accueil.aucunProchain}</p>
               ) : (
                 <ul className="liste-prochains">
-                  {prochains.map(({ cle, annonce: a, marque, action }) => (
-                    <li key={cle} className={`prochain ligne-${marque?.type ?? ""}`}>
-                      <Link href={`/annonces/${a.id}`} className="prochain-lien">
-                        <strong>{nomRaid(a.contenu, d)}</strong>
-                        <span className="doux">{afficherDateCourte(a.debutUtc, fuseau)}</span>
-                      </Link>
-                      <div className="prochain-bas">
-                        {marque && (
-                          <span className={`badge-raid badge-raid-${marque.type}`}>{marque.texte}</span>
+                  {prochains.map(({ cle, annonce: a, marque, action }) => {
+                    const enAttente = resumeLigneRaid(a).enAttente;
+                    return (
+                      <li key={cle} className={`prochain ligne-${marque?.type ?? ""}`}>
+                        {enAttente > 0 && (
+                          <span className="bulle-candidatures" title={d.accueil.candidatures(enAttente)}>
+                            <span aria-hidden="true">{enAttente}</span>
+                            <span className="sr-only">{d.accueil.candidatures(enAttente)}</span>
+                          </span>
                         )}
-                        {marque?.perso && <ClasseIcone classe={marque.perso.classe} taille={18} />}
-                        {marque?.detail && <span className="doux">{marque.detail}</span>}
-                        {action && <span className="prochain-action">{action}</span>}
-                      </div>
-                    </li>
-                  ))}
+                        <Link href={`/annonces/${a.id}`} className="prochain-lien">
+                          <strong>{a.titre ?? nomRaid(a.contenu, d)}</strong>
+                          <span className="doux">
+                            {a.titre && `${nomRaid(a.contenu, d)} · `}
+                            {afficherDateCourte(a.debutUtc, fuseau)}
+                          </span>
+                        </Link>
+                        <div className="prochain-bas">
+                          {marque && <span className={`badge-raid badge-raid-${marque.type}`}>{marque.texte}</span>}
+                          {marque?.perso && <ClasseIcone classe={marque.perso.classe} taille={18} />}
+                          {marque?.detail && <span className="doux">{marque.detail}</span>}
+                          {action && <span className="prochain-action">{action}</span>}
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </section>
           </aside>
         </div>
       )}
-
     </main>
   );
 }

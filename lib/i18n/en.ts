@@ -142,6 +142,7 @@ export const en: Dico = {
       "This character is committed to an upcoming raid: its faction, ruleset, region and class can't change for now.",
   },
   champ: {
+    titre: "Raid title",
     prenom: "Character first name",
     nom: "Character last name",
     duree: "Duration",
@@ -409,6 +410,8 @@ export const en: Dico = {
     sansPerso1: "First add",
     sansPerso2: ": the raid will use its faction, ruleset and region.",
     avecQuelPerso: "With which character?",
+    titreAide: "(optional, 20 characters)",
+    titrePlaceholder: "E.g. Thursday night Hyjal",
     organisation: "Organization",
     peuImporte: "Doesn't matter",
     lienDiscord: "Discord invite link",
