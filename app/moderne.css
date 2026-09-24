@@ -1094,3 +1094,40 @@ span.profil-avatar {
 .prochain:has(.prochain-lien:focus-visible) {
   box-shadow: var(--anneau);
 }
+
+/* Page du raid (RL) : écrire à un joueur sur Discord, retirer un joueur convié. */
+.actions-joueur {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.actions-joueur button.bouton-icone,
+a.lien-discord {
+  width: 1.9rem;
+  height: 1.9rem;
+}
+a.lien-discord {
+  display: inline-grid;
+  place-items: center;
+  vertical-align: middle;
+  color: var(--texte-doux);
+  background: var(--surface-2);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-3);
+  text-decoration: none;
+  transition: color 0.15s, border-color 0.15s;
+}
+a.lien-discord:hover {
+  color: #8f9bff;
+  border-color: #5865f2;
+}
+.membres-candidats a.lien-discord,
+.candidat-infos a.lien-discord {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+/* Note pour les RL, en haut de « Je cherche un raid pour ». */
+.choix-perso .rapide-note {
+  margin: 0 0 1rem;
+}

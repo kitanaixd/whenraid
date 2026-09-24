@@ -119,6 +119,7 @@ enum TypeNotification {
   VALIDER_PRESENCES
   DESISTEMENT // un joueur convié s'est désisté (pour le RL)
   CANDIDATURE_GROUPE // un membre de mon groupe a candidaté pour tout le groupe
+  RETIRE_PAR_RL // le RL m'a retiré d'un raid où j'étais convié
 }
 
 enum SourceParticipation {
@@ -306,6 +307,8 @@ model Inscription {
   // Invitation (vocal + /w) envoyée à ce joueur : on ne la lui renvoie pas.
   invitationEnvoyeeLe DateTime?         @db.Timestamptz(3)
   // Candidature faite avec un groupe d'amis : le RL accepte ou refuse tout le groupe d'un coup.
+  // Le RL a retiré ce joueur convié : à moins de 2 h du début, cela pèse sur sa fiabilité de RL.
+  retireParRlLe       DateTime?         @db.Timestamptz(3)
   escouadeId          String?
 
   escouade    Escouade?   @relation(fields: [escouadeId], references: [id], onDelete: SetNull)

@@ -1,6 +1,8 @@
 "use client";
 
+import { useContext } from "react";
 import { useFormStatus } from "react-dom";
+import { EnvoiEnCours } from "./FormulaireConserve";
 
 /**
  * Bouton d'envoi qui se désactive pendant l'envoi du formulaire :
@@ -24,7 +26,10 @@ export function BoutonEnvoi({
   /** Autre action que celle du formulaire (ex. « Refuser » à côté de « Accepter »). */
   formAction?: (form: FormData) => void | Promise<void>;
 }) {
-  const { pending } = useFormStatus();
+  // Envoi classique (useFormStatus) ou FormulaireConserve (contexte).
+  const { pending: envoiClassique } = useFormStatus();
+  const envoiConserve = useContext(EnvoiEnCours);
+  const pending = envoiClassique || envoiConserve;
   return (
     <button
       type="submit"

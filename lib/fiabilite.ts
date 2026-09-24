@@ -66,29 +66,47 @@ export async function fiabiliteMercenaires(utilisateurIds: string[]) {
 
 /**
  * Raid Leader : raid tenu = 1 (validé ou clôturé automatiquement), annulé à moins
- * de 2 h du début = 0. Une annulation faite à l'avance ne compte pas.
+ * de 2 h du début = 0. Une annulation faite à l'avance ne compte pas. Chaque joueur
+ * convié que le RL retire à moins de 2 h du début compte aussi pour 0.
  */
 export async function fiabiliteRls(utilisateurIds: string[]) {
   const maintenant = Date.now();
-  const raids = await db.annonce.findMany({
-    where: { createurId: { in: utilisateurIds }, statut: { not: "BROUILLON" } },
-    select: { createurId: true, statut: true, debutUtc: true, dureeEstimee: true, annuleeLe: true },
-  });
+  const [raids, retraits] = await Promise.all([
+    db.annonce.findMany({
+      where: { createurId: { in: utilisateurIds }, statut: { not: "BROUILLON" } },
+      select: { createurId: true, statut: true, debutUtc: true, dureeEstimee: true, annuleeLe: true },
+    }),
+    retraitsTardifs(utilisateurIds),
+  ]);
   return new Map(
     utilisateurIds.map((id) => [
       id,
       calculer(
-        raids
-          .filter((r) => r.createurId === id)
-          .flatMap((r): Evenement[] => {
-            if (r.statut === "ANNULEE") {
-              const tardive = r.annuleeLe && r.debutUtc.getTime() - r.annuleeLe.getTime() < DERNIERE_MINUTE_MS;
-              return tardive ? [{ points: 0, date: r.debutUtc }] : [];
-            }
-            return creneau(r).fin <= maintenant ? [{ points: 1, date: r.debutUtc }] : [];
-          }),
+        [
+          ...raids
+            .filter((r) => r.createurId === id)
+            .flatMap((r): Evenement[] => {
+              if (r.statut === "ANNULEE") {
+                const tardive = r.annuleeLe && r.debutUtc.getTime() - r.annuleeLe.getTime() < DERNIERE_MINUTE_MS;
+                return tardive ? [{ points: 0, date: r.debutUtc }] : [];
+              }
+              return creneau(r).fin <= maintenant ? [{ points: 1, date: r.debutUtc }] : [];
+            }),
+          ...retraits.filter((r) => r.createurId === id).map((r) => ({ points: 0, date: r.debutUtc })),
+        ],
         maintenant,
       ),
     ]),
   );
+}
+
+/** Joueurs convoqués que leur RL a retirés à moins de 2 h du début du raid. */
+export async function retraitsTardifs(utilisateurIds: string[]) {
+  const retraits = await db.inscription.findMany({
+    where: { retireParRlLe: { not: null }, place: { annonce: { createurId: { in: utilisateurIds } } } },
+    select: { retireParRlLe: true, place: { select: { annonce: { select: { createurId: true, debutUtc: true } } } } },
+  });
+  return retraits
+    .map((r) => ({ ...r.place.annonce, retireLe: r.retireParRlLe! }))
+    .filter((r) => r.debutUtc.getTime() - r.retireLe.getTime() < DERNIERE_MINUTE_MS);
 }

@@ -54,6 +54,7 @@ export const en: Dico = {
 
   // ─── Notifications (site and Discord DMs) ──────────────────────────────────
   notification: {
+    RETIRE_PAR_RL: (raid) => `The RL removed you from the raid ${raid}.`,
     CANDIDATURE_GROUPE: (raid) => `👥 Your group applied to the raid ${raid}.`,
     unRaid: "a raid",
     raidDu: (raid, date) => `${raid} on ${date}`,
@@ -68,6 +69,7 @@ export const en: Dico = {
     personnage: (nom, role) => ` Character: ${nom}${role ? ` (${role})` : ""}.`,
   },
   banniere: {
+    RETIRE_PAR_RL: "Removed from raid",
     CANDIDATURE_GROUPE: "Group application",
     CANDIDATURE_ACCEPTEE: "Invitation",
     CANDIDATURE_REFUSEE: "Application declined",
@@ -79,6 +81,7 @@ export const en: Dico = {
   },
   discord: {
     titre: {
+      RETIRE_PAR_RL: "Removed from raid",
       CANDIDATURE_GROUPE: "👥 Group application",
       CANDIDATURE_ACCEPTEE: "✅ You're in!",
       CANDIDATURE_REFUSEE: "Application declined",
@@ -119,6 +122,7 @@ export const en: Dico = {
 
   // ─── Form and action errors ────────────────────────────────────────────────
   erreur: {
+    plusConvie: "This player is no longer invited to this raid.",
     groupeIntrouvable: "This group doesn't exist or you're not in it.",
     groupeTropPetit: "A group needs at least 2 members to apply together.",
     groupeRl: "This raid's RL is in your group.",
@@ -531,6 +535,7 @@ export const en: Dico = {
 
   // ─── Player profile ────────────────────────────────────────────────────────
   profil: {
+    retiresTard: "Players removed less than 2 h before start",
     personnages: "Characters",
     historique: "📜 Raid history",
     aucunHistorique: "No past raids yet.",
@@ -547,7 +552,7 @@ export const en: Dico = {
     partisEnCours: "Left mid-raid",
     distinctions: "Stood out",
     explication:
-      "Reliability is recalculated on every visit: each raid counts (present 1, left early ½, absent 0; raid held 1, cancelled less than 2 h before 0), recent raids weigh more, and everyone starts at 80%.",
+      "Reliability is recalculated on every visit: each raid counts (present 1, left early ½, absent 0; raid held 1, cancelled or player removed less than 2 h before 0), recent raids weigh more, and everyone starts at 80%.",
   },
 
   // ─── Notifications page ────────────────────────────────────────────────────
@@ -599,5 +604,17 @@ export const en: Dico = {
     refuserGroupe: "Decline group",
     roleDe: (nom) => `${nom}'s role`,
     avecGroupe: (nom) => `with the group “${nom}”`,
+  },
+  // ─── RL removing an invited player, Discord message ────────────────────────
+  retrait: {
+    bouton: "Remove",
+    aria: (nom) => `Remove ${nom} from the raid`,
+    titre: (nom) => `Remove ${nom} from the raid?`,
+    explication: "Their spot reopens and they're notified on the site and by Discord DM.",
+    penalite:
+      "⚠ The raid starts in less than 2 h: this removal will count against your RL reliability, like a last-minute cancellation.",
+    garder: "Keep them",
+    confirmer: "Remove from raid",
+    message: (pseudo) => `Message ${pseudo} on Discord`,
   },
 };

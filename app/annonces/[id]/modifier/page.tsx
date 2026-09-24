@@ -11,6 +11,7 @@ import { estComplet, STATUTS_EN_ATTENTE } from "@/lib/annonces";
 import { placePourRoles, rolesProposes } from "@/lib/eligibilite";
 import { prevenirEnMp } from "@/lib/prevenir";
 import { BoutonEnvoi } from "@/app/BoutonEnvoi";
+import { FormulaireConserve } from "@/app/FormulaireConserve";
 import { ErreurFormulaire, messageErreur } from "@/lib/formulaire";
 import { dicoCourant, langueCourante } from "@/lib/langue";
 import { ChampsOrganisation, ChampTitre, lireCompoEtBesoins, lireOrganisation } from "../../organisation";
@@ -157,21 +158,23 @@ async function modifierAnnonce(form: FormData) {
     erreur = messageErreur(e, await dicoCourant());
   }
 
-  if (erreur) redirect(`/annonces/${annonce.id}/modifier?erreur=${encodeURIComponent(erreur)}`);
+  // L'erreur s'affiche sans recharger la page : tout ce qui a été saisi reste en place.
+  if (erreur) return { erreur };
   for (const id of refusees) prevenirEnMp(id, "CANDIDATURE_REFUSEE");
   revalidatePath(`/annonces/${annonce.id}`);
   revalidatePath("/");
   redirect(`/annonces/${annonce.id}`);
 }
 
-export default async function PageModifierAnnonce({ params, searchParams }: PageProps<"/annonces/[id]/modifier">) {
+export default async function PageModifierAnnonce({ params }: PageProps<"/annonces/[id]/modifier">) {
   const utilisateur = await exigerUtilisateur();
   const [d, langue] = await Promise.all([dicoCourant(), langueCourante()]);
   const { id } = await params;
-  const { erreur } = await searchParams;
   const annonce = await monRaidModifiable(id, utilisateur.id);
   if (!annonce) notFound();
   const fuseau = utilisateur.fuseauHoraire;
+  const jourActuel = jourLocal(annonce.debutUtc, fuseau);
+  const aujourdHui = jourLocal(new Date(), fuseau);
 
   // Pré-remplissage : la compo déclarée, et les besoins précis regroupés depuis les places ouvertes
   // (les places « toute classe, tout rôle » sont le reste libre, pas un besoin).
@@ -198,13 +201,8 @@ export default async function PageModifierAnnonce({ params, searchParams }: Page
         {annonce.titre ? `${annonce.titre} · ` : ""}
         {nomRaid(annonce.contenu, d)}
       </p>
-      {typeof erreur === "string" && (
-        <p className="avertissement grave" role="alert">
-          ⚠ {erreur}
-        </p>
-      )}
       <p className="encadre">{d.edition.aide}</p>
-      <form action={modifierAnnonce} className="formulaire">
+      <FormulaireConserve action={modifierAnnonce} className="formulaire">
         <input type="hidden" name="annonceId" value={annonce.id} />
         <div className="rangee">
           <ChampTitre d={d} valeur={annonce.titre} />
@@ -212,7 +210,14 @@ export default async function PageModifierAnnonce({ params, searchParams }: Page
         <div className="rangee rangee-raid">
           <label className="champ">
             {d.creation.date}
-            <input type="date" name="date" required defaultValue={jourLocal(annonce.debutUtc, fuseau)} />
+            {/* Pas de nouvelle date dans le passé ; la date actuelle du raid reste possible. */}
+            <input
+              type="date"
+              name="date"
+              required
+              min={[aujourdHui, jourActuel].sort()[0]}
+              defaultValue={jourActuel}
+            />
           </label>
           <label className="champ">
             <span>
@@ -248,7 +253,7 @@ export default async function PageModifierAnnonce({ params, searchParams }: Page
             {d.edition.annuler}
           </Link>
         </div>
-      </form>
+      </FormulaireConserve>
     </main>
   );
 }

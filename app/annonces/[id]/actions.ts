@@ -448,27 +448,10 @@ export async function seDesinscrire(form: FormData) {
       });
     }
     if (!etaitConvie) return;
-
-    // Un remplaçant sur la même place devient titulaire ; sinon la place se rouvre.
-    const remplacant = await tx.inscription.findFirst({ where: { placeId: inscription.placeId, statut: "CONFIRME" } });
-    if (remplacant) return;
-    await tx.place.update({ where: { id: inscription.placeId }, data: { statut: "OUVERTE" } });
-    await tx.annonce.updateMany({ where: { id: annonce.id, statut: "COMPLETE" }, data: { statut: "PUBLIEE" } });
-    await tx.notification.create({
-      data: { utilisateurId: annonce.createurId, type: "DESISTEMENT", annonceId: annonce.id },
-    });
-
-    // Les joueurs en liste d'attente qui peuvent prendre une place ouverte redeviennent candidats.
-    const places = await tx.place.findMany({ where: { annonceId: annonce.id } });
-    const enAttente = await tx.inscription.findMany({
-      where: { place: { annonceId: annonce.id }, statut: "LISTE_ATTENTE" },
-      include: { personnage: true },
-    });
-    const repris = enAttente
-      .filter((i) => i.personnage && placePourRoles(places, i.personnage, rolesProposes(i), annonce)?.ouverte)
-      .map((i) => i.id);
-    if (repris.length > 0) {
-      await tx.inscription.updateMany({ where: { id: { in: repris } }, data: { statut: "INSCRIT" } });
+    if (await rouvrirPlace(tx, annonce, inscription.placeId)) {
+      await tx.notification.create({
+        data: { utilisateurId: annonce.createurId, type: "DESISTEMENT", annonceId: annonce.id },
+      });
     }
   });
 
@@ -686,6 +669,64 @@ export async function refuserGroupe(form: FormData) {
     }),
   ]);
   for (const i of inscriptions) prevenirEnMp(i.id, "CANDIDATURE_REFUSEE");
+  rafraichir(annonce.id);
+  retour();
+}
+
+/**
+ * Un joueur convié quitte sa place (désistement ou retrait par le RL). Un remplaçant sur
+ * la même place devient titulaire ; sinon la place se rouvre, le raid n'est plus complet, et
+ * les joueurs en liste d'attente qui peuvent la prendre redeviennent candidats.
+ * Renvoie true si la place s'est rouverte.
+ */
+async function rouvrirPlace(
+  tx: Transaction,
+  annonce: { id: string; faction: Faction; ruleset: Ruleset; region: Region; niveauMin: number | null },
+  placeId: string,
+) {
+  const remplacant = await tx.inscription.findFirst({ where: { placeId, statut: "CONFIRME" } });
+  if (remplacant) return false;
+  await tx.place.update({ where: { id: placeId }, data: { statut: "OUVERTE" } });
+  await tx.annonce.updateMany({ where: { id: annonce.id, statut: "COMPLETE" }, data: { statut: "PUBLIEE" } });
+  const places = await tx.place.findMany({ where: { annonceId: annonce.id } });
+  const enAttente = await tx.inscription.findMany({
+    where: { place: { annonceId: annonce.id }, statut: "LISTE_ATTENTE" },
+    include: { personnage: true },
+  });
+  const repris = enAttente
+    .filter((i) => i.personnage && placePourRoles(places, i.personnage, rolesProposes(i), annonce)?.ouverte)
+    .map((i) => i.id);
+  if (repris.length > 0) {
+    await tx.inscription.updateMany({ where: { id: { in: repris } }, data: { statut: "INSCRIT" } });
+  }
+  return true;
+}
+
+/**
+ * Le RL retire un joueur convié. Le joueur est prévenu ; à moins de 2 h du début,
+ * le retrait compte contre la fiabilité du RL (voir fiabiliteRls).
+ */
+export async function retirerJoueur(form: FormData) {
+  const inscription = await candidaturePourRl(form);
+  const d = await dicoCourant();
+  const { annonce } = inscription.place;
+  const retour = retourVers(annonce.id);
+  if (!rlPeutAgir(annonce)) retour(d.erreur.plusModifiable);
+  if (inscription.statut !== "CONFIRME") retour(d.erreur.plusConvie);
+
+  await db.$transaction(async (tx) => {
+    // Le filtre sur le statut évite un double retrait simultané.
+    const retire = await tx.inscription.updateMany({
+      where: { id: inscription.id, statut: "CONFIRME" },
+      data: { statut: "RETIRE", retireParRlLe: new Date() },
+    });
+    if (retire.count === 0) return;
+    await tx.notification.create({
+      data: { utilisateurId: inscription.utilisateurId, type: "RETIRE_PAR_RL", annonceId: annonce.id },
+    });
+    await rouvrirPlace(tx, annonce, inscription.placeId);
+  });
+  prevenirEnMp(inscription.id, "RETIRE_PAR_RL");
   rafraichir(annonce.id);
   retour();
 }

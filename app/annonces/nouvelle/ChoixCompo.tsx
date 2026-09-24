@@ -29,6 +29,7 @@ export function ChoixCompo({
   compoInitiale = {},
   besoinsInitiaux = [],
   dejaPris = 0,
+  dateMin,
 }: {
   fuseau: string;
   personnage?: React.ReactNode;
@@ -37,6 +38,8 @@ export function ChoixCompo({
   compoInitiale?: Record<string, number>;
   besoinsInitiaux?: Besoin[];
   dejaPris?: number;
+  /** Premier jour possible (aujourd'hui, dans le fuseau du RL) : pas de raid dans le passé. */
+  dateMin?: string;
 }) {
   const d = useDico();
   const [contenu, setContenu] = useState<Contenu>(contenuInitial);
@@ -86,7 +89,7 @@ export function ChoixCompo({
           </label>
           <label className="champ">
             {d.creation.date}
-            <input type="date" name="date" required />
+            <input type="date" name="date" required min={dateMin} />
           </label>
           <label className="champ">
             <span>

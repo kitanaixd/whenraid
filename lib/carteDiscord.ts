@@ -26,6 +26,7 @@ export const COULEUR_NOTIFICATION: Record<TypeNotification, number> = {
   VALIDER_PRESENCES: OR,
   DESISTEMENT: ORANGE,
   CANDIDATURE_GROUPE: OR,
+  RETIRE_PAR_RL: ROUGE,
 };
 
 type RaidCarte = { id: string; contenu: Contenu; titre: string | null; debutUtc: Date };

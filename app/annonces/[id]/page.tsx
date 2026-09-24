@@ -24,9 +24,13 @@ import {
   envoyerLesInvitations,
   refuser,
   refuserGroupe,
+  retirerJoueur,
   seDesinscrire,
 } from "./actions";
 import { BoutonDesinscrire } from "./BoutonDesinscrire";
+import { BoutonRetirerJoueur } from "./BoutonRetirerJoueur";
+import { IconeMessage } from "@/app/Icones";
+import { commenceBientot } from "@/lib/profil";
 import { BoutonInvitations } from "./BoutonInvitations";
 import { nomEnJeu } from "@/lib/invitations";
 import { placePourRoles, rolesPourRaid, rolesProposes } from "@/lib/eligibilite";
@@ -71,7 +75,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             orderBy: { inscritLe: "asc" },
             include: {
               personnage: true,
-              utilisateur: { select: { pseudo: true } },
+              utilisateur: { select: { pseudo: true, discordId: true } },
               escouade: { select: { nom: true } },
             },
           },
@@ -176,6 +180,21 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   const persosCandidats = mesPersonnages
     .map((p) => ({ perso: p, roles: rolesPourRaid(p, annonce.places, annonce) }))
     .filter((c) => c.roles.length > 0);
+  /** Bouton pour écrire au joueur sur Discord (visible du seul RL). */
+  const ecrireSurDiscord = (u: { discordId: string; pseudo: string }) => (
+    <a
+      href={`https://discord.com/users/${u.discordId}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bouton-icone lien-discord"
+      aria-label={d.retrait.message(u.pseudo)}
+      title={d.retrait.message(u.pseudo)}
+    >
+      <IconeMessage />
+    </a>
+  );
+  // Retirer un joueur à moins de 2 h du début pèse sur la fiabilité du RL.
+  const retraitPenalise = commenceBientot(annonce.debutUtc);
   const organisateur = annonce.organisateurPersonnage;
   const resumeRaid = `${annonce.titre ?? nomRaid(annonce.contenu, d)} — ${date(annonce.debutUtc)}`;
 
@@ -426,6 +445,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                                 </strong>
                               </span>
                               <span className="doux">
+                                {ecrireSurDiscord(i.utilisateur)}{" "}
                                 <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
                                 <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} />
                                 {i.personnage?.lienLogs && (
@@ -491,7 +511,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         </div>
                         <div className="doux">
                           <Link href={`/joueurs/${i.utilisateurId}`}>{i.utilisateur.pseudo}</Link> ·{" "}
-                          <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} />
+                          <BadgeFiabilite fiabilite={fiabCandidats.get(i.utilisateurId)} />{" "}
+                          {ecrireSurDiscord(i.utilisateur)}
                         </div>
                         {i.personnage?.lienLogs && (
                           <a href={i.personnage.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
@@ -621,6 +642,19 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         </>
                       )}
                     </span>
+                    {estRl && (
+                      <span className="actions-joueur">
+                        {ecrireSurDiscord(i.utilisateur)}
+                        {rlPeutAgir(annonce) && (
+                          <BoutonRetirerJoueur
+                            action={retirerJoueur}
+                            inscriptionId={i.id}
+                            nom={nomEnJeu(i.personnage!)}
+                            penalite={retraitPenalise}
+                          />
+                        )}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>

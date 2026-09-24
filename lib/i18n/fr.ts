@@ -75,6 +75,7 @@ export const fr = {
 
   // ─── Notifications (site et MP Discord) ────────────────────────────────────
   notification: {
+    RETIRE_PAR_RL: (raid: string) => `Le RL t'a retiré du raid ${raid}.`,
     CANDIDATURE_GROUPE: (raid: string) => `👥 Ton groupe a candidaté au raid ${raid}.`,
     unRaid: "un raid",
     raidDu: (raid: string, date: string) => `${raid} du ${date}`,
@@ -90,6 +91,7 @@ export const fr = {
     personnage: (nom: string, role: string) => ` Personnage : ${nom}${role ? ` (${role})` : ""}.`,
   },
   banniere: {
+    RETIRE_PAR_RL: "Retiré du raid",
     CANDIDATURE_GROUPE: "Candidature de groupe",
     CANDIDATURE_ACCEPTEE: "Convocation",
     CANDIDATURE_REFUSEE: "Candidature refusée",
@@ -101,6 +103,7 @@ export const fr = {
   },
   discord: {
     titre: {
+      RETIRE_PAR_RL: "Retiré du raid",
       CANDIDATURE_GROUPE: "👥 Candidature de groupe",
       CANDIDATURE_ACCEPTEE: "✅ Tu es convié !",
       CANDIDATURE_REFUSEE: "Candidature non retenue",
@@ -142,6 +145,7 @@ export const fr = {
 
   // ─── Erreurs de formulaire et d'action ─────────────────────────────────────
   erreur: {
+    plusConvie: "Ce joueur n'est plus convié à ce raid.",
     groupeIntrouvable: "Ce groupe n'existe pas ou tu n'en fais pas partie.",
     groupeTropPetit: "Il faut au moins 2 membres dans le groupe pour candidater ensemble.",
     groupeRl: "Le RL de ce raid fait partie de ton groupe.",
@@ -560,6 +564,7 @@ export const fr = {
 
   // ─── Profil d'un joueur ────────────────────────────────────────────────────
   profil: {
+    retiresTard: "Joueurs retirés à moins de 2 h du début",
     personnages: "Personnages",
     historique: "📜 Historique des raids",
     aucunHistorique: "Aucun raid passé pour l'instant.",
@@ -576,7 +581,7 @@ export const fr = {
     partisEnCours: "Partis en cours de raid",
     distinctions: "Distinctions",
     explication:
-      "La fiabilité est recalculée à chaque visite : chaque raid compte (présent 1, parti en cours ½, absent 0 ; raid tenu 1, annulé à moins de 2 h 0), les plus récents pèsent davantage, et chacun démarre à 80 %.",
+      "La fiabilité est recalculée à chaque visite : chaque raid compte (présent 1, parti en cours ½, absent 0 ; raid tenu 1, annulé ou joueur retiré à moins de 2 h 0), les plus récents pèsent davantage, et chacun démarre à 80 %.",
   },
 
   // ─── Notifications (page) ──────────────────────────────────────────────────
@@ -630,6 +635,18 @@ export const fr = {
     refuserGroupe: "Refuser le groupe",
     roleDe: (nom: string) => `Rôle de ${nom}`,
     avecGroupe: (nom: string) => `avec le groupe « ${nom} »`,
+  },
+  // ─── Retrait d'un joueur convié par le RL, message Discord ─────────────────
+  retrait: {
+    bouton: "Retirer",
+    aria: (nom: string) => `Retirer ${nom} du raid`,
+    titre: (nom: string) => `Retirer ${nom} du raid ?`,
+    explication: "Sa place se rouvre et il est prévenu sur le site et en MP Discord.",
+    penalite:
+      "⚠ Le raid commence dans moins de 2 h : ce retrait comptera contre ta fiabilité de RL, comme une annulation de dernière minute.",
+    garder: "Le garder",
+    confirmer: "Retirer du raid",
+    message: (pseudo: string) => `Écrire à ${pseudo} sur Discord`,
   },
 };
 

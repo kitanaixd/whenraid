@@ -112,6 +112,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
               libelle={d.profil.annulesTard}
               alerte={rl.annulesDerniereMinute > 0}
             />
+            <Tuile valeur={rl.retiresTard} libelle={d.profil.retiresTard} alerte={rl.retiresTard > 0} />
           </div>
         </section>
 

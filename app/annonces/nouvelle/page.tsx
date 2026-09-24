@@ -4,7 +4,8 @@ import { Contenu } from "@/generated/prisma/enums";
 import { db } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { exigerUtilisateur } from "@/lib/session";
-import { localVersUtc } from "@/lib/dates";
+import { jourLocal, localVersUtc } from "@/lib/dates";
+import { FormulaireConserve } from "@/app/FormulaireConserve";
 import { raids } from "@/lib/raids";
 import { nomEnJeu } from "@/lib/jeu";
 import { ChoixCompo } from "./ChoixCompo";
@@ -70,14 +71,14 @@ async function creerAnnonce(form: FormData) {
     erreur = messageErreur(e, await dicoCourant());
   }
 
-  if (erreur) redirect(`/annonces/nouvelle?erreur=${encodeURIComponent(erreur)}`);
+  // L'erreur s'affiche sans recharger la page : tout ce qui a été saisi reste en place.
+  if (erreur) return { erreur };
   redirect(`/annonces/${annonceId}`);
 }
 
-export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/annonces/nouvelle">) {
+export default async function PageNouvelleAnnonce() {
   const utilisateur = await exigerUtilisateur();
   const [d, langue] = await Promise.all([dicoCourant(), langueCourante()]);
-  const { erreur } = await searchParams;
   const personnages = await db.personnage.findMany({
     where: { utilisateurId: utilisateur.id, supprimeLe: null },
     orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }],
@@ -103,13 +104,13 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
         <Link href="/">{d.commun.accueil}</Link>
       </p>
       <h1>{d.creation.titre}</h1>
-      {typeof erreur === "string" && <p role="alert">⚠ {erreur}</p>}
-      <form action={creerAnnonce} className="formulaire">
+      <FormulaireConserve action={creerAnnonce} className="formulaire">
         <div className="rangee">
           <ChampTitre d={d} />
         </div>
         <ChoixCompo
           fuseau={utilisateur.fuseauHoraire}
+          dateMin={jourLocal(new Date(), utilisateur.fuseauHoraire)}
           personnage={
             <div className="champ">
               {d.creation.avecQuelPerso}
@@ -133,7 +134,7 @@ export default async function PageNouvelleAnnonce({ searchParams }: PageProps<"/
             {d.creation.publier}
           </BoutonEnvoi>
         </div>
-      </form>
+      </FormulaireConserve>
     </main>
   );
 }

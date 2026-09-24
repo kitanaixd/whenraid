@@ -7,18 +7,30 @@ import { creneau } from "@/lib/jeu";
 /** Une annulation à moins de 2 heures du début compte comme « dernière minute ». */
 export const DERNIERE_MINUTE_MS = 2 * 3600_000;
 
-/** Face RL : raids tenus et annulations de dernière minute. */
+/** Le raid commence-t-il dans moins de 2 h (dernière minute) ? */
+export const commenceBientot = (debutUtc: Date) => debutUtc.getTime() - Date.now() < DERNIERE_MINUTE_MS;
+
+/** Face RL : raids tenus, annulations de dernière minute et joueurs retirés à moins de 2 h. */
 export async function statsRl(utilisateurId: string) {
-  const raids = await db.annonce.findMany({
-    where: { createurId: utilisateurId, statut: { not: "BROUILLON" } },
-    select: { statut: true, debutUtc: true, dureeEstimee: true, annuleeLe: true },
-  });
+  const [raids, retraits] = await Promise.all([
+    db.annonce.findMany({
+      where: { createurId: utilisateurId, statut: { not: "BROUILLON" } },
+      select: { statut: true, debutUtc: true, dureeEstimee: true, annuleeLe: true },
+    }),
+    db.inscription.findMany({
+      where: { retireParRlLe: { not: null }, place: { annonce: { createurId: utilisateurId } } },
+      select: { retireParRlLe: true, place: { select: { annonce: { select: { debutUtc: true } } } } },
+    }),
+  ]);
   const maintenant = Date.now();
   const organises = raids.filter((r) => r.statut !== "ANNULEE" && creneau(r).fin <= maintenant).length;
   const annulesDerniereMinute = raids.filter(
     (r) => r.statut === "ANNULEE" && r.annuleeLe && r.debutUtc.getTime() - r.annuleeLe.getTime() < DERNIERE_MINUTE_MS,
   ).length;
-  return { organises, annulesDerniereMinute };
+  const retiresTard = retraits.filter(
+    (r) => r.place.annonce.debutUtc.getTime() - r.retireParRlLe!.getTime() < DERNIERE_MINUTE_MS,
+  ).length;
+  return { organises, annulesDerniereMinute, retiresTard };
 }
 
 /** Face Mercenaire : présences, absences, départs en cours et distinctions constatés par les RL. */

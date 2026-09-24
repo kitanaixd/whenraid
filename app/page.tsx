@@ -451,6 +451,13 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
             )}
             <nav className="carte choix-perso" aria-label={d.accueil.chercheRaidPourAria}>
               <p className="surtitre">{d.accueil.chercheRaidPour}</p>
+              {perso && (
+                // La note part avec la candidature rapide (formulaire plus bas, relié par form=).
+                <label className="champ rapide-note">
+                  {d.accueil.noteRl} <small className="fuseau">{d.accueil.noteRlAide}</small>
+                  <input name="note" form="candidature-rapide" maxLength={80} placeholder={d.accueil.notePlaceholder} />
+                </label>
+              )}
               <ul>
                 {personnages.map((p) => (
                   <li key={p.id}>
@@ -551,10 +558,6 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                     </fieldset>
                   </>
                 )}
-                <label className="champ rapide-note">
-                  {d.accueil.noteRl} <small className="fuseau">{d.accueil.noteRlAide}</small>
-                  <input name="note" maxLength={80} placeholder={d.accueil.notePlaceholder} />
-                </label>
               </form>
             )}
           </aside>
