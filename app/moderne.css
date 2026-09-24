@@ -1401,3 +1401,14 @@ button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compt
 a.bouton {
   letter-spacing: 0 !important;
 }
+
+/* Aucun soulignement au survol, nulle part (liens, cartes, boutons). */
+a:hover,
+a:hover *,
+a:focus-visible,
+a:focus-visible * {
+  text-decoration: none !important;
+}
+.banniere-texte:hover span {
+  text-decoration: none !important;
+}
