@@ -12,6 +12,7 @@ import { nomEnJeu } from "@/lib/jeu";
 import { exigerUtilisateur } from "@/lib/session";
 import { messageErreur } from "@/lib/formulaire";
 import { dicoCourant } from "@/lib/langue";
+import { IconeWarcraftLogs } from "@/app/Icones";
 
 async function creerPersonnage(form: FormData) {
   "use server";
@@ -158,7 +159,7 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 </small>
                 {p.lienLogs && (
                   <a href={p.lienLogs} target="_blank" rel="noopener noreferrer nofollow" className="lien-logs">
-                    {d.commun.voirLogs}
+                    <IconeWarcraftLogs /> {d.commun.voirLogs}
                   </a>
                 )}
               </div>

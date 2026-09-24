@@ -70,3 +70,9 @@ export function IconeMessage() {
     </svg>
   );
 }
+
+/** Logo Warcraft Logs, devant chaque lien vers des logs. */
+export function IconeWarcraftLogs({ taille = 16 }: { taille?: number }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/logos/warcraftlogs.png" alt="" width={taille} height={taille} className="icone-wcl" />;
+}

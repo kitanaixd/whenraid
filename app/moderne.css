@@ -1455,3 +1455,11 @@ a:focus-visible * {
 .membres-candidats li {
   grid-template-columns: minmax(0, 1fr) auto auto auto;
 }
+
+/* Logo Warcraft Logs devant les liens de logs. */
+.icone-wcl {
+  display: inline-block;
+  vertical-align: -3px;
+  border-radius: 50%;
+  object-fit: contain;
+}

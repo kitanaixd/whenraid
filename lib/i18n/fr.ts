@@ -355,7 +355,7 @@ export const fr = {
 
   // ─── Page d'un raid ────────────────────────────────────────────────────────
   raid: {
-    logsRaid: "📊 Logs du raid",
+    logsRaid: "Logs du raid",
     logsAide: "Colle le lien Warcraft Logs du raid : seuls toi et les joueurs confirmés le verront.",
     logsVoir: "Voir les logs sur Warcraft Logs ↗",
     logsLien: "Lien Warcraft Logs",

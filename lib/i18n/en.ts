@@ -325,7 +325,7 @@ export const en: Dico = {
 
   // ─── Raid page ─────────────────────────────────────────────────────────────
   raid: {
-    logsRaid: "📊 Raid logs",
+    logsRaid: "Raid logs",
     logsAide: "Paste the raid's Warcraft Logs link: only you and confirmed players will see it.",
     logsVoir: "View logs on Warcraft Logs ↗",
     logsLien: "Warcraft Logs link",

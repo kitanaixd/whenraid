@@ -10,6 +10,7 @@ import { ClasseIcone, FactionIcone } from "@/app/ClasseIcone";
 import { fiabiliteMercenaires, fiabiliteRls } from "@/lib/fiabilite";
 import { BadgeFiabilite } from "@/app/BadgeFiabilite";
 import { dicoCourant } from "@/lib/langue";
+import { IconeWarcraftLogs } from "@/app/Icones";
 
 /** Une statistique en tuile : le chiffre en grand, son libellé dessous. */
 function Tuile({ valeur, libelle, alerte = false }: { valeur: React.ReactNode; libelle: string; alerte?: boolean }) {
@@ -86,7 +87,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
                         <>
                           {" · "}
                           <a href={p.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
-                            {d.commun.logs}
+                            <IconeWarcraftLogs /> {d.commun.logs}
                           </a>
                         </>
                       )}

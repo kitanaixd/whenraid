@@ -31,6 +31,7 @@ import {
 import { BoutonDesinscrire } from "./BoutonDesinscrire";
 import { BoutonRetirerJoueur } from "./BoutonRetirerJoueur";
 import { BoutonMessage } from "./BoutonMessage";
+import { IconeWarcraftLogs } from "@/app/Icones";
 import { commenceBientot } from "@/lib/profil";
 import { BoutonInvitations } from "./BoutonInvitations";
 import { nomEnJeu } from "@/lib/invitations";
@@ -449,7 +450,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                                   <>
                                     {" · "}
                                     <a href={i.personnage.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
-                                      {d.commun.logs}
+                                      <IconeWarcraftLogs /> {d.commun.logs}
                                     </a>
                                   </>
                                 )}
@@ -513,7 +514,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         </div>
                         {i.personnage?.lienLogs && (
                           <a href={i.personnage.lienLogs} target="_blank" rel="noopener noreferrer nofollow">
-                            {d.raid.voirLogsWcl}
+                            <IconeWarcraftLogs /> {d.raid.voirLogsWcl}
                           </a>
                         )}
                         {i.note && <blockquote className="note">« {i.note} »</blockquote>}
@@ -795,11 +796,11 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           {voitLogs && (
             <section className="carte logs-raid" aria-labelledby="titre-logs">
               <p className="surtitre" id="titre-logs">
-                {d.raid.logsRaid}
+                <IconeWarcraftLogs taille={18} /> {d.raid.logsRaid}
               </p>
               {annonce.lienLogs && (
                 <a href={annonce.lienLogs} target="_blank" rel="noopener noreferrer nofollow" className="bouton petit">
-                  {d.raid.logsVoir}
+                  <IconeWarcraftLogs taille={18} /> {d.raid.logsVoir}
                 </a>
               )}
               {estRl && (
