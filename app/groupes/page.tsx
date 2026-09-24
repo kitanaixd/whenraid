@@ -20,7 +20,13 @@ export default async function PageGroupes({ searchParams }: PageProps<"/groupes"
       orderBy: [{ estPrincipal: "desc" }, { nom: "asc" }],
     }),
   ]);
-  const persos = personnages.map((p) => ({ id: p.id, nom: nomEnJeu(p), classe: p.classe, roles: rolesDuPerso(p) }));
+  const persos = personnages.map((p) => ({
+    id: p.id,
+    nom: nomEnJeu(p),
+    classe: p.classe,
+    roles: rolesDuPerso(p),
+    ruleset: d.ruleset[p.ruleset],
+  }));
 
   return (
     <main className="page-groupes">

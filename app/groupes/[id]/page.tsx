@@ -29,7 +29,13 @@ export default async function PageGroupe({ params, searchParams }: PageProps<"/g
   const autres = groupe.membres.filter((m) => m.id !== moi.id);
   const persos = personnages
     .filter((p) => autres.every((m) => memeMonde(m.personnage, p)))
-    .map((p) => ({ id: p.id, nom: nomEnJeu(p), classe: p.classe, roles: rolesDuPerso(p) }));
+    .map((p) => ({
+      id: p.id,
+      nom: nomEnJeu(p),
+      classe: p.classe,
+      roles: rolesDuPerso(p),
+      ruleset: d.ruleset[p.ruleset],
+    }));
   const lien = `${URL_SITE}/groupes/rejoindre/${groupe.code}`;
 
   return (

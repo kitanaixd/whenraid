@@ -57,7 +57,13 @@ export default async function PageRejoindre({ params, searchParams }: PageProps<
   // Seuls les personnages du même monde que le groupe (faction, ruleset, région) peuvent le rejoindre.
   const persos = personnages
     .filter((p) => groupe.membres.every((m) => memeMonde(m.personnage, p)))
-    .map((p) => ({ id: p.id, nom: nomEnJeu(p), classe: p.classe, roles: rolesDuPerso(p) }));
+    .map((p) => ({
+      id: p.id,
+      nom: nomEnJeu(p),
+      classe: p.classe,
+      roles: rolesDuPerso(p),
+      ruleset: d.ruleset[p.ruleset],
+    }));
   const plein = groupe.membres.length >= MAX_MEMBRES;
   const monde = groupe.membres[0]?.personnage;
 

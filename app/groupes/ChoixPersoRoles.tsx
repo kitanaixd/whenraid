@@ -5,7 +5,7 @@ import type { Classe, Role } from "@/generated/prisma/enums";
 import { ClasseIcone, NomRole } from "@/app/ClasseIcone";
 import { useDico } from "@/app/Langue";
 
-type PersoChoix = { id: string; nom: string; classe: Classe; roles: Role[] };
+type PersoChoix = { id: string; nom: string; classe: Classe; roles: Role[]; ruleset?: string };
 
 /** Personnage du joueur dans un groupe, puis les rôles qu'il y jouera (ceux de ce personnage). */
 export function ChoixPersoRoles({
@@ -41,6 +41,7 @@ export function ChoixPersoRoles({
             <span className="classe" style={{ "--c": `var(--classe-${p.classe})` } as React.CSSProperties}>
               {p.nom}
             </span>
+            {p.ruleset && <span className="ruleset-perso">({p.ruleset})</span>}
           </label>
         ))}
       </fieldset>

@@ -1175,3 +1175,17 @@ dialog.confirmation textarea {
   background: rgb(226 189 111 / 0.14);
   border: 1px solid var(--accent);
 }
+
+/* Ruleset à côté du nom d'un personnage : « (PvE) », « (PvP) », « (RP) ». */
+.ruleset-perso {
+  flex: none;
+  font-size: 0.8em;
+  font-weight: 500;
+  color: var(--texte-doux);
+}
+.accueil-perso .perso-choix .classe {
+  flex: 0 1 auto;
+}
+.accueil-perso .perso-choix .ruleset-perso + img {
+  margin-left: auto;
+}

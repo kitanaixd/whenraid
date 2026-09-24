@@ -486,6 +486,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                       >
                         {nomEnJeu(p)}
                       </span>
+                      <span className="ruleset-perso">({d.ruleset[p.ruleset]})</span>
                       <FactionIcone faction={p.faction} taille={16} />
                     </Link>
                   </li>
