@@ -23,7 +23,7 @@ export type Marque = {
 /** Le groupe inscrit : les icônes de classe des membres, superposées, puis son nom. */
 export function GroupeInscrit({ groupe }: { groupe: { nom: string; classes: Classe[] } }) {
   return (
-    <span className="perso-inscrit groupe-inscrit">
+    <span className="perso-inscrit groupe-inscrit" title={groupe.nom}>
       <span className="groupe-icones">
         {groupe.classes.map((c, n) => (
           <ClasseIcone key={n} classe={c} taille={20} />

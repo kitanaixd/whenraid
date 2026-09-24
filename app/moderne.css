@@ -1030,3 +1030,67 @@ span.profil-avatar {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ─── Prochains raids : carte entièrement cliquable, action à droite ─────── */
+.prochain {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "lien action" "bas action";
+  column-gap: 0.6rem;
+  row-gap: 0.4rem;
+  align-items: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.prochain:hover {
+  border-color: var(--bord-fort);
+  background: var(--surface-3);
+}
+.prochain .prochain-lien {
+  grid-area: lien;
+  min-width: 0;
+  text-decoration: none;
+}
+/* Le lien recouvre toute la carte. */
+.prochain .prochain-lien::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.prochain .prochain-lien:hover,
+.prochain .prochain-lien:hover * {
+  text-decoration: none;
+}
+.prochain:hover .prochain-lien strong {
+  color: var(--accent);
+}
+.prochain .prochain-lien strong,
+.prochain .prochain-lien .doux {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.prochain .prochain-bas {
+  grid-area: bas;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.prochain .prochain-action {
+  grid-area: action;
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  align-self: center;
+}
+.prochain .bulle-candidatures {
+  z-index: 2;
+}
+.prochain .prochain-lien:focus-visible {
+  outline: none;
+}
+.prochain:has(.prochain-lien:focus-visible) {
+  box-shadow: var(--anneau);
+}

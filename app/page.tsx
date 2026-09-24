@@ -297,7 +297,8 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                     // Bulle des candidatures : seulement sur les raids que j'organise.
                     const enAttente = a.createurId === utilisateur.id ? resumeLigneRaid(a).enAttente : 0;
                     return (
-                      <li key={cle} className={`prochain ligne-${marque?.type ?? ""}`}>
+                      // Toute la carte mène au raid (le lien la recouvre) ; le bouton d'action reste au-dessus.
+                      <li key={cle} className={`prochain ligne-${marque?.type ?? ""} ${action ? "avec-action" : ""}`}>
                         {enAttente > 0 && (
                           <span className="bulle-candidatures" title={d.accueil.candidatures(enAttente)}>
                             <span aria-hidden="true">{enAttente}</span>
@@ -319,8 +320,8 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                             marque?.perso && <ClasseIcone classe={marque.perso.classe} taille={18} />
                           )}
                           {marque?.detail && <span className="doux">{marque.detail}</span>}
-                          {action && <span className="prochain-action">{action}</span>}
                         </div>
+                        {action && <span className="prochain-action">{action}</span>}
                       </li>
                     );
                   })}
