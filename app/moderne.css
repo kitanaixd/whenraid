@@ -1145,3 +1145,33 @@ dialog.confirmation textarea {
   min-height: 6rem;
   resize: vertical;
 }
+
+/* Mes personnages : favori, Modifier et Supprimer à la même hauteur. */
+.liste-persos a.bouton.petit,
+.liste-persos button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).petit {
+  box-sizing: border-box;
+  height: 2.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+/* Favori (personnage principal) : étoile dorée pleine si choisi, étoile vide et discrète sinon. */
+.liste-persos button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).bouton-favori {
+  width: 2.15rem;
+  padding: 0;
+  font-size: 1.05rem;
+  letter-spacing: 0;
+  color: var(--texte-doux);
+  background: transparent;
+  border: 1px dashed var(--bord-fort);
+}
+.liste-persos button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).bouton-favori:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.liste-persos button:not(.bouton-lien):not(.menu-choisi):not(.banniere-fermer):not(.menu-compte-deconnexion):not(.menu-compte-bouton).bouton-favori.actif {
+  color: var(--accent);
+  background: rgb(226 189 111 / 0.14);
+  border: 1px solid var(--accent);
+}

@@ -136,7 +136,7 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 <input type="hidden" name="personnageId" value={p.id} />
                 <button
                   type="submit"
-                  className="petit"
+                  className={`petit bouton-favori ${p.estPrincipal ? "actif" : ""}`}
                   title={p.estPrincipal ? d.personnages.retirerPrincipal : d.personnages.definirPrincipal}
                   aria-pressed={p.estPrincipal}
                 >
