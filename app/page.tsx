@@ -10,7 +10,7 @@ import { groupeHomogene, mesGroupes } from "@/lib/groupes";
 import { chargerMesRaids } from "@/lib/mesRaids";
 import { fiabiliteRls } from "@/lib/fiabilite";
 import { BadgeFiabilite } from "./BadgeFiabilite";
-import { IconeCroix, IconePlus } from "./Icones";
+import { IconeCartes, IconeCroix, IconeListe, IconePlus } from "./Icones";
 import { includeLigneRaid, resumeLigneRaid } from "@/lib/ligneRaid";
 import { Contenu } from "@/generated/prisma/enums";
 import {
@@ -25,7 +25,8 @@ import {
 import { GroupeInscrit, LigneRaid, type Marque } from "./LigneRaid";
 import { Calendrier } from "./Calendrier";
 import { MemoriserChoix } from "./MemoriserChoix";
-import { COOKIE_CHOIX } from "@/lib/choixListe";
+import { COOKIE_CHOIX, COOKIE_VUE } from "@/lib/choixListe";
+import { EnteteListe, LigneListe } from "./LigneListe";
 import { cookies } from "next/headers";
 import { FormulaireAuto } from "./FormulaireAuto";
 import { CurseurDuree } from "./CurseurDuree";
@@ -36,7 +37,7 @@ import { dicoCourant } from "@/lib/langue";
 
 const DUREES_MAX = [2, 3, 4, 6];
 /** Paramètres de la liste gardés d'un lien à l'autre (personnage, filtres, mois du calendrier). */
-const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q", "masquer"] as const;
+const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q", "masquer", "vue"] as const;
 
 /** Texte comparable : minuscules, sans accents (« Hyjal Déjà » ≈ « hyjal deja »). */
 const sansAccents = (texte: string) =>
@@ -110,7 +111,10 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
   ]);
   // Le joueur cherche un raid pour un de ses groupes, ou pour un personnage (par défaut : son principal).
   // Sans choix dans l'adresse, on reprend le dernier personnage ou groupe choisi (cookie).
-  const [typeRetenu, idRetenu] = ((await cookies()).get(COOKIE_CHOIX)?.value ?? "").split(":");
+  const biscuits = await cookies();
+  const [typeRetenu, idRetenu] = (biscuits.get(COOKIE_CHOIX)?.value ?? "").split(":");
+  // Vue de la liste : cartes (par défaut) ou liste, choisie dans l'adresse ou retenue (cookie).
+  const vue = (valeur("vue") || biscuits.get(COOKIE_VUE)?.value) === "liste" ? "liste" : "cartes";
   const sansChoix = !valeur("groupe") && !valeur("perso");
   const groupeId = valeur("groupe") || (sansChoix && typeRetenu === "groupe" ? idRetenu : "");
   const persoId = valeur("perso") || (sansChoix && typeRetenu === "perso" ? idRetenu : "");
@@ -358,18 +362,41 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               </fieldset>
             </FormulaireAuto>
             {/* Recherche par titre : garde le personnage et les autres filtres. */}
-            <form className="recherche-raids" method="get" role="search" aria-label={d.accueil.rechercheAria}>
-              {champsCaches("q")}
-              <input
-                type="search"
-                name="q"
-                defaultValue={recherche}
-                placeholder={d.accueil.rechercher}
-                aria-label={d.accueil.rechercheAria}
-                maxLength={40}
-                autoComplete="off"
-              />
-            </form>
+            <MemoriserChoix nom={COOKIE_VUE} valeur={vue} />
+            <div className="recherche-et-vue">
+              <form className="recherche-raids" method="get" role="search" aria-label={d.accueil.rechercheAria}>
+                {champsCaches("q")}
+                <input
+                  type="search"
+                  name="q"
+                  defaultValue={recherche}
+                  placeholder={d.accueil.rechercher}
+                  aria-label={d.accueil.rechercheAria}
+                  maxLength={40}
+                  autoComplete="off"
+                />
+              </form>
+              <nav className="choix-vue" aria-label={d.accueil.vue.aria}>
+                <Link
+                  href={lienListe({ vue: "cartes" })}
+                  className={`bouton-icone ${vue === "cartes" ? "actif" : ""}`}
+                  aria-current={vue === "cartes" ? "true" : undefined}
+                  aria-label={d.accueil.vue.cartes}
+                  title={d.accueil.vue.cartes}
+                >
+                  <IconeCartes />
+                </Link>
+                <Link
+                  href={lienListe({ vue: "liste" })}
+                  className={`bouton-icone ${vue === "liste" ? "actif" : ""}`}
+                  aria-current={vue === "liste" ? "true" : undefined}
+                  aria-label={d.accueil.vue.liste}
+                  title={d.accueil.vue.liste}
+                >
+                  <IconeListe />
+                </Link>
+              </nav>
+            </div>
             {typeof erreur === "string" && erreur && (
               <p className="avertissement grave" role="alert">
                 ⚠ {erreur}
@@ -388,12 +415,14 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 </Link>
               </div>
             ) : (
-              <ul className="liste-raids">
+              <ul className={`liste-raids ${vue === "liste" ? "vue-liste" : ""}`}>
+                {vue === "liste" && <EnteteListe d={d} />}
                 {annonces.map((a) => {
                   const marque = marqueDe(a.id, a.createurId);
                   const libelleBouton = a.statut === "COMPLETE" ? d.accueil.reserveAria : d.accueil.candidater;
+                  const Ligne = vue === "liste" ? LigneListe : LigneRaid;
                   return (
-                    <LigneRaid
+                    <Ligne
                       key={a.id}
                       annonce={a}
                       fuseau={fuseau}

@@ -285,6 +285,8 @@ export const fr = {
 
   // ─── Accueil ───────────────────────────────────────────────────────────────
   accueil: {
+    vue: { aria: "Affichage de la liste", cartes: "Afficher en cartes", liste: "Afficher en liste" },
+    colonnes: { date: "Date", raid: "Raid", statut: "Statut", compo: "Compo", recherche: "Recherché" },
     masquerMesRaids: "Masquer mes raids",
     visiteurSurtitre: "Le rendez-vous des raids de WoW Forever",
     accroche:

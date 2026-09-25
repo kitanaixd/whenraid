@@ -256,6 +256,8 @@ export const en: Dico = {
 
   // ─── Home ──────────────────────────────────────────────────────────────────
   accueil: {
+    vue: { aria: "List display", cartes: "Show as cards", liste: "Show as list" },
+    colonnes: { date: "Date", raid: "Raid", statut: "Status", compo: "Roster", recherche: "Wanted" },
     masquerMesRaids: "Hide my raids",
     visiteurSurtitre: "Where WoW Forever raids come together",
     accroche:

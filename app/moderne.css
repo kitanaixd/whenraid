@@ -1487,3 +1487,161 @@ a:focus-visible * {
 .accueil-perso .perso-choix .ruleset-perso {
   flex: none;
 }
+
+/* ─── Liste des raids : bascule « Cartes / Liste » et vue en lignes ────────── */
+.recherche-et-vue {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+.recherche-et-vue .recherche-raids {
+  flex: 1;
+  margin: 0;
+}
+.choix-vue {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+.choix-vue a.bouton-icone {
+  display: inline-grid;
+  place-items: center;
+  width: 48px !important;
+  height: 48px !important;
+  color: var(--texte-doux);
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-2);
+}
+.choix-vue a.bouton-icone:hover {
+  color: var(--texte);
+  border-color: var(--bord-fort);
+}
+.choix-vue a.bouton-icone.actif {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: rgb(226 189 111 / 0.08);
+}
+
+.liste-raids.vue-liste {
+  gap: 0.35rem;
+}
+.ligne-liste {
+  position: relative;
+  display: grid;
+  grid-template-columns: 6.2rem minmax(0, 1.6fr) minmax(0, 1.3fr) 9.5rem 6.5rem 2.25rem;
+  align-items: center;
+  gap: 0.8rem;
+  min-height: 3.4rem;
+  padding: 0.45rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  border-left: 3px solid var(--bord);
+  border-radius: var(--rayon-2);
+  font-size: 0.88rem;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ligne-liste:not(.entete-liste):hover {
+  background: var(--surface-2);
+  border-color: var(--bord-fort);
+}
+.ligne-liste.ligne-organise {
+  border-left-color: var(--accent);
+}
+.ligne-liste.ligne-convie {
+  border-left-color: #4ade80;
+}
+.ligne-liste.ligne-candidat {
+  border-left-color: #6ee7f5;
+}
+.ligne-liste.ligne-attente {
+  border-left-color: #fbbf24;
+}
+/* Le lien recouvre toute la ligne ; le bouton d'action reste au-dessus. */
+.ligne-liste-lien {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.ligne-liste .liste-action {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+.ligne-liste > span {
+  min-width: 0;
+}
+.liste-date,
+.liste-raid {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+.liste-raid strong,
+.liste-raid .doux {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liste-raid .doux,
+.liste-date .doux {
+  font-size: 0.8rem;
+}
+.ligne-liste:hover .liste-raid strong {
+  color: var(--accent);
+}
+.liste-statut,
+.liste-compo,
+.liste-recherche {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.liste-statut {
+  overflow: hidden;
+}
+.liste-statut .badge-raid {
+  flex: none;
+}
+.liste-compo span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+.liste-compo strong {
+  margin-left: 0.2rem;
+}
+.bulle-liste {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  margin-left: 0.4rem;
+  padding: 0 0.3rem;
+  font-size: 0.7rem;
+  border-radius: 999px;
+  color: #04262b;
+  background: #6ee7f5;
+  vertical-align: 1px;
+}
+.entete-liste {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0.2rem;
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--texte-doux);
+}
+@media (max-width: 900px) {
+  .ligne-liste {
+    grid-template-columns: 5.4rem minmax(0, 1fr) auto 2.25rem;
+  }
+  .ligne-liste .liste-statut,
+  .ligne-liste .liste-recherche,
+  .entete-liste span:nth-child(3),
+  .entete-liste span:nth-child(5) {
+    display: none;
+  }
+}

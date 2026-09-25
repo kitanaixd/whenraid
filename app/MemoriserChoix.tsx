@@ -3,10 +3,10 @@
 import { useEffect } from "react";
 import { COOKIE_CHOIX } from "@/lib/choixListe";
 
-/** Retient le personnage ou le groupe choisi, pour le retrouver en revenant sur la liste. */
-export function MemoriserChoix({ valeur }: { valeur: string }) {
+/** Retient un choix de la liste (personnage ou groupe, vue…) pour le retrouver en y revenant. */
+export function MemoriserChoix({ nom = COOKIE_CHOIX, valeur }: { nom?: string; valeur: string }) {
   useEffect(() => {
-    document.cookie = `${COOKIE_CHOIX}=${valeur}; path=/; max-age=31536000; samesite=lax`;
-  }, [valeur]);
+    document.cookie = `${nom}=${valeur}; path=/; max-age=31536000; samesite=lax`;
+  }, [nom, valeur]);
   return null;
 }
