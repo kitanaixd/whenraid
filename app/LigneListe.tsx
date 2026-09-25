@@ -4,8 +4,35 @@ import type { Dico } from "@/lib/i18n";
 import { afficherDate, afficherDateCourte } from "@/lib/dates";
 import { nomRaid } from "@/lib/raids";
 import { resumeLigneRaid, type AnnonceLigne } from "@/lib/ligneRaid";
+import type { Classe } from "@/generated/prisma/enums";
 import { ClasseIcone, RoleIcone } from "./ClasseIcone";
-import { GroupeInscrit, type Marque } from "./LigneRaid";
+
+/**
+ * Comment la ligne se distingue : raid que j'organise, où je suis convié, candidat ou en attente.
+ * `texte` : étiquette courte ; `perso` : le personnage inscrit ; `groupe` : le groupe avec lequel
+ * il a candidaté (à la place du personnage) ; `detail` : complément (ex. candidatures reçues).
+ */
+export type Marque = {
+  type: "organise" | "convie" | "candidat" | "attente";
+  texte: string;
+  perso?: { classe: Classe; nom: string };
+  groupe?: { nom: string; classes: Classe[] };
+  detail?: string;
+};
+
+/** Le groupe inscrit : les icônes de classe des membres, superposées, puis son nom. */
+export function GroupeInscrit({ groupe }: { groupe: { nom: string; classes: Classe[] } }) {
+  return (
+    <span className="perso-inscrit groupe-inscrit" title={groupe.nom}>
+      <span className="groupe-icones">
+        {groupe.classes.map((c, n) => (
+          <ClasseIcone key={n} classe={c} taille={20} />
+        ))}
+      </span>
+      <span>{groupe.nom}</span>
+    </span>
+  );
+}
 
 /** En-tête des colonnes de la vue « liste » ; « Date » et « Compo » trient la liste. */
 export function EnteteListe({
@@ -87,8 +114,8 @@ export function LigneListe({
             </span>
           )}
         </strong>
-        <span className="doux">
-          {a.titre && `${nom} · `}
+        <span className="doux liste-raid-detail">
+          <span className="liste-nom">{nom} ·</span>
           {auteur}
         </span>
       </span>

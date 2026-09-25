@@ -1847,3 +1847,33 @@ a:focus-visible * {
 .entete-liste a.actif {
   color: var(--accent);
 }
+
+/* Fiabilité compacte (liste des raids) : point de couleur et pourcentage seulement. */
+.badge-fiabilite.compact {
+  padding: 0.05rem 0.45rem;
+  font-size: 0.72rem;
+}
+.liste-raid-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  white-space: nowrap;
+}
+/* Le nom du raid et du RL se raccourcissent ; la pastille de fiabilité reste entière. */
+.liste-raid-detail .liste-nom,
+.liste-raid-detail .liste-rl {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.liste-raid-detail .liste-nom {
+  flex: 0 1 auto;
+}
+.liste-raid-detail .liste-rl {
+  flex: 0 3 auto;
+}
+.liste-raid-detail .badge-fiabilite {
+  flex: none;
+}

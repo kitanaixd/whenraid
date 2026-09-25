@@ -256,7 +256,6 @@ export const en: Dico = {
 
   // ─── Home ──────────────────────────────────────────────────────────────────
   accueil: {
-    vue: { aria: "List display", cartes: "Show as cards", liste: "Show as list" },
     colonnes: { date: "Date", raid: "Raid", statut: "Status", compo: "Roster", recherche: "Wanted" },
     afficher: "Show",
     maSpe: (classe) => `Missing my spec (${classe})`,

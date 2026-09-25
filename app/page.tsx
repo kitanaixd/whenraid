@@ -10,7 +10,7 @@ import { groupeHomogene, mesGroupes } from "@/lib/groupes";
 import { chargerMesRaids } from "@/lib/mesRaids";
 import { fiabiliteRls } from "@/lib/fiabilite";
 import { BadgeFiabilite } from "./BadgeFiabilite";
-import { IconeCartes, IconeCroix, IconeListe, IconePlus } from "./Icones";
+import { IconeCroix, IconePlus } from "./Icones";
 import { includeLigneRaid, resumeLigneRaid } from "@/lib/ligneRaid";
 import { Contenu } from "@/generated/prisma/enums";
 import {
@@ -22,11 +22,10 @@ import {
   PastilleRuleset,
   RoleIcone,
 } from "./ClasseIcone";
-import { GroupeInscrit, LigneRaid, type Marque } from "./LigneRaid";
+import { EnteteListe, GroupeInscrit, LigneListe, type Marque } from "./LigneListe";
 import { Calendrier } from "./Calendrier";
 import { MemoriserChoix } from "./MemoriserChoix";
-import { COOKIE_CHOIX, COOKIE_VUE } from "@/lib/choixListe";
-import { EnteteListe, LigneListe } from "./LigneListe";
+import { COOKIE_CHOIX } from "@/lib/choixListe";
 import { cookies } from "next/headers";
 import { FormulaireAuto } from "./FormulaireAuto";
 import { CurseurDuree } from "./CurseurDuree";
@@ -37,7 +36,7 @@ import { dicoCourant } from "@/lib/langue";
 
 const DUREES_MAX = [2, 3, 4, 6];
 /** Paramètres de la liste gardés d'un lien à l'autre (personnage, filtres, mois du calendrier). */
-const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q", "afficher", "spe", "tri", "vue"] as const;
+const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q", "afficher", "spe", "tri"] as const;
 /** Catégories de raids qu'on peut afficher ou cacher (filtre « Afficher »). */
 const CATEGORIES = ["organise", "candidatures", "convie", "autres"] as const;
 type Categorie = (typeof CATEGORIES)[number];
@@ -116,8 +115,6 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
   // Sans choix dans l'adresse, on reprend le dernier personnage ou groupe choisi (cookie).
   const biscuits = await cookies();
   const [typeRetenu, idRetenu] = (biscuits.get(COOKIE_CHOIX)?.value ?? "").split(":");
-  // Vue de la liste : cartes (par défaut) ou liste, choisie dans l'adresse ou retenue (cookie).
-  const vue = (valeur("vue") || biscuits.get(COOKIE_VUE)?.value) === "liste" ? "liste" : "cartes";
   const sansChoix = !valeur("groupe") && !valeur("perso");
   const groupeId = valeur("groupe") || (sansChoix && typeRetenu === "groupe" ? idRetenu : "");
   const persoId = valeur("perso") || (sansChoix && typeRetenu === "perso" ? idRetenu : "");
@@ -397,7 +394,11 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               </fieldset>
             </FormulaireAuto>
             {/* Afficher : mes raids, mes candidatures, là où je suis convié, les autres (cocher = afficher). */}
-            <FormulaireAuto key={`afficher-${afficherBrut}-${valeur("spe")}`} className="filtre-afficher" label={d.accueil.afficher}>
+            <FormulaireAuto
+              key={`afficher-${afficherBrut}-${valeur("spe")}`}
+              className="filtre-afficher"
+              label={d.accueil.afficher}
+            >
               {champsCaches("afficher", "spe")}
               <input type="hidden" name="afficher" value="_" />
               <fieldset className="rapide-roles choix-raids">
@@ -417,7 +418,6 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               </fieldset>
             </FormulaireAuto>
             {/* Recherche par titre : garde le personnage et les autres filtres. */}
-            <MemoriserChoix nom={COOKIE_VUE} valeur={vue} />
             <div className="recherche-et-vue">
               <form className="recherche-raids" method="get" role="search" aria-label={d.accueil.rechercheAria}>
                 {champsCaches("q")}
@@ -443,26 +443,6 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   </Link>
                 ))}
               </nav>
-              <nav className="choix-vue" aria-label={d.accueil.vue.aria}>
-                <Link
-                  href={lienListe({ vue: "cartes" })}
-                  className={`bouton-icone ${vue === "cartes" ? "actif" : ""}`}
-                  aria-current={vue === "cartes" ? "true" : undefined}
-                  aria-label={d.accueil.vue.cartes}
-                  title={d.accueil.vue.cartes}
-                >
-                  <IconeCartes />
-                </Link>
-                <Link
-                  href={lienListe({ vue: "liste" })}
-                  className={`bouton-icone ${vue === "liste" ? "actif" : ""}`}
-                  aria-current={vue === "liste" ? "true" : undefined}
-                  aria-label={d.accueil.vue.liste}
-                  title={d.accueil.vue.liste}
-                >
-                  <IconeListe />
-                </Link>
-              </nav>
             </div>
             {typeof erreur === "string" && erreur && (
               <p className="avertissement grave" role="alert">
@@ -482,21 +462,18 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 </Link>
               </div>
             ) : (
-              <ul className={`liste-raids ${vue === "liste" ? "vue-liste" : ""}`}>
-                {vue === "liste" && (
-                  <EnteteListe
-                    d={d}
-                    tri={tri}
-                    lienDate={lienListe({ tri: null })}
-                    lienRoster={lienListe({ tri: "roster" })}
-                  />
-                )}
+              <ul className="liste-raids vue-liste">
+                <EnteteListe
+                  d={d}
+                  tri={tri}
+                  lienDate={lienListe({ tri: null })}
+                  lienRoster={lienListe({ tri: "roster" })}
+                />
                 {annonces.map((a) => {
                   const marque = marqueDe(a.id, a.createurId);
                   const libelleBouton = a.statut === "COMPLETE" ? d.accueil.reserveAria : d.accueil.candidater;
-                  const Ligne = vue === "liste" ? LigneListe : LigneRaid;
                   return (
-                    <Ligne
+                    <LigneListe
                       key={a.id}
                       annonce={a}
                       fuseau={fuseau}
@@ -506,7 +483,8 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                       bulleCandidatures={a.createurId === utilisateur.id}
                       auteur={
                         <>
-                          {d.accueil.par(a.createur.pseudo)} <BadgeFiabilite fiabilite={fiabilite.get(a.createurId)} />
+                          <span className="liste-rl">{d.accueil.par(a.createur.pseudo)}</span>
+                          <BadgeFiabilite fiabilite={fiabilite.get(a.createurId)} compact />
                         </>
                       }
                       action={
