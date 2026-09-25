@@ -108,7 +108,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             {etat ? (
               <div style={{ display: "flex", fontSize: 34, color: OR }}>{etat}</div>
             ) : (
-              <>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ display: "flex", fontSize: 22, letterSpacing: 4, color: "#a1a1aa" }}>
                   {d.apercu.recherche.toUpperCase()}
                 </div>
@@ -140,7 +140,7 @@ export default async function Image({ params }: { params: Promise<{ id: string }
                     </div>
                   ))}
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>
