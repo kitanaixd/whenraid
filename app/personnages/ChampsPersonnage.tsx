@@ -90,22 +90,13 @@ export function ChampsPersonnage({ perso, d }: { perso?: Personnage; d: Dico }) 
             options={optionsTriees(d.classe).map(([v, l]) => ({ valeur: v, libelle: l, classe: v }))}
           />
         </div>
-        <label className="champ">
-          {d.champ.niveau}
-          <input name="niveau" type="number" min={1} max={60} defaultValue={perso?.niveau ?? 60} required />
-        </label>
       </div>
       <fieldset>
         <legend>{d.personnages.rolesJouables}</legend>
         <div className="cases">
           {options(d.role).map(([v, l]) => (
             <label key={v}>
-              <input
-                type="checkbox"
-                name="rolesJouables"
-                value={v}
-                defaultChecked={perso?.rolesJouables.includes(v)}
-              />{" "}
+              <input type="checkbox" name="rolesJouables" value={v} defaultChecked={perso?.rolesJouables.includes(v)} />{" "}
               {l}
             </label>
           ))}

@@ -81,8 +81,7 @@ export default async function PageJoueur({ params }: PageProps<"/joueurs/[id]">)
                       {nomEnJeu(p)}
                     </strong>
                     <span className="doux">
-                      {d.classe[p.classe]} {p.niveau} · <FactionIcone faction={p.faction} taille={14} />{" "}
-                      {d.faction[p.faction]}
+                      {d.classe[p.classe]} · <FactionIcone faction={p.faction} taille={14} /> {d.faction[p.faction]}
                       {p.lienLogs && (
                         <>
                           {" · "}

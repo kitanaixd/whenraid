@@ -80,9 +80,7 @@ export default async function PageModifierPersonnage({ params, searchParams }: P
           ⚠ {erreur}
         </p>
       )}
-      {engage && (
-        <p className="encadre">{d.personnages.engage}</p>
-      )}
+      {engage && <p className="encadre">{d.personnages.engage}</p>}
       <form action={modifierPersonnage} className="formulaire">
         <input type="hidden" name="personnageId" value={perso.id} />
         <ChampsPersonnage perso={perso} d={d} />

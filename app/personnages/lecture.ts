@@ -1,5 +1,5 @@
 import { Classe, Faction, Region, Role, Ruleset } from "@/generated/prisma/enums";
-import { choix, choixMultiples, entier, ErreurFormulaire, lienWarcraftLogs, nomDePersonnage } from "@/lib/formulaire";
+import { choix, choixMultiples, ErreurFormulaire, lienWarcraftLogs, nomDePersonnage } from "@/lib/formulaire";
 
 /** Lit et valide les champs d'un personnage (création comme modification). */
 export function lirePersonnage(form: FormData) {
@@ -14,6 +14,7 @@ export function lirePersonnage(form: FormData) {
     faction: choix(form, "faction", Faction, "faction"),
     ruleset: choix(form, "ruleset", Ruleset, "ruleset"),
     region: choix(form, "region", Region, "region"),
-    niveau: entier(form, "niveau", { min: 1, max: 60, requis: true, champ: "niveau" })!,
+    // Tous les personnages sont niveau 60 (WoW Forever).
+    niveau: 60,
   };
 }

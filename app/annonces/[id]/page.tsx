@@ -238,7 +238,6 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           {(annonce.langueRequise === "fr" || annonce.langueRequise === "en") && (
             <span className="pastille">{d.langueParlee[annonce.langueRequise]}</span>
           )}
-          {annonce.niveauMin && <span className="pastille">{d.raid.niveauMin(annonce.niveauMin)}</span>}
           <span className={`pastille ${CLASSE_STATUT_ANNONCE[annonce.statut] ?? ""}`}>
             {d.statutAnnonce[annonce.statut]}
           </span>
@@ -543,7 +542,6 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                           >
                             {i.personnage && nomEnJeu(i.personnage)}
                           </strong>
-                          {i.personnage && <span className="doux">{d.commun.niv(i.personnage.niveau)}</span>}
                         </div>
                         <div className="roles-proposes">
                           {i.choixRoles.map((c) => (
@@ -639,7 +637,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                                 {nomEnJeu(i.personnage)}
                               </strong>
                               <span className="doux">
-                                {d.classe[i.personnage.classe]} {d.commun.niv(i.personnage.niveau)}
+                                {d.classe[i.personnage.classe]}
                                 {maCandidature.escouadeId && ` · ${i.utilisateur.pseudo}`}
                               </span>
                             </div>
@@ -686,7 +684,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                       id: perso.id,
                       classe: perso.classe,
                       roles,
-                      libelle: `${nomEnJeu(perso)} — ${d.classe[perso.classe]} ${d.commun.niv(perso.niveau)}`,
+                      libelle: `${nomEnJeu(perso)} — ${d.classe[perso.classe]}`,
                     }))}
                   />
                 </>

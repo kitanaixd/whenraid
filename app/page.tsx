@@ -522,7 +522,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                     <span className="pastille">👥 {groupe.nom}</span>
                   ) : (
                     <span className="pastille">
-                      <NomClasse classe={perso.classe} taille={16} /> {d.commun.niv(perso.niveau)}
+                      <NomClasse classe={perso.classe} taille={16} />
                     </span>
                   )}
                   <PastilleFaction faction={perso.faction} />

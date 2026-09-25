@@ -38,14 +38,14 @@ export function lireOrganisation(form: FormData) {
     dureeEstimee: dureeHeures ? dureeHeures * 60 : null,
     reglesLoot: choix(form, "reglesLoot", ReglesLoot, "loot"),
     langueRequise: (LANGUES as readonly string[]).includes(langue) ? langue : null,
-    niveauMin: entier(form, "niveauMin", { min: 1, max: 60, champ: "niveauMin" }),
+    // Tous les personnages sont niveau 60 : plus de niveau minimum.
+    niveauMin: null,
     ...lireVocal(form),
   };
 }
 
 type Organisation = {
   reglesLoot: ReglesLoot;
-  niveauMin: number | null;
   langueRequise: string | null;
   vocal: Vocal;
   vocalDiscordLien: string | null;
@@ -96,16 +96,6 @@ export function ChampsOrganisation({
           </select>
         </label>
         <label className="champ">
-          {d.champ.niveauMin}
-          <input
-            type="number"
-            name="niveauMin"
-            min={1}
-            max={60}
-            defaultValue={annonce ? (annonce.niveauMin ?? "") : 60}
-          />
-        </label>
-        <label className="champ">
           {d.commun.langue}
           <select name="langueRequise" defaultValue={annonce ? (annonce.langueRequise ?? "") : langueParDefaut}>
             {LANGUES.map((v) => (
@@ -122,13 +112,7 @@ export function ChampsOrganisation({
         <div className="cases">
           {options(d.vocal).map(([v, l]) => (
             <label key={v}>
-              <input
-                type="radio"
-                name="vocal"
-                value={v}
-                defaultChecked={v === (annonce?.vocal ?? "AUCUN")}
-              />{" "}
-              {l}
+              <input type="radio" name="vocal" value={v} defaultChecked={v === (annonce?.vocal ?? "AUCUN")} /> {l}
             </label>
           ))}
         </div>

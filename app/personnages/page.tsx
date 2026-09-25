@@ -151,8 +151,8 @@ export default async function PagePersonnages({ searchParams }: PageProps<"/pers
                 </strong>
                 <br />
                 <small>
-                  {d.classe[p.classe]} {d.commun.niveau(p.niveau)} · <FactionIcone faction={p.faction} taille={16} />{" "}
-                  {d.faction[p.faction]} · <RulesetRegion ruleset={p.ruleset} region={p.region} taille={16} /> ·{" "}
+                  {d.classe[p.classe]} · <FactionIcone faction={p.faction} taille={16} /> {d.faction[p.faction]} ·{" "}
+                  <RulesetRegion ruleset={p.ruleset} region={p.region} taille={16} /> ·{" "}
                   {p.rolesJouables.map((r) => (
                     <NomRole key={r} role={r} taille={16} />
                   ))}
