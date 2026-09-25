@@ -2130,3 +2130,12 @@ select {
 .grille-raid-apercu.icones .case-raid-role {
   display: none;
 }
+
+/* Grille de raid dans l'en-tête de la page du raid, sous les pastilles. */
+.grille-entete {
+  max-width: 40rem;
+  margin: 1.2rem auto 0;
+}
+.grille-entete .grille-raid-apercu {
+  margin: 0;
+}

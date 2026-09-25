@@ -243,6 +243,26 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             {d.statutAnnonce[annonce.statut]}
           </span>
         </div>
+        <div className="grille-entete">
+          {/* Aperçu façon cadres de raid : joueurs (compo déclarée et acceptés), places réservées et libres. */}
+          <GrilleRaid
+            taille={annonce.taille}
+            cases={[
+              ...membres.map((m) => ({ type: "membre" as const, classe: m.classe, role: m.role, nom: m.nom })),
+              ...annonce.places
+                .filter((p) => p.statut === "OUVERTE")
+                .map((p) =>
+                  p.classesAcceptees.length >= NOMBRE_DE_CLASSES && !p.role
+                    ? { type: "libre" as const }
+                    : {
+                        type: "besoin" as const,
+                        classe: p.classesAcceptees.length === 1 ? p.classesAcceptees[0] : undefined,
+                        role: p.role ?? undefined,
+                      },
+                ),
+            ]}
+          />
+        </div>
       </header>
 
       {annonce.statut === "ANNULEE" && (
@@ -766,25 +786,6 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             </p>
           </section>
           <section className="carte compo-panneau" aria-labelledby="titre-compo">
-            {/* Aperçu façon cadres de raid : joueurs (compo déclarée et acceptés), places réservées et libres. */}
-            <GrilleRaid
-              compacte
-              taille={annonce.taille}
-              cases={[
-                ...membres.map((m) => ({ type: "membre" as const, classe: m.classe, role: m.role, nom: m.nom })),
-                ...annonce.places
-                  .filter((p) => p.statut === "OUVERTE")
-                  .map((p) =>
-                    p.classesAcceptees.length >= NOMBRE_DE_CLASSES && !p.role
-                      ? { type: "libre" as const }
-                      : {
-                          type: "besoin" as const,
-                          classe: p.classesAcceptees.length === 1 ? p.classesAcceptees[0] : undefined,
-                          role: p.role ?? undefined,
-                        },
-                  ),
-              ]}
-            />
             <div className="compo-chiffres">
               <div>
                 <RoleIcone role="TANK" taille={30} />
