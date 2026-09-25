@@ -292,6 +292,58 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
     </Link>
   );
 
+  const formRapide = perso && (
+    /* Candidature rapide : rôle(s) et note choisis une fois, puis « + » sur chaque raid.
+     Les boutons des lignes envoient ce formulaire avec l'identifiant de leur raid. */
+    <form id="candidature-rapide" action={candidater} className="candidature-rapide integree">
+      <input type="hidden" name="depuis" value="liste" />
+      <input type="hidden" name="retour" value={requete} />
+      {groupe ? (
+        <>
+          <input type="hidden" name="escouadeId" value={groupe.id} />
+          <ul className="membres-rapide">
+            {groupe.membres.map((m) => (
+              <li key={m.id}>
+                <ClasseIcone classe={m.personnage.classe} taille={20} />
+                <span
+                  className="classe"
+                  style={{ "--c": `var(--classe-${m.personnage.classe})` } as React.CSSProperties}
+                >
+                  {nomEnJeu(m.personnage)}
+                </span>
+                <span className="roles-proposes">
+                  {m.roles.map((r) => (
+                    <RoleIcone key={r} role={r} taille={18} />
+                  ))}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {groupe.membres.length < 2 ? (
+            <p className="doux">{d.groupes.seul}</p>
+          ) : !groupeValide ? (
+            <p className="avertissement">{d.groupes.factionsMelangees}</p>
+          ) : (
+            <p className="doux">{d.groupes.toutOuRien}</p>
+          )}
+        </>
+      ) : (
+        <>
+          <input type="hidden" name="personnageId" value={perso.id} />
+          <fieldset className="rapide-roles">
+            <legend className="sr-only">{d.accueil.rolesProposes}</legend>
+            {rolesPerso.map((r, n) => (
+              <label key={r} className="case-role">
+                <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
+                <NomRole role={r} taille={18} />
+              </label>
+            ))}
+          </fieldset>
+        </>
+      )}
+    </form>
+  );
+
   return (
     <main className="accueil-large">
       <header className="accueil-connecte">
@@ -588,6 +640,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                       <span className="ruleset-perso">({d.ruleset[p.ruleset]})</span>
                       <FactionIcone faction={p.faction} taille={16} />
                     </Link>
+                    {!groupe && p.id === perso?.id && formRapide}
                   </li>
                 ))}
               </ul>
@@ -608,6 +661,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                         </span>
                         <span>{g.nom}</span>
                       </Link>
+                      {g.id === groupe?.id && formRapide}
                     </li>
                   ))}
                 </ul>
@@ -617,59 +671,6 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   {d.groupes.gererGroupes}
                 </Link>
               </div>
-              {perso && (
-                /* Candidature rapide : rôle(s) et note choisis une fois, puis « + » sur chaque raid.
-                 Les boutons des lignes envoient ce formulaire avec l'identifiant de leur raid. */
-                <form id="candidature-rapide" action={candidater} className="candidature-rapide integree">
-                  <input type="hidden" name="depuis" value="liste" />
-                  <input type="hidden" name="retour" value={requete} />
-                  {groupe ? (
-                    <>
-                      <input type="hidden" name="escouadeId" value={groupe.id} />
-                      <p className="surtitre">{d.groupes.candidatureDe(groupe.nom)}</p>
-                      <ul className="membres-rapide">
-                        {groupe.membres.map((m) => (
-                          <li key={m.id}>
-                            <ClasseIcone classe={m.personnage.classe} taille={20} />
-                            <span
-                              className="classe"
-                              style={{ "--c": `var(--classe-${m.personnage.classe})` } as React.CSSProperties}
-                            >
-                              {nomEnJeu(m.personnage)}
-                            </span>
-                            <span className="roles-proposes">
-                              {m.roles.map((r) => (
-                                <RoleIcone key={r} role={r} taille={18} />
-                              ))}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                      {groupe.membres.length < 2 ? (
-                        <p className="doux">{d.groupes.seul}</p>
-                      ) : !groupeValide ? (
-                        <p className="avertissement">{d.groupes.factionsMelangees}</p>
-                      ) : (
-                        <p className="doux">{d.groupes.toutOuRien}</p>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <input type="hidden" name="personnageId" value={perso.id} />
-                      <p className="surtitre">{d.accueil.rapide(nomEnJeu(perso))}</p>
-                      <fieldset className="rapide-roles">
-                        <legend className="sr-only">{d.accueil.rolesProposes}</legend>
-                        {rolesPerso.map((r, n) => (
-                          <label key={r} className="case-role">
-                            <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
-                            <NomRole role={r} taille={18} />
-                          </label>
-                        ))}
-                      </fieldset>
-                    </>
-                  )}
-                </form>
-              )}
             </nav>
           </aside>
         </div>

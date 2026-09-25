@@ -2235,16 +2235,28 @@ select {
   box-sizing: border-box;
 }
 
-/* Accueil : la candidature rapide fait partie de la carte « Je cherche un raid pour », sous un trait. */
+/* Accueil : la candidature rapide (rôles, membres du groupe) s'affiche sous le perso ou le groupe choisi. */
 .candidature-rapide.integree {
-  margin: 1rem 0 0;
-  padding: 1rem 0 0;
+  margin: 0.35rem 0 0.2rem 0.9rem;
+  padding: 0.3rem 0 0.3rem 0.8rem;
   border: 0;
-  border-top: 1px solid var(--bord);
+  border-left: 2px solid var(--accent);
   border-radius: 0;
   background: none;
   box-shadow: none;
 }
 .candidature-rapide.integree::before {
   display: none;
+}
+.candidature-rapide.integree .rapide-roles {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+}
+.candidature-rapide.integree .rapide-roles .case-role {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
 }
