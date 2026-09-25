@@ -613,69 +613,64 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                 </ul>
               )}
               <div className="boutons-groupes">
-                {groupes.length > 0 && (
-                  <Link href="/groupes" className="bouton petit">
-                    {d.groupes.gererGroupes}
-                  </Link>
-                )}
-                <Link href="/groupes#nouveau-groupe" className="bouton petit">
-                  ＋ {d.groupes.creer}
+                <Link href="/groupes" className="bouton petit">
+                  {d.groupes.gererGroupes}
                 </Link>
               </div>
-            </nav>
-            {perso && (
-              /* Candidature rapide : rôle(s) et note choisis une fois, puis « + » sur chaque raid.
+              {perso && (
+                /* Candidature rapide : rôle(s) et note choisis une fois, puis « + » sur chaque raid.
                  Les boutons des lignes envoient ce formulaire avec l'identifiant de leur raid. */
-              <form id="candidature-rapide" action={candidater} className="carte candidature-rapide">
-                <input type="hidden" name="depuis" value="liste" />
-                <input type="hidden" name="retour" value={requete} />
-                {groupe ? (
-                  <>
-                    <input type="hidden" name="escouadeId" value={groupe.id} />
-                    <p className="surtitre">{d.groupes.candidatureDe(groupe.nom)}</p>
-                    <ul className="membres-rapide">
-                      {groupe.membres.map((m) => (
-                        <li key={m.id}>
-                          <ClasseIcone classe={m.personnage.classe} taille={20} />
-                          <span
-                            className="classe"
-                            style={{ "--c": `var(--classe-${m.personnage.classe})` } as React.CSSProperties}
-                          >
-                            {nomEnJeu(m.personnage)}
-                          </span>
-                          <span className="roles-proposes">
-                            {m.roles.map((r) => (
-                              <RoleIcone key={r} role={r} taille={18} />
-                            ))}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    {groupe.membres.length < 2 ? (
-                      <p className="doux">{d.groupes.seul}</p>
-                    ) : !groupeValide ? (
-                      <p className="avertissement">{d.groupes.factionsMelangees}</p>
-                    ) : (
-                      <p className="doux">{d.groupes.toutOuRien}</p>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <input type="hidden" name="personnageId" value={perso.id} />
-                    <p className="surtitre">{d.accueil.rapide(nomEnJeu(perso))}</p>
-                    <fieldset className="rapide-roles">
-                      <legend className="sr-only">{d.accueil.rolesProposes}</legend>
-                      {rolesPerso.map((r, n) => (
-                        <label key={r} className="case-role">
-                          <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
-                          <NomRole role={r} taille={18} />
-                        </label>
-                      ))}
-                    </fieldset>
-                  </>
-                )}
-              </form>
-            )}
+                <form id="candidature-rapide" action={candidater} className="candidature-rapide integree">
+                  <input type="hidden" name="depuis" value="liste" />
+                  <input type="hidden" name="retour" value={requete} />
+                  {groupe ? (
+                    <>
+                      <input type="hidden" name="escouadeId" value={groupe.id} />
+                      <p className="surtitre">{d.groupes.candidatureDe(groupe.nom)}</p>
+                      <ul className="membres-rapide">
+                        {groupe.membres.map((m) => (
+                          <li key={m.id}>
+                            <ClasseIcone classe={m.personnage.classe} taille={20} />
+                            <span
+                              className="classe"
+                              style={{ "--c": `var(--classe-${m.personnage.classe})` } as React.CSSProperties}
+                            >
+                              {nomEnJeu(m.personnage)}
+                            </span>
+                            <span className="roles-proposes">
+                              {m.roles.map((r) => (
+                                <RoleIcone key={r} role={r} taille={18} />
+                              ))}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                      {groupe.membres.length < 2 ? (
+                        <p className="doux">{d.groupes.seul}</p>
+                      ) : !groupeValide ? (
+                        <p className="avertissement">{d.groupes.factionsMelangees}</p>
+                      ) : (
+                        <p className="doux">{d.groupes.toutOuRien}</p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <input type="hidden" name="personnageId" value={perso.id} />
+                      <p className="surtitre">{d.accueil.rapide(nomEnJeu(perso))}</p>
+                      <fieldset className="rapide-roles">
+                        <legend className="sr-only">{d.accueil.rolesProposes}</legend>
+                        {rolesPerso.map((r, n) => (
+                          <label key={r} className="case-role">
+                            <input type="checkbox" name="roles" value={r} defaultChecked={n === 0} />
+                            <NomRole role={r} taille={18} />
+                          </label>
+                        ))}
+                      </fieldset>
+                    </>
+                  )}
+                </form>
+              )}
+            </nav>
           </aside>
         </div>
       )}

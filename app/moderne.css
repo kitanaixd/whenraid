@@ -2234,3 +2234,17 @@ select {
   width: 100%;
   box-sizing: border-box;
 }
+
+/* Accueil : la candidature rapide fait partie de la carte « Je cherche un raid pour », sous un trait. */
+.candidature-rapide.integree {
+  margin: 1rem 0 0;
+  padding: 1rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--bord);
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.candidature-rapide.integree::before {
+  display: none;
+}
