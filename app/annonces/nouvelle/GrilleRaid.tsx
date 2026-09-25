@@ -51,7 +51,7 @@ export function GrilleRaid({
 
   return (
     <div
-      className={`grille-raid-apercu ${icones ? "icones" : ""}`}
+      className={`grille-raid-apercu g${Math.ceil(taille / 5)} ${icones ? "icones" : ""}`}
       style={{ "--groupes": Math.ceil(taille / 5) } as React.CSSProperties}
     >
       {triees.map((c, n) => {

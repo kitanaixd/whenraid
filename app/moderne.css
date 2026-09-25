@@ -2194,3 +2194,30 @@ select {
   font-size: 1.1rem;
   font-weight: 600;
 }
+
+/* Grille de raid plus grande : cases larges en 10 et 20, plus étroites en 40 pour que les 8 groupes
+   tiennent ; elles rétrécissent sur petit écran. */
+.grille-raid-apercu:not(.icones) {
+  --case: 150px;
+  grid-template-columns: repeat(var(--groupes), minmax(0, var(--case)));
+  grid-template-rows: repeat(5, 48px);
+  gap: 4px;
+}
+.grille-raid-apercu.g4:not(.icones) {
+  --case: 130px;
+}
+.grille-raid-apercu.g8:not(.icones) {
+  --case: 88px;
+  grid-template-rows: repeat(5, 44px);
+  gap: 3px;
+}
+.grille-raid-apercu:not(.icones) .case-raid {
+  font-size: 0.82rem;
+}
+.grille-raid-apercu:not(.icones) .case-raid .case-raid-role img {
+  width: 16px;
+  height: 16px;
+}
+.grille-entete {
+  max-width: 46rem;
+}
