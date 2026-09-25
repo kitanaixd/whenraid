@@ -1,4 +1,5 @@
-// Remet la prod à zéro côté raids, puis crée 50 raids de démonstration au nom de Kitanai.
+// Remet la prod à zéro côté raids, puis crée 50 raids de démonstration au nom de Kitanai,
+// de ce soir (vendredi 25/09) à mardi 29/09 au soir.
 //
 //   Voir ce qui serait fait (rien n'est modifié) :
 //     node --env-file=.env.prod.local scripts/raids-prod.mjs
@@ -78,10 +79,7 @@ function preparer(i, monde, r) {
   }
   while (places.length < ouvertes) places.push({ role: null, classes: TOUTES });
 
-  // 50 raids sur 14 jours à partir du 26/09, entre 19:00 et 22:00 heure de Paris (UTC+2).
-  const jour = 26 + Math.floor(i / 4);
-  const heure = 17 + (i % 4); // 19:00, 20:00, 21:00, 22:00 à Paris
-  const debut = new Date(Date.UTC(2026, 8, jour, heure, i % 2 === 0 ? 0 : 30));
+  const debut = DEBUTS[i];
   return {
     id: `demo_${String(i + 1).padStart(2, "0")}`,
     ...r,
@@ -93,6 +91,27 @@ function preparer(i, monde, r) {
     places,
     remplis,
   };
+}
+
+// Créneaux : de ce soir (vendredi 25/09) à mardi 29/09 au soir, toutes les demi-heures entre
+// 18:00 et 23:30 heure de Paris (UTC+2), en sautant ceux déjà passés au moment du lancement.
+// Les 50 raids se répartissent régulièrement ; s'il manque des créneaux, deux raids partagent
+// le même, décalés de 15 minutes.
+const creneaux = [];
+for (let jour = 25; jour <= 29; jour++) {
+  for (let demi = 0; demi < 12; demi++) {
+    const t = new Date(Date.UTC(2026, 8, jour, 16 + Math.floor(demi / 2), (demi % 2) * 30));
+    if (t.getTime() > Date.now() + 30 * 60_000) creneaux.push(t);
+  }
+}
+if (creneaux.length === 0) throw new Error("Plus aucun créneau d'ici mardi soir : rien n'est fait.");
+const DEBUTS = [];
+const utilises = new Map();
+for (let i = 0; i < NOMBRE; i++) {
+  const base = creneaux[Math.floor((i * creneaux.length) / NOMBRE)];
+  const deja = utilises.get(base.getTime()) ?? 0;
+  utilises.set(base.getTime(), deja + 1);
+  DEBUTS.push(new Date(base.getTime() + deja * 15 * 60_000));
 }
 
 // Tous les mondes (faction × ruleset × région), chacun avec les 3 raids, dans un ordre mélangé.
