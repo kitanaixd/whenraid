@@ -1499,29 +1499,6 @@ a:focus-visible * {
   flex: 1;
   margin: 0;
 }
-.choix-vue {
-  display: inline-flex;
-  gap: 0.35rem;
-}
-.choix-vue a.bouton-icone {
-  display: inline-grid;
-  place-items: center;
-  width: 48px !important;
-  height: 48px !important;
-  color: var(--texte-doux);
-  background: var(--surface);
-  border: 1px solid var(--bord);
-  border-radius: var(--rayon-2);
-}
-.choix-vue a.bouton-icone:hover {
-  color: var(--texte);
-  border-color: var(--bord-fort);
-}
-.choix-vue a.bouton-icone.actif {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: rgb(226 189 111 / 0.08);
-}
 
 .liste-raids.vue-liste {
   gap: 0.35rem;
@@ -1634,83 +1611,6 @@ a:focus-visible * {
   font-size: 0.75rem;
   color: var(--texte-doux);
 }
-@media (max-width: 900px) {
-  .ligne-liste {
-    grid-template-columns: 5.4rem minmax(0, 1fr) auto 2.25rem;
-  }
-  .ligne-liste .liste-statut,
-  .ligne-liste .liste-recherche,
-  .entete-liste span:nth-child(3),
-  .entete-liste span:nth-child(5) {
-    display: none;
-  }
-}
-
-/* Vue « liste » : colonnes partagées par toutes les lignes (subgrid). Statut, compo et classes
-   prennent la largeur de leur contenu, le raid prend le reste. */
-.liste-raids.vue-liste {
-  display: grid;
-  grid-template-columns: 5.6rem minmax(7rem, 1fr) max-content max-content max-content 2.25rem;
-  column-gap: 0.9rem;
-  row-gap: 0.35rem;
-}
-.liste-raids.vue-liste > .ligne-liste {
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
-  gap: inherit;
-}
-.liste-statut {
-  overflow: visible;
-  white-space: nowrap;
-}
-.liste-statut .groupe-inscrit > span:last-child {
-  max-width: 8rem;
-}
-@media (max-width: 1100px) {
-  .liste-raids.vue-liste {
-    grid-template-columns: 5.4rem minmax(7rem, 1fr) max-content max-content 2.25rem;
-  }
-  .ligne-liste .liste-recherche,
-  .entete-liste span:nth-child(5) {
-    display: none;
-  }
-}
-@media (max-width: 700px) {
-  .liste-raids.vue-liste {
-    grid-template-columns: 5.4rem minmax(0, 1fr) max-content 2.25rem;
-  }
-  .ligne-liste .liste-statut,
-  .entete-liste span:nth-child(3) {
-    display: none;
-  }
-}
-
-/* Vue « liste », réglage des largeurs : la marge intérieure des lignes compte dans la 1re et la
-   dernière colonne ; le statut est plafonné ; le nom du groupe s'affiche au survol. */
-.liste-raids.vue-liste {
-  grid-template-columns: 6.8rem minmax(6rem, 1fr) fit-content(11rem) max-content max-content 3.2rem;
-}
-.liste-statut .groupe-inscrit > span:last-child {
-  display: none;
-}
-.liste-statut {
-  overflow: hidden;
-}
-@media (max-width: 1100px) {
-  .liste-raids.vue-liste {
-    grid-template-columns: 6.6rem minmax(6rem, 1fr) fit-content(7rem) max-content 3.2rem;
-  }
-  .liste-statut .perso-inscrit,
-  .liste-statut > img {
-    display: none;
-  }
-}
-@media (max-width: 700px) {
-  .liste-raids.vue-liste {
-    grid-template-columns: 6.6rem minmax(0, 1fr) max-content 3.2rem;
-  }
-}
-
 /* Filtre « Afficher » : libellé puis les quatre chips, sur une ligne sous les types de raid. */
 .filtre-afficher {
   margin: 0 0 0.8rem;
@@ -1860,20 +1760,99 @@ a:focus-visible * {
   min-width: 0;
   white-space: nowrap;
 }
-/* Le nom du raid et du RL se raccourcissent ; la pastille de fiabilité reste entière. */
-.liste-raid-detail .liste-nom,
-.liste-raid-detail .liste-rl {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+
+/* ─── Vue liste : colonnes ─────────────────────────────────────────────────
+   Toutes les lignes partagent les mêmes colonnes (subgrid). Rien n'est tronqué sauf le nom de la
+   session : la date, le statut, la compo et les classes prennent la largeur de leur contenu ; la
+   colonne Raid fait au moins la largeur de sa 2e ligne (raid, RL, fiabilité), le titre ne compte
+   pas dans ce calcul et se raccourcit s'il manque de place.
+   Selon la largeur de la liste elle-même, on retire dans l'ordre : les icônes du statut, la colonne
+   « Recherché », puis le statut ; sur mobile, la 2e ligne passe sur deux lignes. */
+.accueil-centre {
+  container-type: inline-size;
+  container-name: liste;
+}
+.liste-raids.vue-liste {
+  display: grid;
+  grid-template-columns: max-content minmax(min-content, 1fr) max-content max-content max-content 3.2rem;
+  column-gap: 0.9rem;
+  row-gap: 0.35rem;
+}
+.liste-raids.vue-liste > .ligne-liste {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  gap: inherit;
+}
+.ligne-liste > .liste-raid {
+  min-width: min-content;
+}
+.liste-raid strong {
+  width: 0;
+  min-width: 100%;
+}
+.liste-date strong {
   white-space: nowrap;
 }
-.liste-raid-detail .liste-nom {
-  flex: 0 1 auto;
+.liste-raid .liste-raid-detail {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
 }
-.liste-raid-detail .liste-rl {
-  flex: 0 3 auto;
-}
-.liste-raid-detail .badge-fiabilite {
+.liste-raid-detail > * {
   flex: none;
+}
+.liste-statut {
+  overflow: visible;
+  white-space: nowrap;
+}
+.liste-statut .groupe-inscrit > span:last-child {
+  display: none;
+}
+@container liste (max-width: 900px) {
+  .liste-statut .perso-inscrit,
+  .liste-statut > img {
+    display: none;
+  }
+}
+@container liste (max-width: 780px) {
+  .liste-raids.vue-liste {
+    grid-template-columns: max-content minmax(min-content, 1fr) max-content max-content 3.2rem;
+  }
+  .ligne-liste .liste-recherche,
+  .entete-liste > :nth-child(5) {
+    display: none;
+  }
+}
+@container liste (max-width: 720px) {
+  .liste-raids.vue-liste {
+    grid-template-columns: max-content minmax(min-content, 1fr) max-content 3.2rem;
+  }
+  .ligne-liste .liste-statut,
+  .entete-liste > :nth-child(3) {
+    display: none;
+  }
+}
+@container liste (max-width: 520px) {
+  .liste-raids.vue-liste {
+    column-gap: 0.6rem;
+  }
+  .ligne-liste {
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+  .liste-raid .liste-raid-detail {
+    flex-wrap: wrap;
+    row-gap: 0.1rem;
+  }
+}
+@container liste (max-width: 460px) {
+  .liste-compo > span {
+    display: none;
+  }
+  .liste-compo strong {
+    margin-left: 0;
+  }
 }
