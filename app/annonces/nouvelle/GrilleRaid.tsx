@@ -3,6 +3,7 @@
 import type { Classe, Role } from "@/generated/prisma/enums";
 import { ClasseIcone, RoleIcone } from "@/app/ClasseIcone";
 import { useDico } from "@/app/Langue";
+import { rolesParClasse } from "@/lib/jeu";
 
 /** Une case de la grille : un joueur de la compo, un joueur déjà accepté, une place réservée ou libre. */
 export type CaseRaid =
@@ -20,9 +21,21 @@ const ORDRE_ROLES: Role[] = ["TANK", "SOIGNEUR", "DPS"];
  */
 export function GrilleRaid({ taille, cases }: { taille: number; cases: CaseRaid[] }) {
   const d = useDico();
-  // Les joueurs d'abord (tanks, soigneurs, DPS), puis les acceptés, les places réservées et libres.
-  const rang = (c: CaseRaid) =>
-    c.type === "membre" ? ORDRE_ROLES.indexOf(c.role) : c.type === "accepte" ? 3 : c.type === "besoin" ? 4 : 5;
+  // Toujours Tank > Soigneur > DPS : dans chaque rôle, les joueurs puis les places réservées.
+  // Une place réservée à une classe sans rôle précisé prend le seul rôle de cette classe s'il n'y en a qu'un
+  // (mage, voleur…), sinon elle vient après les DPS. Puis les joueurs déjà acceptés, puis les places libres.
+  const roleDe = (c: CaseRaid): Role | undefined => {
+    if (c.type === "membre") return c.role;
+    if (c.type !== "besoin") return undefined;
+    if (c.role) return c.role;
+    const possibles = c.classe ? rolesParClasse[c.classe] : [];
+    return possibles.length === 1 ? possibles[0] : undefined;
+  };
+  const rang = (c: CaseRaid) => {
+    const role = roleDe(c);
+    if (role) return ORDRE_ROLES.indexOf(role) * 2 + (c.type === "membre" ? 0 : 1);
+    return c.type === "besoin" ? 6 : c.type === "accepte" ? 7 : 8;
+  };
   const triees = [...cases].sort((a, b) => rang(a) - rang(b)).slice(0, taille);
   while (triees.length < taille) triees.push({ type: "libre" });
 
