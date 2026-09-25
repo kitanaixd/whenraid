@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
-import { exigerUtilisateur } from "@/lib/session";
+import type { Metadata } from "next";
+import { utilisateurConnecte } from "@/lib/session";
+import { apercuRaid, dateApercu, rechercheApercu, titreApercu } from "@/lib/apercu";
+import { ApercuPublic } from "./ApercuPublic";
 import { afficherDate } from "@/lib/dates";
 import { nomRaid, raids } from "@/lib/raids";
 import { optionsTriees } from "@/lib/libelles";
@@ -45,7 +48,7 @@ import { ClasseIcone, NomClasse, NomRole, PastilleFaction, PastilleRuleset, Role
 import { FormCandidature } from "./FormCandidature";
 import { fiabiliteMercenaires, fiabiliteRls } from "@/lib/fiabilite";
 import { BadgeFiabilite } from "@/app/BadgeFiabilite";
-import { dicoCourant } from "@/lib/langue";
+import { dicoCourant, langueCourante } from "@/lib/langue";
 
 const NOMBRE_DE_CLASSES = Object.keys(Classe).length;
 const ORDRE_ROLES = Object.keys(Role);
@@ -59,10 +62,40 @@ const CLASSE_STATUT_INSCRIPTION: Record<string, string> = {
   INSCRIT: "ouvert",
 };
 
+/** Carte du lien partagé (Discord, réseaux) : le raid, sa date, son monde et ce qu'il recherche. */
+export async function generateMetadata({ params }: PageProps<"/annonces/[id]">): Promise<Metadata> {
+  const { id } = await params;
+  const [a, d, langue] = await Promise.all([apercuRaid(id), dicoCourant(), langueCourante()]);
+  if (!a) return {};
+  const titre = a.titre ? `${a.titre} · ${nomRaid(a.contenu, d)}` : nomRaid(a.contenu, d);
+  const etat =
+    a.statut === "ANNULEE"
+      ? d.apercu.annule
+      : a.debutUtc.getTime() < Date.now()
+        ? d.apercu.termine
+        : a.ouvertes === 0
+          ? d.apercu.complet
+          : d.apercu.rechercheTexte(rechercheApercu(a, d));
+  const description = [
+    `📅 ${dateApercu(a.debutUtc, a.region, langue)}`,
+    `🌍 ${d.faction[a.faction]} · ${d.ruleset[a.ruleset]} · ${a.region}`,
+    `👥 ${d.apercu.joueurs(a.joueurs, a.taille)} — ${etat}`,
+    `🎲 ${d.raid.loot(d.reglesLoot[a.reglesLoot])} · ${d.apercu.organisePar(a.organisateur.nom)}`,
+  ].join("\n");
+  return {
+    title: `${titreApercu(a, d)} — WhenRaid`,
+    description,
+    openGraph: { siteName: "WhenRaid", type: "website", title: titre, description },
+    twitter: { card: "summary_large_image" },
+  };
+}
+
 export default async function PageAnnonce({ params, searchParams }: PageProps<"/annonces/[id]">) {
-  const utilisateur = await exigerUtilisateur();
+  const utilisateur = await utilisateurConnecte();
   const d = await dicoCourant();
   const { id } = await params;
+  // Visiteur non connecté (lien partagé) : aperçu public du raid, puis connexion pour candidater.
+  if (!utilisateur) return <ApercuPublic id={id} />;
   const { erreur, info, perso: persoChoisi } = await searchParams;
 
   const annonce = await db.annonce.findUnique({

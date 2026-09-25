@@ -253,6 +253,22 @@ export const en: Dico = {
   },
   meta: {
     description: "Find a raid looking for your class on World of Warcraft Forever.",
+    descriptionPartage:
+      "Find a raid looking for your class on WoW Forever: filter by raid, class, role and time, then apply in one click, solo or with your friends.",
+  },
+
+  // ─── Public raid preview (logged-out visitors, shared links) ────────────────
+  apercu: {
+    joueurs: (j, t) => `${j}/${t} players`,
+    recherche: "Looking for",
+    rechercheTexte: (r) => `Looking for: ${r}`,
+    complet: "Raid full",
+    annule: "Raid cancelled",
+    termine: "Raid over",
+    organisePar: (n) => `Organized by ${n}`,
+    heureServeur: "Time shown in the game server's time zone. Once logged in, everything is shown in yours.",
+    connecte: "Log in with Discord to see the raid details and apply.",
+    candidater: "Log in to apply",
   },
 
   // ─── Home ──────────────────────────────────────────────────────────────────

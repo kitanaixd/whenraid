@@ -282,6 +282,22 @@ export const fr = {
   },
   meta: {
     description: "Trouve un raid qui cherche ta classe sur World of Warcraft Forever.",
+    descriptionPartage:
+      "Trouve un raid qui cherche ta classe sur WoW Forever : filtre par raid, classe, rôle et horaire, puis candidate en un clic, seul ou avec tes amis.",
+  },
+
+  // ─── Aperçu public d'un raid (visiteurs non connectés, liens partagés) ──────
+  apercu: {
+    joueurs: (j: number, t: number) => `${j}/${t} joueurs`,
+    recherche: "Recherche",
+    rechercheTexte: (r: string) => `Recherche : ${r}`,
+    complet: "Raid complet",
+    annule: "Raid annulé",
+    termine: "Raid terminé",
+    organisePar: (n: string) => `Organisé par ${n}`,
+    heureServeur: "Heure affichée : celle du serveur de jeu. Une fois connecté, tout s'affiche dans ton fuseau.",
+    connecte: "Connecte-toi avec Discord pour voir le détail du raid et candidater.",
+    candidater: "Se connecter pour candidater",
   },
 
   // ─── Accueil ───────────────────────────────────────────────────────────────
