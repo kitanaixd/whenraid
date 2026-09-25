@@ -130,6 +130,12 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
   const ORDRE_CLASSES = optionsTriees(d.classe).map(([c]) => c);
   const roles = compoParRole(compo.lignes);
   // Compo joueur par joueur : les membres déclarés par le RL (sans nom) puis les joueurs acceptés.
+  // Confidentialité : seul le RL voit qui a candidaté ou qui est accepté ; les autres joueurs ne voient
+  // que la classe (et leur propre personnage), pour qu'on ne puisse pas démarcher les membres du raid.
+  const nomVisible = (i: {
+    utilisateurId: string;
+    personnage: { nom: string; nomDeFamille: string | null; classe: Classe } | null;
+  }) => (estRl || i.utilisateurId === utilisateur.id ? nomEnJeu(i.personnage!) : d.classe[i.personnage!.classe]);
   const membres = [
     ...annonce.composition.flatMap((c) =>
       Array.from({ length: c.nombre }, (_, n) => ({
@@ -141,7 +147,12 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
     ),
     ...confirmes
       .filter((i) => !remplacants.includes(i))
-      .map((i) => ({ cle: i.id, classe: i.personnage!.classe, role: i.role!, nom: nomEnJeu(i.personnage!) })),
+      .map((i) => ({
+        cle: i.id,
+        classe: i.personnage!.classe,
+        role: i.role!,
+        nom: estRl || i.utilisateurId === utilisateur.id ? nomEnJeu(i.personnage!) : null,
+      })),
   ].sort(
     (a, b) =>
       ORDRE_ROLES.indexOf(a.role) - ORDRE_ROLES.indexOf(b.role) ||
@@ -729,7 +740,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                         className="classe"
                         style={{ "--c": `var(--classe-${i.personnage!.classe})` } as React.CSSProperties}
                       >
-                        {nomEnJeu(i.personnage!)}
+                        {nomVisible(i)}
                       </strong>
                     </span>
                     <span className="doux">
@@ -842,7 +853,7 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
                   {remplacants.map((i) => (
                     <li key={i.id}>
                       <span className="nom-classe">
-                        <ClasseIcone classe={i.personnage!.classe} /> {nomEnJeu(i.personnage!)}
+                        <ClasseIcone classe={i.personnage!.classe} /> {nomVisible(i)}
                       </span>
                       <span className="compo-nombre">
                         <NomRole role={i.role!} taille={18} />
