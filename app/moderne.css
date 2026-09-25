@@ -2260,3 +2260,51 @@ select {
   min-width: 0;
   width: auto;
 }
+
+/* Accueil : le perso (ou groupe) choisi s'ouvre en une seule carte dorée, rôles à l'intérieur. */
+.choix-perso li:has(> .integree) {
+  border: 1px solid var(--accent);
+  border-radius: var(--rayon-2);
+  background: rgb(226 189 111 / 0.08);
+}
+.choix-perso li:has(> .integree) > .perso-choix.choisi {
+  border-color: transparent !important;
+  background: none !important;
+}
+.candidature-rapide.integree {
+  margin: 0;
+  padding: 0 0.6rem 0.6rem;
+  border: 0;
+}
+/* Rôles : petites pastilles à cocher (sans case), dorées quand choisies. */
+.candidature-rapide.integree .rapide-roles .case-role {
+  position: relative;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 0.7rem;
+  font-size: 0.8rem;
+  border: 1px solid var(--bord) !important;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.25) !important;
+  color: var(--texte-doux) !important;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.candidature-rapide.integree .rapide-roles .case-role:has(input:checked) {
+  border-color: var(--accent) !important;
+  background: rgb(226 189 111 / 0.16) !important;
+  color: var(--texte) !important;
+  opacity: 1;
+}
+.candidature-rapide.integree .rapide-roles .case-role:has(input:focus-visible) {
+  box-shadow: var(--anneau) !important;
+}
+.candidature-rapide.integree .rapide-roles .case-role input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
