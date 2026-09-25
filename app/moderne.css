@@ -1936,3 +1936,19 @@ a:focus-visible * {
 .besoin-etat .pourvu-texte {
   color: #4ade80;
 }
+
+/* ─── Menus déroulants natifs : texte centré dans les 36 px, même taille que les champs ── */
+select {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-right: 2rem;
+  font-size: 0.95rem !important;
+  line-height: normal;
+}
+/* Libellés de champ : une mention en petit (fuseau, aide) ne décale pas le champ. */
+.champ small {
+  line-height: 1;
+}
+.champ > span {
+  line-height: inherit;
+}

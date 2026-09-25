@@ -4,7 +4,7 @@ import { DRAPEAUX, ICONES_RULESET } from "@/lib/icones";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { NOM_MAX } from "@/lib/formulaire";
 import type { Dico } from "@/lib/i18n";
-import { options } from "@/lib/libelles";
+import { options, optionsTriees } from "@/lib/libelles";
 
 /** Champs d'un personnage, vides (création) ou pré-remplis (modification). */
 export function ChampsPersonnage({ perso, d }: { perso?: Personnage; d: Dico }) {
@@ -87,7 +87,7 @@ export function ChampsPersonnage({ perso, d }: { perso?: Personnage; d: Dico }) 
             name="classe"
             etiquette={d.champ.classe}
             valeurInitiale={perso?.classe}
-            options={options(d.classe).map(([v, l]) => ({ valeur: v, libelle: l, classe: v }))}
+            options={optionsTriees(d.classe).map(([v, l]) => ({ valeur: v, libelle: l, classe: v }))}
           />
         </div>
         <label className="champ">

@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { exigerUtilisateur } from "@/lib/session";
 import { afficherDate } from "@/lib/dates";
 import { nomRaid, raids } from "@/lib/raids";
+import { optionsTriees } from "@/lib/libelles";
 import {
   accepteCandidatures,
   compoActuelle,
@@ -47,7 +48,6 @@ import { dicoCourant } from "@/lib/langue";
 
 const NOMBRE_DE_CLASSES = Object.keys(Classe).length;
 const ORDRE_ROLES = Object.keys(Role);
-const ORDRE_CLASSES = Object.keys(Classe);
 
 // Couleur des pastilles selon le statut.
 const TYPE_STATUT: Record<string, string> = { INSCRIT: "candidat", LISTE_ATTENTE: "attente", CONFIRME: "convie" };
@@ -125,6 +125,8 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
           orderBy: { nom: "asc" },
         });
 
+  // Classes par ordre alphabétique (dans la langue affichée).
+  const ORDRE_CLASSES = optionsTriees(d.classe).map(([c]) => c);
   const roles = compoParRole(compo.lignes);
   // Compo joueur par joueur : les membres déclarés par le RL (sans nom) puis les joueurs acceptés.
   const membres = [

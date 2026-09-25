@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { Classe, Contenu, Role } from "@/generated/prisma/enums";
 import { MAX_EXIGENCES, rolesParClasse } from "@/lib/jeu";
-import { options } from "@/lib/libelles";
+import { options, optionsTriees } from "@/lib/libelles";
 import { nomRaid, raids } from "@/lib/raids";
 import { NomClasse, NomRole, RoleIcone } from "@/app/ClasseIcone";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
@@ -189,7 +189,7 @@ export function ChoixCompo({
           </tr>
         </thead>
         <tbody>
-          {options(d.classe).map(([classe]) => (
+          {optionsTriees(d.classe).map(([classe]) => (
             <tr key={classe}>
               <th scope="row">
                 <NomClasse classe={classe} />
@@ -258,7 +258,7 @@ export function ChoixCompo({
               valeurInitiale={besoinsInitiaux[l]?.classe ?? ""}
               options={[
                 { valeur: "", libelle: d.commun.touteClasseMin },
-                ...options(d.classe).map(([v, lib]) => ({ valeur: v, libelle: lib, classe: v })),
+                ...optionsTriees(d.classe).map(([v, lib]) => ({ valeur: v, libelle: lib, classe: v })),
               ]}
             />
           </div>

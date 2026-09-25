@@ -500,7 +500,7 @@ export const en: Dico = {
     publier: "Publish the raid",
     date: "Date",
     heure: "Time",
-    compoActuelle: "Your current roster",
+    compoActuelle: "Starting composition",
     raidPlein: "Your raid is already full: no spots are left to open.",
     placesRestantes: (n) => `${n} spot${s(n)} left to fill.`,
     retirerUn: (classe, role) => `Remove a ${classe} ${role}`,

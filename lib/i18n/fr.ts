@@ -529,7 +529,7 @@ export const fr = {
     publier: "Publier le raid",
     date: "Date",
     heure: "Heure",
-    compoActuelle: "Ta compo actuelle",
+    compoActuelle: "Composition de départ",
     raidPlein: "Ton raid est déjà plein : il ne reste aucune place à ouvrir.",
     placesRestantes: (n: number) => `Il reste ${n} place${s(n)} à pourvoir.`,
     retirerUn: (classe: string, role: string) => `Retirer un ${classe} ${role}`,
