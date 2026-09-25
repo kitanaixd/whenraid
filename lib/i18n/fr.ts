@@ -238,6 +238,7 @@ export const fr = {
 
   // ─── Commun ────────────────────────────────────────────────────────────────
   commun: {
+    erreurInattendue: "Une erreur est survenue. Recharge la page et réessaie (tes informations restent affichées).",
     accueil: "← Accueil",
     tousLesRaids: "← Tous les raids",
     toi: "Toi",

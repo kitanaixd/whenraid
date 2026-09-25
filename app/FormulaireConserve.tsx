@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useEffect, useRef, useState, useTransition } from "react";
+import { useDico } from "./Langue";
 
 /** Envoi en cours d'un FormulaireConserve (lu par BoutonEnvoi pour se désactiver). */
 export const EnvoiEnCours = createContext(false);
@@ -19,6 +20,7 @@ export function FormulaireConserve({
   className?: string;
   children: React.ReactNode;
 }) {
+  const d = useDico();
   const [erreur, setErreur] = useState<string | null>(null);
   const [enCours, demarrer] = useTransition();
   const message = useRef<HTMLParagraphElement>(null);
@@ -36,8 +38,16 @@ export function FormulaireConserve({
         e.preventDefault();
         const donnees = new FormData(e.currentTarget);
         demarrer(async () => {
-          const resultat = await action(donnees);
-          setErreur(resultat?.erreur ?? null);
+          try {
+            const resultat = await action(donnees);
+            setErreur(resultat?.erreur ?? null);
+          } catch (e) {
+            // Une redirection (succès) passe par une exception propre à Next : on la laisse passer.
+            if (e instanceof Error && e.message === "NEXT_REDIRECT") throw e;
+            // Erreur imprévue (serveur, ou page ouverte avant une mise à jour du site) : on le dit.
+            console.error(e);
+            setErreur(d.commun.erreurInattendue);
+          }
         });
       }}
     >

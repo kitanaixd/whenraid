@@ -209,6 +209,7 @@ export const en: Dico = {
 
   // ─── Common ────────────────────────────────────────────────────────────────
   commun: {
+    erreurInattendue: "Something went wrong. Reload the page and try again (your entries stay on screen).",
     accueil: "← Home",
     tousLesRaids: "← All raids",
     toi: "You",
