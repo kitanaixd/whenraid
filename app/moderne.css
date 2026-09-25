@@ -2118,3 +2118,15 @@ select {
   border: 1px dashed var(--bord-fort);
   background: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.04) 0 5px, transparent 5px 10px);
 }
+
+/* Grille de raid dans la colonne de la page du raid : au-dessus des chiffres de la compo. */
+.compo-panneau .grille-raid-apercu {
+  margin: 0 0 1rem;
+}
+.grille-raid-apercu.icones {
+  grid-template-rows: repeat(5, 30px);
+  gap: 2px;
+}
+.grille-raid-apercu.icones .case-raid-role {
+  display: none;
+}

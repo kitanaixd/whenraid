@@ -7,7 +7,7 @@ import { rolesParClasse } from "@/lib/jeu";
 
 /** Une case de la grille : un joueur de la compo, un joueur déjà accepté, une place réservée ou libre. */
 export type CaseRaid =
-  | { type: "membre"; classe: Classe; role: Role; moi?: boolean }
+  | { type: "membre"; classe: Classe; role: Role; moi?: boolean; nom?: string | null }
   | { type: "accepte" }
   | { type: "besoin"; classe?: Classe; role?: Role }
   | { type: "libre" };
@@ -19,7 +19,17 @@ const ORDRE_ROLES: Role[] = ["TANK", "SOIGNEUR", "DPS"];
  * un raid de 10, 4 pour 20, 8 pour 40). Joueurs de la compo en cases pleines, à la couleur
  * de leur classe ; places réservées en pointillés ; places libres hachurées.
  */
-export function GrilleRaid({ taille, cases }: { taille: number; cases: CaseRaid[] }) {
+export function GrilleRaid({
+  taille,
+  cases,
+  compacte = false,
+}: {
+  taille: number;
+  cases: CaseRaid[];
+  /** Colonne étroite (page du raid) : au-delà de 10 joueurs, les cases n'affichent que les icônes. */
+  compacte?: boolean;
+}) {
+  const icones = compacte && taille > 10;
   const d = useDico();
   // Toujours Tank > Soigneur > DPS : dans chaque rôle, les joueurs puis les places réservées.
   // Une place réservée à une classe sans rôle précisé prend le seul rôle de cette classe s'il n'y en a qu'un
@@ -40,7 +50,10 @@ export function GrilleRaid({ taille, cases }: { taille: number; cases: CaseRaid[
   while (triees.length < taille) triees.push({ type: "libre" });
 
   return (
-    <div className="grille-raid-apercu" style={{ "--groupes": Math.ceil(taille / 5) } as React.CSSProperties}>
+    <div
+      className={`grille-raid-apercu ${icones ? "icones" : ""}`}
+      style={{ "--groupes": Math.ceil(taille / 5) } as React.CSSProperties}
+    >
       {triees.map((c, n) => {
         if (c.type === "membre") {
           return (
@@ -48,12 +61,16 @@ export function GrilleRaid({ taille, cases }: { taille: number; cases: CaseRaid[
               key={n}
               className={`case-raid membre ${c.moi ? "moi" : ""}`}
               style={{ "--c": `var(--classe-${c.classe})` } as React.CSSProperties}
-              title={`${d.classe[c.classe]} · ${d.role[c.role]}`}
+              title={[c.nom, d.classe[c.classe], d.role[c.role]].filter(Boolean).join(" · ")}
             >
               <span className="case-raid-role">
                 <RoleIcone role={c.role} taille={14} />
               </span>
-              <span className="case-nom">{c.moi ? d.commun.toi : d.classe[c.classe]}</span>
+              {icones ? (
+                <ClasseIcone classe={c.classe} taille={18} />
+              ) : (
+                <span className="case-nom">{c.moi ? d.commun.toi : (c.nom ?? d.classe[c.classe])}</span>
+              )}
             </div>
           );
         }
