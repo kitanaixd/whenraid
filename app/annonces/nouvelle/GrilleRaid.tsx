@@ -106,7 +106,12 @@ export function GrilleRaid({
             </div>
           );
         }
-        return <div key={n} className="case-raid libre" aria-hidden="true" />;
+        // Place libre : « + Libre » (juste « + » quand les cases sont petites).
+        return (
+          <div key={n} className="case-raid libre" title={d.creation.caseLibre}>
+            <span className="case-nom">{icones ? "+" : `+ ${d.creation.caseLibre}`}</span>
+          </div>
+        );
       })}
     </div>
   );

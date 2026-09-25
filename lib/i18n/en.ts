@@ -480,6 +480,7 @@ export const en: Dico = {
 
   // ─── Raid creation ─────────────────────────────────────────────────────────
   creation: {
+    caseLibre: "Open",
     caseAccepte: "Accepted",
     aucunRolePossible: "This character has no playable role for its class: edit it in “My characters”.",
     tonRole: "Your role in this raid",

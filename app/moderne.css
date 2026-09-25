@@ -2161,3 +2161,11 @@ select {
 .case-raid {
   border-radius: 0;
 }
+
+/* Place libre : pointillés bien visibles et « + Libre » au centre. */
+.case-raid.libre {
+  color: rgb(255 255 255 / 0.45);
+  font-weight: 600;
+  border: 1px dashed rgb(255 255 255 / 0.3);
+  background: repeating-linear-gradient(135deg, rgb(255 255 255 / 0.05) 0 5px, rgb(255 255 255 / 0.015) 5px 10px);
+}

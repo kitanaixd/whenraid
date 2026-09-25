@@ -509,6 +509,7 @@ export const fr = {
 
   // ─── Création de raid ──────────────────────────────────────────────────────
   creation: {
+    caseLibre: "Libre",
     caseAccepte: "Accepté",
     aucunRolePossible: "Ce personnage n'a aucun rôle jouable pour sa classe : modifie-le dans « Mes personnages ».",
     tonRole: "Ton rôle dans ce raid",
