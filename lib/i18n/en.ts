@@ -258,7 +258,14 @@ export const en: Dico = {
   accueil: {
     vue: { aria: "List display", cartes: "Show as cards", liste: "Show as list" },
     colonnes: { date: "Date", raid: "Raid", statut: "Status", compo: "Roster", recherche: "Wanted" },
-    masquerMesRaids: "Hide my raids",
+    afficher: "Show",
+    categories: {
+      organise: "My raids",
+      candidatures: "My applications",
+      convie: "Invited",
+      autres: "Other raids",
+    },
+    sansCategorie: (categorie) => `Without “${categorie}”`,
     visiteurSurtitre: "Where WoW Forever raids come together",
     accroche:
       "Your group needs a healer tonight? Looking for a raid that needs your class? Find each other in a few clicks.",

@@ -287,7 +287,14 @@ export const fr = {
   accueil: {
     vue: { aria: "Affichage de la liste", cartes: "Afficher en cartes", liste: "Afficher en liste" },
     colonnes: { date: "Date", raid: "Raid", statut: "Statut", compo: "Compo", recherche: "Recherché" },
-    masquerMesRaids: "Masquer mes raids",
+    afficher: "Afficher",
+    categories: {
+      organise: "Mes raids",
+      candidatures: "Mes candidatures",
+      convie: "Convié",
+      autres: "Autres raids",
+    },
+    sansCategorie: (categorie: string) => `Sans « ${categorie} »`,
     visiteurSurtitre: "Le rendez-vous des raids de WoW Forever",
     accroche:
       "Ton groupe cherche un soigneur pour ce soir ? Tu cherches un raid qui a besoin de ta classe ? Trouvez-vous en quelques clics.",

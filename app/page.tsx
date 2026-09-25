@@ -37,7 +37,10 @@ import { dicoCourant } from "@/lib/langue";
 
 const DUREES_MAX = [2, 3, 4, 6];
 /** Paramètres de la liste gardés d'un lien à l'autre (personnage, filtres, mois du calendrier). */
-const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q", "masquer", "vue"] as const;
+const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q", "afficher", "vue"] as const;
+/** Catégories de raids qu'on peut afficher ou cacher (filtre « Afficher »). */
+const CATEGORIES = ["organise", "candidatures", "convie", "autres"] as const;
+type Categorie = (typeof CATEGORIES)[number];
 
 /** Texte comparable : minuscules, sans accents (« Hyjal Déjà » ≈ « hyjal deja »). */
 const sansAccents = (texte: string) =>
@@ -151,12 +154,23 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
   const monInscription = new Map([...convocations, ...candidatures].map((i) => [i.place.annonce.id, i]));
   // Un raid n'apparaît que si le personnage choisi peut y tenir une place (classe, niveau…),
   // ou s'il y a déjà candidaté.
-  // « Masquer mes raids » : sans les raids que j'organise (liste et calendrier).
-  const masquerMesRaids = valeur("masquer") === "1";
+  // Filtre « Afficher » : les catégories cochées (toutes par défaut). « _ » marque un choix
+  // fait (même vide), pour distinguer « rien de coché » de « pas de filtre ».
+  const afficherBrut = valeur("afficher");
+  const affichees = new Set<Categorie>(
+    afficherBrut ? CATEGORIES.filter((c) => afficherBrut.split(",").includes(c)) : CATEGORIES,
+  );
+  const cachees = CATEGORIES.filter((c) => !affichees.has(c));
+  const categorieDe = (a: { id: string; createurId: string }): Categorie => {
+    if (a.createurId === utilisateur.id) return "organise";
+    const i = monInscription.get(a.id);
+    if (!i) return "autres";
+    return i.statut === "CONFIRME" ? "convie" : "candidatures";
+  };
   const ouverts = perso
     ? annoncesBrutes.filter(
         (a) =>
-          !(masquerMesRaids && a.createurId === utilisateur.id) &&
+          affichees.has(categorieDe(a)) &&
           (monInscription.get(a.id)?.personnageId === perso.id ||
             (groupe
               ? groupeValide &&
@@ -186,7 +200,10 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
   const rolesPerso = perso ? perso.rolesJouables.filter((r) => rolePossible(perso.classe, r)) : [];
   const requete = lienListe({}).replace(/^\/\??/, "");
   const erreur = valeur("erreur");
-  const filtreActif = Boolean(contenus.length > 0 || jour || dureeMax || recherche || masquerMesRaids);
+  const filtreActif = Boolean(contenus.length > 0 || jour || dureeMax || recherche || cachees.length > 0);
+  /** Adresse avec les catégories affichées changées (toutes affichées : plus de paramètre). */
+  const afficherAvec = (categories: Categorie[]) =>
+    categories.length === CATEGORIES.length ? null : ["_", ...categories].join(",");
   /** Champs cachés qui gardent les paramètres actuels de la liste, sauf `sauf`. */
   const champsCaches = (...sauf: (typeof PARAMETRES)[number][]) =>
     PARAMETRES.filter((nom) => !sauf.includes(nom) && valeur(nom)).map((nom) => (
@@ -288,6 +305,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
             >
               {/* Durée : un curseur, appliqué au relâchement. */}
               <CurseurDuree
+                key={`duree-${dureeMax ?? ""}`}
                 valeurs={DUREES_MAX}
                 choisie={dureeMax}
                 etiquettes={[...DUREES_MAX.map((h) => d.accueil.heuresMax(h)), d.accueil.toutes]}
@@ -345,20 +363,30 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
           {/* ─── Au centre : la liste des raids ─── */}
           <section className="accueil-centre" id="titre-raids" aria-label={d.accueil.raidsTitre}>
             {/* Choix du raid : une ligne de chips (plusieurs raids possibles), appliquée au clic. */}
-            <FormulaireAuto className="filtre-raids" label={d.calendrier.choixRaid}>
-              {champsCaches("raid", "masquer")}
+            <FormulaireAuto key={`raid-${valeur("raid")}`} className="filtre-raids" label={d.calendrier.choixRaid}>
+              {champsCaches("raid")}
               <fieldset className="rapide-roles choix-raids">
-                <legend className="sr-only">{d.champ.raid}</legend>
+                <legend>{d.champ.raid}</legend>
                 {(Object.keys(raids) as Contenu[]).map((c) => (
                   <label key={c} className="case-role">
                     <input type="checkbox" name="raid" value={c} defaultChecked={contenus.includes(c)} />
                     {nomRaid(c, d)}
                   </label>
                 ))}
-                <label className="case-role masquer-mes-raids">
-                  <input type="checkbox" name="masquer" value="1" defaultChecked={masquerMesRaids} />
-                  {d.accueil.masquerMesRaids}
-                </label>
+              </fieldset>
+            </FormulaireAuto>
+            {/* Afficher : mes raids, mes candidatures, là où je suis convié, les autres (cocher = afficher). */}
+            <FormulaireAuto key={`afficher-${afficherBrut}`} className="filtre-afficher" label={d.accueil.afficher}>
+              {champsCaches("afficher")}
+              <input type="hidden" name="afficher" value="_" />
+              <fieldset className="rapide-roles choix-raids">
+                <legend>{d.accueil.afficher}</legend>
+                {CATEGORIES.map((c) => (
+                  <label key={c} className="case-role">
+                    <input type="checkbox" name="afficher" value={c} defaultChecked={affichees.has(c)} />
+                    {d.accueil.categories[c]}
+                  </label>
+                ))}
               </fieldset>
             </FormulaireAuto>
             {/* Recherche par titre : garde le personnage et les autres filtres. */}
@@ -480,7 +508,13 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                       jour: null,
                     })}
                   {recherche && filtreRetirable(d.accueil.recherche(recherche), { q: null })}
-                  {masquerMesRaids && filtreRetirable(d.accueil.masquerMesRaids, { masquer: null })}
+                  {cachees.map((c) => (
+                    <span key={c}>
+                      {filtreRetirable(d.accueil.sansCategorie(d.accueil.categories[c]), {
+                        afficher: afficherAvec([...affichees, c]),
+                      })}
+                    </span>
+                  ))}
                   {contenus.map((c) => (
                     <span key={c}>
                       {filtreRetirable(nomRaid(c, d), { raid: contenus.filter((x) => x !== c).join(",") || null })}

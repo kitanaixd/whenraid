@@ -1710,3 +1710,86 @@ a:focus-visible * {
     grid-template-columns: 6.6rem minmax(0, 1fr) max-content 3.2rem;
   }
 }
+
+/* Filtre « Afficher » : libellé puis les quatre chips, sur une ligne sous les types de raid. */
+.filtre-afficher {
+  margin: 0 0 0.8rem;
+}
+.filtre-afficher .choix-raids {
+  align-items: center;
+}
+.filtre-afficher legend {
+  float: left;
+  margin-right: 0.3rem;
+  padding: 0;
+  font-size: 0.85rem;
+  color: var(--texte-doux);
+}
+.filtre-afficher .case-role {
+  height: var(--hauteur-controle) !important;
+}
+
+/* ─── Filtres au-dessus de la liste : deux lignes bien distinctes ─────────── */
+/* Libellé à gauche de chaque ligne (« Raid », « Afficher »), même largeur pour les aligner. */
+.filtre-raids legend,
+.filtre-afficher legend {
+  float: left;
+  width: 4.6rem;
+  margin: 0;
+  padding: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--texte-doux);
+}
+.filtre-raids .choix-raids,
+.filtre-afficher .choix-raids {
+  align-items: center;
+}
+/* « Afficher » : pastilles arrondies plus petites, allumées ou éteintes. */
+.filtre-afficher {
+  margin-top: -0.2rem;
+}
+.filtre-afficher .case-role {
+  height: 32px !important;
+  padding: 0 0.85rem 0 0.7rem;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  border-radius: 999px;
+  color: var(--texte-doux);
+  background: transparent;
+  border: 1px dashed var(--bord-fort);
+}
+.filtre-afficher .case-role input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 8px;
+  height: 8px;
+  margin: 0;
+  border-radius: 50%;
+  background: var(--bord-fort);
+  border: none;
+}
+.filtre-afficher .case-role:has(input:checked) {
+  color: var(--texte) !important;
+  border-style: solid;
+}
+.filtre-afficher .case-role input[type="checkbox"]:checked {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgb(226 189 111 / 0.25);
+}
+.filtre-afficher .case-role input[type="checkbox"] {
+  flex: none;
+  width: 8px !important;
+  height: 8px !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 50% !important;
+}
+.filtre-afficher .case-role input[type="checkbox"]::before,
+.filtre-afficher .case-role input[type="checkbox"]::after {
+  content: none !important;
+}
