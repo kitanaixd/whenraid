@@ -612,9 +612,16 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   ))}
                 </ul>
               )}
-              <Link href="/groupes" className="lien-discret">
-                {groupes.length > 0 ? d.groupes.gerer : `＋ ${d.groupes.creer}`}
-              </Link>
+              <div className="boutons-groupes">
+                {groupes.length > 0 && (
+                  <Link href="/groupes" className="bouton petit">
+                    {d.groupes.gererGroupes}
+                  </Link>
+                )}
+                <Link href="/groupes#nouveau-groupe" className="bouton petit">
+                  ＋ {d.groupes.creer}
+                </Link>
+              </div>
             </nav>
             {perso && (
               /* Candidature rapide : rôle(s) et note choisis une fois, puis « + » sur chaque raid.

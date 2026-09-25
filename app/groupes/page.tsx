@@ -69,7 +69,7 @@ export default async function PageGroupes({ searchParams }: PageProps<"/groupes"
         </ul>
       )}
 
-      <section className="carte" aria-labelledby="titre-nouveau-groupe">
+      <section className="carte" id="nouveau-groupe" aria-labelledby="titre-nouveau-groupe">
         <p className="surtitre" id="titre-nouveau-groupe">
           {d.groupes.creerTitre}
         </p>

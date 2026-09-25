@@ -2221,3 +2221,16 @@ select {
 .grille-entete {
   max-width: 46rem;
 }
+
+/* Accueil : « Gérer les groupes » et « Créer un groupe » sous la liste des groupes. */
+.boutons-groupes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+.boutons-groupes .bouton {
+  justify-content: center;
+  width: 100%;
+  box-sizing: border-box;
+}

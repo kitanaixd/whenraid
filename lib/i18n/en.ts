@@ -624,6 +624,7 @@ export const en: Dico = {
     tesRoles: "Your roles in this group",
     membres: (n) => `${n} member${s(n)}`,
     gerer: "Manage",
+    gererGroupes: "Manage groups",
     chef: "Leader",
     inviter: "Invite link",
     inviterAide: "Send this link to your friends: they'll pick their character and join the group (5 members max).",

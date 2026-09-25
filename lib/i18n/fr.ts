@@ -653,6 +653,7 @@ export const fr = {
     tesRoles: "Tes rôles dans ce groupe",
     membres: (n: number) => `${n} membre${s(n)}`,
     gerer: "Gérer",
+    gererGroupes: "Gérer les groupes",
     chef: "Chef",
     inviter: "Lien d'invitation",
     inviterAide:
