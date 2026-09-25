@@ -1645,3 +1645,68 @@ a:focus-visible * {
     display: none;
   }
 }
+
+/* Vue « liste » : colonnes partagées par toutes les lignes (subgrid). Statut, compo et classes
+   prennent la largeur de leur contenu, le raid prend le reste. */
+.liste-raids.vue-liste {
+  display: grid;
+  grid-template-columns: 5.6rem minmax(7rem, 1fr) max-content max-content max-content 2.25rem;
+  column-gap: 0.9rem;
+  row-gap: 0.35rem;
+}
+.liste-raids.vue-liste > .ligne-liste {
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  gap: inherit;
+}
+.liste-statut {
+  overflow: visible;
+  white-space: nowrap;
+}
+.liste-statut .groupe-inscrit > span:last-child {
+  max-width: 8rem;
+}
+@media (max-width: 1100px) {
+  .liste-raids.vue-liste {
+    grid-template-columns: 5.4rem minmax(7rem, 1fr) max-content max-content 2.25rem;
+  }
+  .ligne-liste .liste-recherche,
+  .entete-liste span:nth-child(5) {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .liste-raids.vue-liste {
+    grid-template-columns: 5.4rem minmax(0, 1fr) max-content 2.25rem;
+  }
+  .ligne-liste .liste-statut,
+  .entete-liste span:nth-child(3) {
+    display: none;
+  }
+}
+
+/* Vue « liste », réglage des largeurs : la marge intérieure des lignes compte dans la 1re et la
+   dernière colonne ; le statut est plafonné ; le nom du groupe s'affiche au survol. */
+.liste-raids.vue-liste {
+  grid-template-columns: 6.8rem minmax(6rem, 1fr) fit-content(11rem) max-content max-content 3.2rem;
+}
+.liste-statut .groupe-inscrit > span:last-child {
+  display: none;
+}
+.liste-statut {
+  overflow: hidden;
+}
+@media (max-width: 1100px) {
+  .liste-raids.vue-liste {
+    grid-template-columns: 6.6rem minmax(6rem, 1fr) fit-content(7rem) max-content 3.2rem;
+  }
+  .liste-statut .perso-inscrit,
+  .liste-statut > img {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .liste-raids.vue-liste {
+    grid-template-columns: 6.6rem minmax(0, 1fr) max-content 3.2rem;
+  }
+}
