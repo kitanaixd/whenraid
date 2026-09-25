@@ -5,7 +5,7 @@ import type { Classe, Contenu, Role } from "@/generated/prisma/enums";
 import { MAX_EXIGENCES, rolesParClasse } from "@/lib/jeu";
 import { options, optionsTriees } from "@/lib/libelles";
 import { nomRaid, raids } from "@/lib/raids";
-import { NomClasse, NomRole, RoleIcone } from "@/app/ClasseIcone";
+import { ClasseIcone, NomClasse, NomRole, RoleIcone } from "@/app/ClasseIcone";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { useDico } from "@/app/Langue";
 
@@ -57,12 +57,15 @@ export function ChoixCompo({
   const [roleRl, setRoleRl] = useState<Role | undefined>(persoRl?.roles[0]);
   const cleRl = persoRl && roleRl ? cle(persoRl.classe, roleRl) : null;
   const moi = cleRl ? 1 : 0;
-  const nbLignes = Math.max(1, besoinsInitiaux.length);
-  const [lignes, setLignes] = useState<number[]>(Array.from({ length: nbLignes }, (_, i) => i));
-  const [prochaineLigne, setProchaineLigne] = useState(nbLignes);
-  const [exigences, setExigences] = useState<Record<number, number>>(
-    Object.fromEntries(besoinsInitiaux.map((b, i) => [i, b.nombre])),
+  // Besoins précis : aucune ligne au départ ; chacune garde son nombre, sa classe et son rôle.
+  const [lignes, setLignes] = useState<number[]>(besoinsInitiaux.map((_, i) => i));
+  const [prochaineLigne, setProchaineLigne] = useState(besoinsInitiaux.length);
+  const [besoins, setBesoins] = useState<Record<number, Besoin>>(
+    Object.fromEntries(besoinsInitiaux.map((b, i) => [i, b])),
   );
+  const besoin = (l: number) => besoins[l] ?? { classe: "", role: "", nombre: 1 };
+  const majBesoin = (l: number, champ: Partial<Besoin>) =>
+    setBesoins((avant) => ({ ...avant, [l]: { ...(avant[l] ?? { classe: "", role: "", nombre: 1 }), ...champ } }));
 
   // Places que le RL peut répartir : la taille, moins les joueurs acceptés (qui gardent leur place).
   const taille = raids[contenu].taille - dejaPris;
@@ -75,7 +78,17 @@ export function ChoixCompo({
       .reduce((t, [, n]) => t + n, 0) + (roleRl === role && cleRl ? 1 : 0);
   const joueurs = Object.values(compo).reduce((a, b) => a + b, 0) + moi;
   const places = Math.max(0, taille - joueurs);
-  const exigees = lignes.reduce((t, l) => t + (exigences[l] ?? 0), 0);
+  const exigees = lignes.reduce((t, l) => t + besoin(l).nombre, 0);
+  /** « 2 Prêtres », « 1 Tank », « 3 Prêtres Soigneurs »… pour le récapitulatif. */
+  const libelleBesoin = (b: Besoin) => {
+    const pluriel = b.nombre > 1;
+    const role = b.role ? (pluriel ? d.rolesPluriel[b.role as Role] : d.role[b.role as Role]) : "";
+    if (b.classe) {
+      const classe = d.classe[b.classe as Classe];
+      return `${b.nombre} ${pluriel ? d.raid.besoin.classes(classe) : classe}${role ? ` ${role}` : ""}`;
+    }
+    return role ? `${b.nombre} ${role}` : d.creation.besoinQuelconque(b.nombre);
+  };
 
   // Chaque clic part de la dernière valeur réelle (même en cliquant très vite).
   const changer = (classe: Classe, role: Role, delta: number) => {
@@ -239,66 +252,159 @@ export function ChoixCompo({
 
       <h2>{d.creation.besoins}</h2>
       <p className="doux">{d.creation.besoinsAide}</p>
-      {lignes.map((l) => (
-        <div key={l} className="ligne-besoin">
-          <input
-            type="number"
-            name={`exigences.${l}.nombre`}
-            min={0}
-            max={places}
-            defaultValue={besoinsInitiaux[l]?.nombre ?? 0}
-            aria-label={d.creation.nombrePlaces}
-            onChange={(e) => setExigences({ ...exigences, [l]: Number(e.target.value) || 0 })}
-          />
-          <span>{d.creation.placesPour}</span>
-          <div className="besoin-classe">
-            <MenuDeroulant
-              name={`exigences.${l}.classe`}
-              etiquette={d.champ.classe}
-              valeurInitiale={besoinsInitiaux[l]?.classe ?? ""}
-              options={[
-                { valeur: "", libelle: d.commun.touteClasseMin },
-                ...optionsTriees(d.classe).map(([v, lib]) => ({ valeur: v, libelle: lib, classe: v })),
-              ]}
-            />
+      <div className="besoins-precis">
+        {lignes.map((l) => {
+          const b = besoin(l);
+          return (
+            <div key={l} className="ligne-besoin-v2">
+              {/* Nombre de places : − / + comme pour la compo. */}
+              <div className="compteur-pas">
+                <button
+                  type="button"
+                  className="pas"
+                  onClick={() => majBesoin(l, { nombre: Math.max(1, b.nombre - 1) })}
+                  disabled={b.nombre <= 1}
+                  aria-label={d.creation.moinsUnePlace}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  name={`exigences.${l}.nombre`}
+                  value={b.nombre}
+                  readOnly
+                  tabIndex={-1}
+                  aria-label={d.creation.nombrePlaces}
+                />
+                <button
+                  type="button"
+                  className="pas"
+                  onClick={() => majBesoin(l, { nombre: b.nombre + 1 })}
+                  disabled={exigees >= places}
+                  aria-label={d.creation.plusUnePlace}
+                >
+                  +
+                </button>
+              </div>
+              <span className="doux">{d.creation.placesPour}</span>
+              <div className="besoin-classe">
+                <MenuDeroulant
+                  name={`exigences.${l}.classe`}
+                  etiquette={d.champ.classe}
+                  valeurInitiale={b.classe}
+                  surChangement={(v) =>
+                    // Un rôle que la nouvelle classe ne peut pas jouer est remis à « tout rôle ».
+                    majBesoin(l, {
+                      classe: v,
+                      role: v && b.role && !rolesParClasse[v as Classe].includes(b.role as Role) ? "" : b.role,
+                    })
+                  }
+                  options={[
+                    { valeur: "", libelle: d.commun.touteClasseMin },
+                    ...optionsTriees(d.classe).map(([v, lib]) => ({ valeur: v, libelle: lib, classe: v })),
+                  ]}
+                />
+              </div>
+              <div className="besoin-role">
+                <MenuDeroulant
+                  key={`${l}-${b.classe}`}
+                  name={`exigences.${l}.role`}
+                  etiquette={d.champ.role}
+                  valeurInitiale={b.role}
+                  surChangement={(v) => majBesoin(l, { role: v })}
+                  options={[
+                    { valeur: "", libelle: d.commun.toutRoleMin },
+                    // Seulement les rôles que la classe choisie peut jouer.
+                    ...options(d.role)
+                      .filter(([v]) => !b.classe || rolesParClasse[b.classe as Classe].includes(v))
+                      .map(([v, lib]) => ({ valeur: v, libelle: lib, role: v })),
+                  ]}
+                />
+              </div>
+              <button
+                type="button"
+                className="pas retirer-besoin"
+                aria-label={d.creation.retirerBesoin}
+                title={d.creation.retirerBesoin}
+                onClick={() => setLignes(lignes.filter((x) => x !== l))}
+              >
+                ✕
+              </button>
+            </div>
+          );
+        })}
+        {lignes.length < MAX_EXIGENCES && (
+          <button
+            type="button"
+            className="petit ajouter-besoin"
+            disabled={exigees >= places}
+            onClick={() => {
+              setLignes([...lignes, prochaineLigne]);
+              setProchaineLigne(prochaineLigne + 1);
+            }}
+          >
+            {d.creation.ajouterBesoin}
+          </button>
+        )}
+      </div>
+      {/* Récapitulatif des places ouvertes : barre proportionnelle et légende. */}
+      {exigees > places ? (
+        <p role="alert" className="avertissement">
+          {d.creation.tropDemandees(exigees, places)}
+        </p>
+      ) : (
+        <div className="recap-places">
+          <p className="recap-titre">{d.creation.placesOuvertes(places)}</p>
+          {/* Une barre découpée en segments proportionnels : chaque besoin, puis les places libres. */}
+          <div className="recap-barre" aria-hidden="true">
+            {lignes
+              .map((l) => besoin(l))
+              .filter((b) => b.nombre > 0)
+              .map((b, n) => (
+                <span
+                  key={n}
+                  style={
+                    {
+                      flexGrow: b.nombre,
+                      "--c": b.classe ? `var(--classe-${b.classe})` : `var(--role-${b.role || "libre"})`,
+                    } as React.CSSProperties
+                  }
+                >
+                  {b.nombre}
+                </span>
+              ))}
+            {places - exigees > 0 && (
+              <span className="recap-libre" style={{ flexGrow: places - exigees }}>
+                {places - exigees}
+              </span>
+            )}
           </div>
-          <div className="besoin-role">
-            <MenuDeroulant
-              name={`exigences.${l}.role`}
-              etiquette={d.champ.role}
-              valeurInitiale={besoinsInitiaux[l]?.role ?? ""}
-              options={[
-                { valeur: "", libelle: d.commun.toutRoleMin },
-                ...options(d.role).map(([v, lib]) => ({ valeur: v, libelle: lib, role: v })),
-              ]}
-            />
-          </div>
-          {lignes.length > 1 && (
-            <button
-              type="button"
-              className="pas"
-              aria-label={d.creation.retirerBesoin}
-              onClick={() => setLignes(lignes.filter((x) => x !== l))}
-            >
-              ✕
-            </button>
-          )}
+          <ul className="recap-legende">
+            {lignes
+              .map((l) => besoin(l))
+              .filter((b) => b.nombre > 0)
+              .map((b, n) => (
+                <li key={n}>
+                  {b.classe ? (
+                    <ClasseIcone classe={b.classe as Classe} taille={20} />
+                  ) : b.role ? (
+                    <RoleIcone role={b.role as Role} taille={20} />
+                  ) : (
+                    <span className="recap-puce-libre">✦</span>
+                  )}
+                  {b.classe && b.role && <RoleIcone role={b.role as Role} taille={16} />}
+                  <span>{libelleBesoin(b)}</span>
+                </li>
+              ))}
+            {places - exigees > 0 && (
+              <li className="libre">
+                <span className="recap-puce-libre">✦</span>
+                <span>{d.creation.libres(places - exigees)}</span>
+              </li>
+            )}
+          </ul>
         </div>
-      ))}
-      {lignes.length < MAX_EXIGENCES && (
-        <button
-          type="button"
-          className="petit"
-          onClick={() => {
-            setLignes([...lignes, prochaineLigne]);
-            setProchaineLigne(prochaineLigne + 1);
-          }}
-        >
-          {d.creation.ajouterBesoin}
-        </button>
       )}
-      {exigees > places && <p role="alert">{d.creation.tropDemandees(exigees, places)}</p>}
-      {exigees < places && <p className="doux">{d.creation.placesLibres(places - exigees)}</p>}
     </>
   );
 }

@@ -1952,3 +1952,110 @@ select {
 .champ > span {
   line-height: inherit;
 }
+
+/* ─── Création : besoins précis ───────────────────────────────────────────── */
+.besoins-precis {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+.ligne-besoin-v2 {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  background: var(--surface-2);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-2);
+  box-sizing: border-box;
+}
+.ligne-besoin-v2 .doux {
+  white-space: nowrap;
+  font-size: 0.85rem;
+}
+.ligne-besoin-v2 .retirer-besoin {
+  color: #f87171;
+}
+.besoins-precis .ajouter-besoin {
+  align-self: flex-start;
+}
+/* Récapitulatif : barre proportionnelle (une couleur par besoin) et légende. */
+:root {
+  --role-TANK: #7aa7ff;
+  --role-SOIGNEUR: #4ade80;
+  --role-DPS: #f87171;
+  --role-libre: var(--accent);
+}
+.recap-places {
+  margin: 0.9rem 0 0;
+  padding: 0.9rem 1rem;
+  background: var(--surface-2);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-2);
+}
+.recap-titre {
+  margin: 0 0 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.recap-barre {
+  display: flex;
+  gap: 3px;
+  height: 26px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.recap-barre > span {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0b0b0d;
+  background: var(--c);
+}
+.recap-barre > .recap-libre {
+  color: var(--texte-doux);
+  background: repeating-linear-gradient(135deg, var(--surface-3) 0 6px, var(--surface) 6px 12px);
+}
+.recap-legende {
+  list-style: none;
+  margin: 0.7rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  font-size: 0.85rem;
+}
+.recap-legende li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.recap-legende li.libre {
+  color: var(--texte-doux);
+}
+.recap-puce-libre {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  font-size: 0.7rem;
+  border-radius: 50%;
+  color: var(--accent);
+  border: 1px dashed var(--bord-fort);
+}
+@media (max-width: 640px) {
+  .ligne-besoin-v2 {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+  .ligne-besoin-v2 > .doux {
+    display: none;
+  }
+  .ligne-besoin-v2 .besoin-role {
+    grid-column: 2 / 3;
+  }
+}
