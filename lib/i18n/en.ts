@@ -259,6 +259,9 @@ export const en: Dico = {
     vue: { aria: "List display", cartes: "Show as cards", liste: "Show as list" },
     colonnes: { date: "Date", raid: "Raid", statut: "Status", compo: "Roster", recherche: "Wanted" },
     afficher: "Show",
+    maSpe: (classe) => `Missing my spec (${classe})`,
+    maSpeAide: "Only raids that don't have your class in one of your roles yet: they need you.",
+    tri: { aria: "Sort the list", date: "Date", roster: "Fill" },
     categories: {
       organise: "My raids",
       candidatures: "My applications",

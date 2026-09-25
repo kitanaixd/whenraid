@@ -7,16 +7,30 @@ import { resumeLigneRaid, type AnnonceLigne } from "@/lib/ligneRaid";
 import { ClasseIcone, RoleIcone } from "./ClasseIcone";
 import { GroupeInscrit, type Marque } from "./LigneRaid";
 
-/** En-tête des colonnes de la vue « liste ». */
-export function EnteteListe({ d }: { d: Dico }) {
+/** En-tête des colonnes de la vue « liste » ; « Date » et « Compo » trient la liste. */
+export function EnteteListe({
+  d,
+  tri,
+  lienDate,
+  lienRoster,
+}: {
+  d: Dico;
+  tri: "date" | "roster";
+  lienDate: string;
+  lienRoster: string;
+}) {
   const c = d.accueil.colonnes;
   return (
-    <li className="ligne-liste entete-liste" aria-hidden="true">
-      <span>{c.date}</span>
-      <span>{c.raid}</span>
-      <span>{c.statut}</span>
-      <span>{c.compo}</span>
-      <span>{c.recherche}</span>
+    <li className="ligne-liste entete-liste">
+      <Link href={lienDate} className={tri === "date" ? "actif" : undefined} aria-label={d.accueil.tri.date}>
+        {c.date} {tri === "date" && "↑"}
+      </Link>
+      <span aria-hidden="true">{c.raid}</span>
+      <span aria-hidden="true">{c.statut}</span>
+      <Link href={lienRoster} className={tri === "roster" ? "actif" : undefined} aria-label={d.accueil.tri.roster}>
+        {c.compo} {tri === "roster" && "↓"}
+      </Link>
+      <span aria-hidden="true">{c.recherche}</span>
       <span />
     </li>
   );
@@ -49,8 +63,13 @@ export function LigneListe({
   const nom = nomRaid(a.contenu, d);
   const titre = a.titre ?? nom;
   const [jour, heure] = afficherDateCourte(a.debutUtc, fuseau).split(" · ");
-  const classes = r.classesRecherchees.slice(0, 3);
-  const enPlus = r.classesRecherchees.length - classes.length;
+  // Classes puis rôles demandés (seulement quand il ne reste plus de place ouverte à tous).
+  const demandes = [
+    ...r.classesRecherchees.map((c) => ({ cle: c, icone: <ClasseIcone classe={c} taille={20} /> })),
+    ...r.rolesRecherches.map((ro) => ({ cle: ro, icone: <RoleIcone role={ro} taille={20} /> })),
+  ];
+  const visibles = demandes.slice(0, 3);
+  const enPlus = demandes.length - visibles.length;
 
   return (
     <li className={`ligne-liste ${marque ? `ligne-${marque.type}` : ""}`}>
@@ -102,12 +121,12 @@ export function LigneListe({
       <span className="liste-recherche" aria-label={d.accueil.classesRecherchees}>
         {a.statut === "COMPLETE" ? (
           <span className="pastille complet">{d.accueil.complet}</span>
-        ) : r.placeLibre && classes.length === 0 ? (
+        ) : r.placeLibre ? (
           <span className="pastille">{d.commun.toutesClasses}</span>
         ) : (
           <>
-            {classes.map((c) => (
-              <ClasseIcone key={c} classe={c} taille={20} />
+            {visibles.map((x) => (
+              <span key={x.cle}>{x.icone}</span>
             ))}
             {enPlus > 0 && <span className="classes-en-plus">+{enPlus}</span>}
           </>

@@ -38,7 +38,11 @@ export function placePour<P extends PlaceAvecStatut>(
   preferee?: string,
 ): { place: P; ouverte: boolean } | null {
   const compatibles = places.filter((p) => p.statut !== "ANNULEE" && rolesPourPlace(perso, p, annonce).includes(role));
-  const ouvertes = compatibles.filter((p) => p.statut === "OUVERTE");
+  // Parmi les places ouvertes, la plus précise d'abord (moins de classes acceptées, rôle demandé) :
+  // un prêtre prend la place « prêtre » avant une place ouverte à tous.
+  const ouvertes = compatibles
+    .filter((p) => p.statut === "OUVERTE")
+    .sort((a, b) => a.classesAcceptees.length - b.classesAcceptees.length || Number(!a.role) - Number(!b.role));
   const ouverte = ouvertes.find((p) => p.id === preferee) ?? ouvertes[0];
   if (ouverte) return { place: ouverte, ouverte: true };
   const pourvue = compatibles.find((p) => p.id === preferee) ?? compatibles[0];
@@ -97,7 +101,12 @@ export function affecterGroupe<P extends PlaceAvecStatut>(
           .filter((r) => m.roles.includes(r))
           .map((role) => ({ place: p, role })),
       )
-      .sort((a, b) => Number(b.place.id === m.preferee) - Number(a.place.id === m.preferee)),
+      .sort(
+        (a, b) =>
+          Number(b.place.id === m.preferee) - Number(a.place.id === m.preferee) ||
+          a.place.classesAcceptees.length - b.place.classesAcceptees.length ||
+          Number(!a.place.role) - Number(!b.place.role),
+      ),
   );
   const prises = new Set<string>();
   const resultat: { place: P; role: Role }[] = [];

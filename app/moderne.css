@@ -1793,3 +1793,57 @@ a:focus-visible * {
 .filtre-afficher .case-role input[type="checkbox"]::after {
   content: none !important;
 }
+
+/* « Il manque ma spé » : pastille à part, après les catégories. */
+.filtre-afficher .spe-manquante {
+  margin-left: 0.4rem;
+  border-color: rgb(110 231 245 / 0.45);
+}
+.filtre-afficher .spe-manquante:has(input:checked) {
+  border-color: #6ee7f5 !important;
+  background: rgb(110 231 245 / 0.08) !important;
+}
+.filtre-afficher .spe-manquante input[type="checkbox"]:checked {
+  background: #6ee7f5;
+  box-shadow: 0 0 0 3px rgb(110 231 245 / 0.25);
+}
+
+/* Tri : deux boutons texte, à côté de la bascule Cartes / Liste. */
+.choix-tri {
+  display: inline-flex;
+  padding: 3px;
+  gap: 3px;
+  height: 48px;
+  box-sizing: border-box;
+  background: var(--surface);
+  border: 1px solid var(--bord);
+  border-radius: var(--rayon-2);
+}
+.choix-tri a {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--texte-doux);
+  border-radius: calc(var(--rayon-2) - 3px);
+  text-decoration: none;
+}
+.choix-tri a:hover {
+  color: var(--texte);
+}
+.choix-tri a.actif {
+  color: var(--accent-texte);
+  background: var(--accent);
+  font-weight: 600;
+}
+/* En-tête de la liste : Date et Compo cliquables pour trier. */
+.entete-liste a {
+  color: var(--texte-doux);
+  text-decoration: none;
+  position: relative;
+  z-index: 1;
+}
+.entete-liste a:hover,
+.entete-liste a.actif {
+  color: var(--accent);
+}

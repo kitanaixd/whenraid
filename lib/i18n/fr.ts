@@ -288,6 +288,9 @@ export const fr = {
     vue: { aria: "Affichage de la liste", cartes: "Afficher en cartes", liste: "Afficher en liste" },
     colonnes: { date: "Date", raid: "Raid", statut: "Statut", compo: "Compo", recherche: "Recherché" },
     afficher: "Afficher",
+    maSpe: (classe: string) => `Il manque ma spé (${classe})`,
+    maSpeAide: "Seulement les raids qui n'ont pas encore ta classe dans l'un de tes rôles : ils ont besoin de toi.",
+    tri: { aria: "Trier la liste", date: "Date", roster: "Remplissage" },
     categories: {
       organise: "Mes raids",
       candidatures: "Mes candidatures",

@@ -62,9 +62,13 @@ export function LigneRaid({
 }) {
   const r = resumeLigneRaid(a);
   const taille = compact ? 18 : 22;
-  // Carte complète : au plus 4 icônes de classe, le reste en « +n » (hauteur de carte constante).
-  const classesVisibles = r.classesRecherchees.slice(0, 4);
-  const classesEnPlus = r.classesRecherchees.length - classesVisibles.length;
+  // Carte complète : au plus 4 icônes (classes puis rôles demandés), le reste en « +n » (hauteur constante).
+  const demandes = [
+    ...r.classesRecherchees.map((c) => ({ cle: c, icone: <ClasseIcone classe={c} taille={28} /> })),
+    ...r.rolesRecherches.map((ro) => ({ cle: ro, icone: <RoleIcone role={ro} taille={28} /> })),
+  ];
+  const demandesVisibles = demandes.slice(0, 4);
+  const demandesEnPlus = demandes.length - demandesVisibles.length;
   const compo = (
     <div className="compo-roles" title={d.accueil.compoTitre}>
       <span aria-label={d.accueil.tanks(r.roles.tanks)}>
@@ -142,11 +146,16 @@ export function LigneRaid({
             </div>
           ) : (
             <div className="recherche" aria-label={d.accueil.classesRecherchees}>
-              {classesVisibles.map((c) => (
-                <ClasseIcone key={c} classe={c} taille={28} />
-              ))}
-              {classesEnPlus > 0 && <span className="classes-en-plus">+{classesEnPlus}</span>}
-              {r.placeLibre && <span className="pastille">{d.commun.toutesClasses}</span>}
+              {r.placeLibre ? (
+                <span className="pastille">{d.commun.toutesClasses}</span>
+              ) : (
+                <>
+                  {demandesVisibles.map((x) => (
+                    <span key={x.cle}>{x.icone}</span>
+                  ))}
+                  {demandesEnPlus > 0 && <span className="classes-en-plus">+{demandesEnPlus}</span>}
+                </>
+              )}
             </div>
           )}
         </div>

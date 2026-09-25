@@ -37,7 +37,7 @@ import { dicoCourant } from "@/lib/langue";
 
 const DUREES_MAX = [2, 3, 4, 6];
 /** Paramètres de la liste gardés d'un lien à l'autre (personnage, filtres, mois du calendrier). */
-const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q", "afficher", "vue"] as const;
+const PARAMETRES = ["perso", "groupe", "raid", "jour", "mois", "duree", "q", "afficher", "spe", "tri", "vue"] as const;
 /** Catégories de raids qu'on peut afficher ou cacher (filtre « Afficher »). */
 const CATEGORIES = ["organise", "candidatures", "convie", "autres"] as const;
 type Categorie = (typeof CATEGORIES)[number];
@@ -183,24 +183,45 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               : rolesPourRaid(perso, a.places, a).length > 0)),
       )
     : [];
+  // « Ma spé manque » (seul, pas en groupe) : la compo n'a pas encore ma classe dans l'un de mes rôles.
+  const speManquante = !groupe && valeur("spe") === "1" && perso;
+  const rolesDeMaSpe = perso ? perso.rolesJouables.filter((r) => rolePossible(perso.classe, r)) : [];
+  const visibles = speManquante
+    ? ouverts.filter((a) => {
+        const lignes = resumeLigneRaid(a).lignes;
+        return rolesDeMaSpe.some((r) => !lignes.some((l) => l.classe === perso.classe && l.role === r && l.nombre > 0));
+      })
+    : ouverts;
   // Le calendrier compte les raids de chaque jour ; la liste ne garde que le jour choisi.
   const raidsParJour = new Map<string, number>();
-  for (const a of ouverts) {
+  for (const a of visibles) {
     const j = jourLocal(a.debutUtc, fuseau);
     raidsParJour.set(j, (raidsParJour.get(j) ?? 0) + 1);
   }
   // Recherche : dans le titre donné par le RL et dans le nom du raid.
   const recherche = valeur("q").trim().slice(0, 40);
   const cherche = sansAccents(recherche);
-  const annonces = ouverts
+  // Tri : par date (défaut) ou par remplissage (les plus proches d'être complets d'abord ;
+  // les raids déjà complets, où l'on ne peut plus entrer, passent en dernier).
+  const tri = valeur("tri") === "roster" ? "roster" : "date";
+  const remplissage = (a: (typeof ouverts)[number]) =>
+    a.statut === "COMPLETE" ? -1 : resumeLigneRaid(a).total / a.taille;
+  const annonces = visibles
     .filter((a) => !jour || jourLocal(a.debutUtc, fuseau) === jour)
     .filter((a) => !cherche || sansAccents(`${a.titre ?? ""} ${nomRaid(a.contenu, d)}`).includes(cherche))
+    .sort((x, y) =>
+      tri === "roster"
+        ? remplissage(y) - remplissage(x) || x.debutUtc.getTime() - y.debutUtc.getTime()
+        : x.debutUtc.getTime() - y.debutUtc.getTime(),
+    )
     .slice(0, 50);
   const fiabilite = await fiabiliteRls([...new Set(annonces.map((a) => a.createurId))]);
   const rolesPerso = perso ? perso.rolesJouables.filter((r) => rolePossible(perso.classe, r)) : [];
   const requete = lienListe({}).replace(/^\/\??/, "");
   const erreur = valeur("erreur");
-  const filtreActif = Boolean(contenus.length > 0 || jour || dureeMax || recherche || cachees.length > 0);
+  const filtreActif = Boolean(
+    contenus.length > 0 || jour || dureeMax || recherche || cachees.length > 0 || speManquante,
+  );
   /** Adresse avec les catégories affichées changées (toutes affichées : plus de paramètre). */
   const afficherAvec = (categories: Categorie[]) =>
     categories.length === CATEGORIES.length ? null : ["_", ...categories].join(",");
@@ -376,8 +397,8 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               </fieldset>
             </FormulaireAuto>
             {/* Afficher : mes raids, mes candidatures, là où je suis convié, les autres (cocher = afficher). */}
-            <FormulaireAuto key={`afficher-${afficherBrut}`} className="filtre-afficher" label={d.accueil.afficher}>
-              {champsCaches("afficher")}
+            <FormulaireAuto key={`afficher-${afficherBrut}-${valeur("spe")}`} className="filtre-afficher" label={d.accueil.afficher}>
+              {champsCaches("afficher", "spe")}
               <input type="hidden" name="afficher" value="_" />
               <fieldset className="rapide-roles choix-raids">
                 <legend>{d.accueil.afficher}</legend>
@@ -387,6 +408,12 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                     {d.accueil.categories[c]}
                   </label>
                 ))}
+                {!groupe && perso && (
+                  <label className="case-role spe-manquante" title={d.accueil.maSpeAide}>
+                    <input type="checkbox" name="spe" value="1" defaultChecked={Boolean(speManquante)} />
+                    {d.accueil.maSpe(d.classe[perso.classe])}
+                  </label>
+                )}
               </fieldset>
             </FormulaireAuto>
             {/* Recherche par titre : garde le personnage et les autres filtres. */}
@@ -404,6 +431,18 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                   autoComplete="off"
                 />
               </form>
+              <nav className="choix-tri" aria-label={d.accueil.tri.aria}>
+                {(["date", "roster"] as const).map((t) => (
+                  <Link
+                    key={t}
+                    href={lienListe({ tri: t === "date" ? null : t })}
+                    className={tri === t ? "actif" : undefined}
+                    aria-current={tri === t ? "true" : undefined}
+                  >
+                    {d.accueil.tri[t]}
+                  </Link>
+                ))}
+              </nav>
               <nav className="choix-vue" aria-label={d.accueil.vue.aria}>
                 <Link
                   href={lienListe({ vue: "cartes" })}
@@ -444,7 +483,14 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
               </div>
             ) : (
               <ul className={`liste-raids ${vue === "liste" ? "vue-liste" : ""}`}>
-                {vue === "liste" && <EnteteListe d={d} />}
+                {vue === "liste" && (
+                  <EnteteListe
+                    d={d}
+                    tri={tri}
+                    lienDate={lienListe({ tri: null })}
+                    lienRoster={lienListe({ tri: "roster" })}
+                  />
+                )}
                 {annonces.map((a) => {
                   const marque = marqueDe(a.id, a.createurId);
                   const libelleBouton = a.statut === "COMPLETE" ? d.accueil.reserveAria : d.accueil.candidater;
@@ -508,6 +554,7 @@ export default async function Accueil({ searchParams }: PageProps<"/">) {
                       jour: null,
                     })}
                   {recherche && filtreRetirable(d.accueil.recherche(recherche), { q: null })}
+                  {speManquante && filtreRetirable(d.accueil.maSpe(d.classe[perso.classe]), { spe: null })}
                   {cachees.map((c) => (
                     <span key={c}>
                       {filtreRetirable(d.accueil.sansCategorie(d.accueil.categories[c]), {

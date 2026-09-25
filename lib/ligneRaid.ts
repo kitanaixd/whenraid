@@ -1,5 +1,5 @@
 import type { Prisma } from "@/generated/prisma/client";
-import type { Classe } from "@/generated/prisma/enums";
+import type { Classe, Role } from "@/generated/prisma/enums";
 import { compoActuelle, compoParRole, estEnAttente, STATUTS_ACTIFS } from "@/lib/annonces";
 
 const NOMBRE_DE_CLASSES = 9;
@@ -34,17 +34,24 @@ export function resumeLigneRaid(a: AnnonceLigne) {
     return t?.role && t.personnage ? [{ classe: t.personnage.classe, role: t.role }] : [];
   });
   const compo = compoActuelle(a.composition, titulaires);
-  const classesRecherchees = [
-    ...new Set(
-      ouvertes.filter((p) => p.classesAcceptees.length < NOMBRE_DE_CLASSES).flatMap((p) => p.classesAcceptees),
-    ),
-  ] as Classe[];
+  // Tant qu'une place est ouverte à tous (toute classe, tout rôle), on n'affiche que « Toutes classes » ;
+  // les classes et rôles précis n'apparaissent que lorsqu'il ne reste plus qu'eux à pourvoir.
+  const toutesClasses = (p: { classesAcceptees: Classe[] }) => p.classesAcceptees.length >= NOMBRE_DE_CLASSES;
+  const placeLibre = ouvertes.some((p) => toutesClasses(p) && !p.role);
+  const classesRecherchees = placeLibre
+    ? []
+    : ([...new Set(ouvertes.filter((p) => !toutesClasses(p)).flatMap((p) => p.classesAcceptees))] as Classe[]);
+  const rolesRecherches = placeLibre
+    ? []
+    : ([...new Set(ouvertes.filter((p) => toutesClasses(p) && p.role).map((p) => p.role!))] as Role[]);
   return {
     ouvertes: ouvertes.length,
     total: compo.total,
+    lignes: compo.lignes,
     roles: compoParRole(compo.lignes),
     classesRecherchees,
-    placeLibre: ouvertes.some((p) => p.classesAcceptees.length === NOMBRE_DE_CLASSES),
+    rolesRecherches,
+    placeLibre,
     enAttente: a.places.reduce((n, p) => n + p.inscriptions.filter((i) => estEnAttente(i.statut)).length, 0),
   };
 }
