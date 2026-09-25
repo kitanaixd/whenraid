@@ -51,7 +51,7 @@ enum Ruleset {
 }
 
 enum Contenu {
-  MONT_HYJAL_10
+  BARROW_DEEPS_10
   MONT_HYJAL_20
   ONYXIA
 }

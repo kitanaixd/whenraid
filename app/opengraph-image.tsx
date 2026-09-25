@@ -8,7 +8,7 @@ export const contentType = "image/png";
 
 export default async function Image() {
   const [fond, logo] = await Promise.all([imageApercu("fond.jpg"), imageApercu("logo.png")]);
-  const raids = ["Mount Hyjal (10 / 20)", "Onyxia (40)"];
+  const raids = ["Barrow Deeps (10)", "Mount Hyjal (20)", "Onyxia (40)"];
 
   return new ImageResponse(
     <div style={{ display: "flex", width: "100%", height: "100%", background: FOND, color: "#fafafa" }}>

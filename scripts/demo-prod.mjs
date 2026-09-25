@@ -10,7 +10,7 @@ import pg from "pg";
 const RL = "cmudugde8000010dxjvrnomwk"; // Kitanai
 const CLASSES = ["GUERRIER", "PALADIN", "CHASSEUR", "VOLEUR", "PRETRE", "CHAMAN", "MAGE", "DEMONISTE", "DRUIDE"];
 const RAIDS = [
-  { contenu: "MONT_HYJAL_10", taille: 10, duree: 120 },
+  { contenu: "BARROW_DEEPS_10", taille: 10, duree: 120 },
   { contenu: "MONT_HYJAL_20", taille: 20, duree: 180 },
   { contenu: "ONYXIA", taille: 40, duree: 90 },
 ];

@@ -14,7 +14,7 @@ import pg from "pg";
 const RL = "cmudugde8000010dxjvrnomwk"; // Kitanai
 const NOMBRE = 50;
 const RAIDS = [
-  { contenu: "MONT_HYJAL_10", taille: 10, duree: 180 },
+  { contenu: "BARROW_DEEPS_10", taille: 10, duree: 180 },
   { contenu: "MONT_HYJAL_20", taille: 20, duree: 180 },
   { contenu: "ONYXIA", taille: 40, duree: 120 },
 ];
@@ -23,7 +23,7 @@ const LOOTS = ["ROLL", "ROLL", "LOOT_COUNCIL", "DKP", "RESERVE"];
 // Titres (20 caractères max), selon le raid.
 const COMMUNS = ["Clean run chill", "Raid des copains", "Guilde + pugs", "Première tentative", "Soirée détente", "Full reroll"];
 const TITRES = {
-  MONT_HYJAL_10: ["Hyjal du jeudi", "Speedrun Hyjal", ...COMMUNS],
+  BARROW_DEEPS_10: ["Barrow du jeudi", "Speedrun Barrow", ...COMMUNS],
   MONT_HYJAL_20: ["Hyjal du jeudi", "Speedrun Hyjal", "Farm T2", ...COMMUNS],
   ONYXIA: ["Ony express", "Onyxia du dimanche", "Farm T2", ...COMMUNS],
 };

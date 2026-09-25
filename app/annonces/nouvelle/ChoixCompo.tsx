@@ -31,7 +31,7 @@ export function ChoixCompo({
   fuseau,
   personnage,
   entete = true,
-  contenuInitial = "MONT_HYJAL_10",
+  contenuInitial = "BARROW_DEEPS_10",
   compoInitiale = {},
   besoinsInitiaux = [],
   dejaPris = 0,

@@ -57,7 +57,7 @@ export const fr = {
     RETIRE: "Retiré",
     REFUSE: "Refusé",
   } satisfies Record<StatutInscription, string>,
-  nomRaid: { MONT_HYJAL_10: "Mont Hyjal", MONT_HYJAL_20: "Mont Hyjal", ONYXIA: "Onyxia" } satisfies Record<
+  nomRaid: { BARROW_DEEPS_10: "Barrow Deeps", MONT_HYJAL_20: "Mont Hyjal", ONYXIA: "Onyxia" } satisfies Record<
     Contenu,
     string
   >,

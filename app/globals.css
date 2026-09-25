@@ -1032,6 +1032,9 @@ button.menu-choisi[aria-expanded="true"] {
 
 /* ─── Illustrations par raid ──────────────────────────────────────────────── */
 
+body:has(main[data-fond="barrow-deeps"]) {
+  --image-fond: url("/raids/barrow-deeps.webp");
+}
 body:has(main[data-fond="mont-hyjal"]) {
   --image-fond: url("/raids/mont-hyjal.webp");
 }
@@ -1046,6 +1049,9 @@ body:has(main[data-fond])::before {
 }
 
 /* Listing : vignette du raid sur la droite de chaque ligne, très assombrie. */
+.ligne-raid[data-fond="barrow-deeps"] {
+  --vignette: url("/raids/barrow-deeps-petit.webp");
+}
 .ligne-raid[data-fond="mont-hyjal"] {
   --vignette: url("/raids/mont-hyjal-petit.webp");
 }

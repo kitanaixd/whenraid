@@ -39,7 +39,7 @@ export const en: Dico = {
     RETIRE: "Withdrawn",
     REFUSE: "Declined",
   },
-  nomRaid: { MONT_HYJAL_10: "Mount Hyjal", MONT_HYJAL_20: "Mount Hyjal", ONYXIA: "Onyxia" },
+  nomRaid: { BARROW_DEEPS_10: "Barrow Deeps", MONT_HYJAL_20: "Mount Hyjal", ONYXIA: "Onyxia" },
   langueParlee: { fr: "French", en: "English" },
   fiabilite: {
     nouveau: "New",
