@@ -160,6 +160,23 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
     besoin.total++;
     if (p.statut === "OUVERTE") besoin.ouvertes++;
   }
+  const precision = (b: (typeof besoins)[number]) => (b.classes.length < NOMBRE_DE_CLASSES ? 0 : 2) + (b.role ? 0 : 1);
+  besoins.sort((x, y) => precision(x) - precision(y));
+  /** Libellé d'un besoin : « 6 Voleurs », « 2 DPS », « 3 places libres » (au pluriel si besoin). */
+  const libelleBesoin = (b: (typeof besoins)[number]) => {
+    const pluriel = b.total > 1;
+    if (b.classes.length < NOMBRE_DE_CLASSES) {
+      const noms = b.classes.map((c) => (pluriel ? d.raid.besoin.classes(d.classe[c]) : d.classe[c])).join(" / ");
+      return `${b.total} ${noms}`;
+    }
+    if (b.role) return `${b.total} ${pluriel ? d.rolesPluriel[b.role] : d.role[b.role]}`;
+    return d.raid.besoin.placesLibres(b.total);
+  };
+  /** Ce que le besoin accepte : le rôle demandé, ou n'importe lequel. */
+  const detailBesoin = (b: (typeof besoins)[number]) => {
+    if (b.classes.length < NOMBRE_DE_CLASSES) return b.role ? d.role[b.role] : d.raid.besoin.toutRole;
+    return b.role ? d.raid.besoin.touteClasse : d.raid.besoin.libre;
+  };
 
   // Candidatures en attente (vue du RL) : « Accepter » s'il reste une place compatible, sinon « Remplaçant ».
   const candidatsEnAttente = inscriptions
@@ -385,24 +402,47 @@ export default async function PageAnnonce({ params, searchParams }: PageProps<"/
             <p className="surtitre" id="titre-recherche">
               {d.raid.recherche}
             </p>
-            <ul className="liste-besoins">
-              {besoins.map((b) => (
-                <li key={b.cle} className={`besoin ${b.ouvertes === 0 ? "besoin-pourvu" : ""}`}>
-                  <div className="besoin-quoi">
-                    {b.classes.length === NOMBRE_DE_CLASSES ? (
-                      <span className="place-libre">{d.commun.toutClasse}</span>
-                    ) : (
-                      b.classes.map((c) => <NomClasse key={c} classe={c} taille={24} />)
-                    )}
-                    <span className="place-role">
-                      {b.role ? <NomRole role={b.role} taille={20} /> : d.commun.toutRole}
+            <ul className="liste-besoins-v2">
+              {besoins.map((b) => {
+                const pris = b.total - b.ouvertes;
+                const classeUnique = b.classes.length === 1 ? b.classes[0] : null;
+                return (
+                  <li key={b.cle} className={b.ouvertes === 0 ? "pourvu" : undefined}>
+                    <span className="besoin-icone">
+                      {classeUnique ? (
+                        <ClasseIcone classe={classeUnique} taille={30} />
+                      ) : b.role ? (
+                        <RoleIcone role={b.role} taille={28} />
+                      ) : (
+                        <span className="besoin-libre" aria-hidden="true">
+                          ✦
+                        </span>
+                      )}
                     </span>
-                  </div>
-                  <span className={`pastille ${b.ouvertes === 0 ? "complet" : "ouvert"}`}>
-                    {b.ouvertes === 0 ? d.raid.pourvues(b.total) : d.raid.surAPourvoir(b.ouvertes, b.total)}
-                  </span>
-                </li>
-              ))}
+                    <span className="besoin-texte">
+                      <strong
+                        className={classeUnique ? "classe" : undefined}
+                        style={
+                          classeUnique ? ({ "--c": `var(--classe-${classeUnique})` } as React.CSSProperties) : undefined
+                        }
+                      >
+                        {libelleBesoin(b)}
+                      </strong>
+                      <span className="doux">
+                        {b.role && classeUnique && <RoleIcone role={b.role} taille={16} />} {detailBesoin(b)}
+                      </span>
+                    </span>
+                    <span className="besoin-etat">
+                      <span className="jauge" aria-hidden="true">
+                        <span style={{ width: `${(pris / b.total) * 100}%` }} />
+                      </span>
+                      <span className={b.ouvertes === 0 ? "pourvu-texte" : "a-pourvoir"}>
+                        {b.ouvertes === 0 ? d.raid.besoin.pourvu : d.raid.besoin.aPourvoir(b.ouvertes, b.total)}
+                      </span>
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </section>
 
