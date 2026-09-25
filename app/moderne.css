@@ -2157,3 +2157,7 @@ select {
     -1px 0 0 #000,
     1px 0 0 #000;
 }
+/* Cases de la grille de raid : angles carrés, comme les cadres de raid en jeu. */
+.case-raid {
+  border-radius: 0;
+}
