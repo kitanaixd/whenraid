@@ -2145,3 +2145,15 @@ select {
   background: var(--c);
   text-shadow: 0 1px 1px rgb(0 0 0 / 0.6);
 }
+/* Contour noir du texte (comme les cadres de raid en jeu) : lisible sur les classes claires. */
+.case-raid.membre {
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    0 -1px 0 #000,
+    0 1px 0 #000,
+    -1px 0 0 #000,
+    1px 0 0 #000;
+}
