@@ -4,7 +4,8 @@ import { DRAPEAUX, ICONES_RULESET } from "@/lib/icones";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
 import { NOM_MAX } from "@/lib/formulaire";
 import type { Dico } from "@/lib/i18n";
-import { options, optionsTriees } from "@/lib/libelles";
+import { options } from "@/lib/libelles";
+import { ClasseEtRoles } from "./ClasseEtRoles";
 
 /** Champs d'un personnage, vides (création) ou pré-remplis (modification). */
 export function ChampsPersonnage({ perso, d }: { perso?: Personnage; d: Dico }) {
@@ -80,28 +81,7 @@ export function ChampsPersonnage({ perso, d }: { perso?: Personnage; d: Dico }) 
           />
         </label>
       </div>
-      <div className="rangee">
-        <div className="champ">
-          {d.champ.classe}
-          <MenuDeroulant
-            name="classe"
-            etiquette={d.champ.classe}
-            valeurInitiale={perso?.classe}
-            options={optionsTriees(d.classe).map(([v, l]) => ({ valeur: v, libelle: l, classe: v }))}
-          />
-        </div>
-      </div>
-      <fieldset>
-        <legend>{d.personnages.rolesJouables}</legend>
-        <div className="cases">
-          {options(d.role).map(([v, l]) => (
-            <label key={v}>
-              <input type="checkbox" name="rolesJouables" value={v} defaultChecked={perso?.rolesJouables.includes(v)} />{" "}
-              {l}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <ClasseEtRoles classeInitiale={perso?.classe} rolesInitiaux={perso?.rolesJouables} />
     </>
   );
 }

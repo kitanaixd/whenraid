@@ -2,7 +2,7 @@ import type { Classe, Role } from "@/generated/prisma/enums";
 
 /** Les rôles qu'une classe peut tenir en raid. */
 export const rolesParClasse: Record<Classe, Role[]> = {
-  GUERRIER: ["TANK", "DPS"],
+  GUERRIER: ["TANK", "SOIGNEUR", "DPS"], // WoW Forever : le Guerrier peut soigner
   PALADIN: ["TANK", "SOIGNEUR", "DPS"],
   CHASSEUR: ["DPS"],
   VOLEUR: ["DPS"],
