@@ -2139,3 +2139,9 @@ select {
 .grille-entete .grille-raid-apercu {
   margin: 0;
 }
+
+/* Grille de raid : cases des joueurs en couleur de classe unie (sans dégradé). */
+.case-raid.membre {
+  background: var(--c);
+  text-shadow: 0 1px 1px rgb(0 0 0 / 0.6);
+}
