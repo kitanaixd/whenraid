@@ -7,6 +7,7 @@ import { options, optionsTriees } from "@/lib/libelles";
 import { nomRaid, raids } from "@/lib/raids";
 import { ClasseIcone, NomClasse, NomRole, RoleIcone } from "@/app/ClasseIcone";
 import { MenuDeroulant } from "@/app/MenuDeroulant";
+import { GrilleRaid } from "./GrilleRaid";
 import { useDico } from "@/app/Langue";
 
 const tousLesRoles: Role[] = ["TANK", "SOIGNEUR", "DPS"];
@@ -379,6 +380,28 @@ export function ChoixCompo({
               </span>
             )}
           </div>
+          {/* Aperçu façon cadres de raid : compo de départ, places réservées, places libres. */}
+          <GrilleRaid
+            taille={taille + dejaPris}
+            cases={[
+              ...(persoRl && roleRl
+                ? [{ type: "membre" as const, classe: persoRl.classe, role: roleRl, moi: true }]
+                : []),
+              ...Object.entries(compo).flatMap(([k, n]) => {
+                const [classe, role] = k.split(".") as [Classe, Role];
+                return Array.from({ length: n }, () => ({ type: "membre" as const, classe, role }));
+              }),
+              ...Array.from({ length: dejaPris }, () => ({ type: "accepte" as const })),
+              ...lignes.flatMap((l) => {
+                const b = besoin(l);
+                return Array.from({ length: b.nombre }, () => ({
+                  type: "besoin" as const,
+                  classe: (b.classe || undefined) as Classe | undefined,
+                  role: (b.role || undefined) as Role | undefined,
+                }));
+              }),
+            ]}
+          />
           <ul className="recap-legende">
             {lignes
               .map((l) => besoin(l))
